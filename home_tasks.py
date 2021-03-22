@@ -6,7 +6,7 @@ Helpful docs:
 """
 from importlib import import_module
 from typing import Set
-from invoke import task, run, Exit, Collection
+from invoke import task, run, Collection, UnexpectedExit, Context
 from pathlib import Path
 import sys
 
@@ -16,8 +16,24 @@ COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
 
 
-def branch_name():
-    return run("git rev-parse --abbrev-ref HEAD", hide=True).stdout.strip()
+class Git:
+    """Git helpers."""
+
+    def __init__(self, context: Context) -> None:
+        self.context = context
+
+    def branch_name(self):
+        """Current branch name."""
+        return run("git rev-parse --abbrev-ref HEAD", hide=True).stdout.strip()
+
+    def checkout(self, *branches: str) -> None:
+        """Try checking out the specified branches in order."""
+        for branch in branches:
+            try:
+                self.context.run(f"git checkout {branch}")
+                return branch
+            except UnexpectedExit:
+                pass
 
 
 @task
@@ -26,7 +42,7 @@ def fixme(c):
     cwd = str(Path.cwd())
     c.run(
         f"rg --line-number -o 'FIXME\[AA\].+' {cwd} | sort -u | sed -E 's/FIXME\[AA\]://'"
-        f" | cut -b {len(cwd)+2}- | sed 's/^/{branch_name()}: /'"
+        f" | cut -b {len(cwd)+2}- | sed 's/^/{Git(c).branch_name()}: /'"
     )
 
 
@@ -38,6 +54,29 @@ def super_up_bclean(c, group=""):
         parts.append(group)
     cmd = " ".join(parts)
     c.run(f"{cmd} up && {cmd} bclean")
+
+
+@task
+def fork_remote(c, username):
+    """Configure an upstream remote for a fork.
+
+    https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
+    """
+    project = c.run("git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'").stdout.strip()
+    c.run(f"git remote add upstream https://github.com/{username}/{project}.git", warn=True)
+    c.run("git remote -v")
+
+
+@task
+def fork_sync(c):
+    """Sync a fork.
+
+    https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork
+    """
+    c.run("git fetch upstream")
+    existing_branch = Git(c).checkout("master", "main")
+    c.run(f"git merge upstream/{existing_branch}")
+    c.run("git push")
 
 
 def add_tasks_directly(main_collection: Collection, module_path):
