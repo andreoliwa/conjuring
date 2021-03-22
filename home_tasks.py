@@ -4,11 +4,12 @@ Helpful docs:
 - http://www.pyinvoke.org/
 - http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
 """
-from importlib import import_module
-from typing import Set
-from invoke import task, run, Collection, UnexpectedExit, Context
-from pathlib import Path
 import sys
+from importlib import import_module
+from pathlib import Path
+from typing import Set
+
+from invoke import Collection, Context, UnexpectedExit, run, task
 
 COLOR_NONE = "\033[0m"
 COLOR_CYAN = "\033[36m"
@@ -26,7 +27,7 @@ class Git:
         """Current branch name."""
         return run("git rev-parse --abbrev-ref HEAD", hide=True).stdout.strip()
 
-    def checkout(self, *branches: str) -> None:
+    def checkout(self, *branches: str) -> str:
         """Try checking out the specified branches in order."""
         for branch in branches:
             try:
@@ -34,6 +35,7 @@ class Git:
                 return branch
             except UnexpectedExit:
                 pass
+        return ""
 
 
 @task
@@ -41,7 +43,7 @@ def fixme(c):
     """Display FIXME comments, sorted by file and with the branch name at the end."""
     cwd = str(Path.cwd())
     c.run(
-        f"rg --line-number -o 'FIXME\[AA\].+' {cwd} | sort -u | sed -E 's/FIXME\[AA\]://'"
+        fr"rg --line-number -o 'FIXME\[AA\].+' {cwd} | sort -u | sed -E 's/FIXME\[AA\]://'"
         f" | cut -b {len(cwd)+2}- | sed 's/^/{Git(c).branch_name()}: /'"
     )
 
@@ -62,7 +64,7 @@ def fork_remote(c, username):
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
     """
-    project = c.run("git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'").stdout.strip()
+    project = c.run(r"git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'", pty=False).stdout.strip()
     c.run(f"git remote add upstream https://github.com/{username}/{project}.git", warn=True)
     c.run("git remote -v")
 
