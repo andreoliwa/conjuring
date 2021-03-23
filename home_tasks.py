@@ -81,6 +81,29 @@ def fork_sync(c):
     c.run("git push")
 
 
+@task
+def pre_commit_install(c, gc=False):
+    """Pre-commit install scripts and hooks."""
+    if gc:
+        c.run("pre-commit gc")
+    c.run("pre-commit install -t pre-commit -t commit-msg --install-hooks")
+
+
+@task
+def pre_commit_run(c, hook=""):
+    """Pre-commit run all hooks or a specific one."""
+    if hook:
+        result = c.run(
+            "yq -r '.repos[].hooks[].id' .pre-commit-config.yaml | "
+            f"fzf --reverse --select-1 --height 40% -q '{hook}'",
+            pty=False,
+        )
+        chosen_hook = result.stdout.strip()
+    else:
+        chosen_hook = ""
+    c.run(f"pre-commit run --all-files {chosen_hook}")
+
+
 def add_tasks_directly(main_collection: Collection, module_path):
     """Add tasks directly to the collection, without prefix."""
     if isinstance(module_path, str):
