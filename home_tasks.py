@@ -82,6 +82,23 @@ def fork_sync(c):
 
 
 @task
+def git_switch_url_to(c, remote="origin", https=False):
+    """Set a SSH ot HTTPS URL for a remote."""
+    regex = r"'git@(.+\.com):(.+/.+)\.git\s'" if https else r"'/([^/]+\.com)/([^/]+/.+)\s\('"
+    replace = "'$1/$2'" if https else "'$1:$2'"
+
+    result = c.run(f"git remote -v | rg {remote} | head -1 | rg -o {regex} -r {replace}", warn=True, pty=False)
+    match = result.stdout.strip()
+    if not match:
+        print(f"{COLOR_LIGHT_RED}Match not found{COLOR_NONE}")
+    else:
+        repo = f"https://{match}" if https else f"git@{match}.git"
+        c.run(f"git remote set-url {remote} {repo}")
+
+    c.run("git remote -v")
+
+
+@task
 def pre_commit_install(c, gc=False):
     """Pre-commit install scripts and hooks."""
     if gc:
