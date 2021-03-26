@@ -165,4 +165,4 @@ def collection_from(*glob_patterns: str, prefix_root=False):
     return main_col
 
 
-namespace = collection_from("tasks.py", "_invoke*.py")
+namespace = collection_from("tasks.py", "*invoke*.py")
