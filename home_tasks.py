@@ -121,6 +121,20 @@ def pre_commit_run(c, hook=""):
     c.run(f"pre-commit run --all-files {chosen_hook}")
 
 
+@task
+def nitpick_auto(c):
+    """Autoupdate nitpick hook with the latest tag."""
+    c.run("pre-commit autoupdate --repo https://github.com/andreoliwa/nitpick")
+    pre_commit_install(c, gc=True)
+
+
+@task
+def nitpick_bleed(c):
+    """Autoupdate nitpick hook with the latest commit."""
+    c.run("pre-commit autoupdate --bleeding-edge --repo https://github.com/andreoliwa/nitpick")
+    pre_commit_install(c, gc=True)
+
+
 def add_tasks_directly(main_collection: Collection, module_path):
     """Add tasks directly to the collection, without prefix."""
     if isinstance(module_path, str):
