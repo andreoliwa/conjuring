@@ -1,3 +1,3 @@
 # http://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values
 tasks:
-  collection_name: home_tasks
+  collection_name: invoke_home

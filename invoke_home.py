@@ -160,14 +160,21 @@ def collection_from(*glob_patterns: str, prefix_root=False):
 
     If the current dir is the root, tasks won't be duplicated.
     """
+    # https://docs.python.org/3/library/os.html#os.stat_result
+    current_inode = Path(__file__).stat().st_ino
+
+    unique_patterns = set(glob_patterns)
     search_dirs: Set[Path] = {Path.cwd(), Path.home()}
 
     main_col = Collection()
 
     for which_dir in search_dirs:
         sys.path.insert(0, str(which_dir))
-        for pattern in glob_patterns:
+        for pattern in unique_patterns:
             for file in which_dir.glob(pattern):
+                if file.stat().st_ino == current_inode:
+                    # Don't add this file twice
+                    continue
                 add_tasks_directly(main_col, file.stem)
         sys.path.pop(0)
 
