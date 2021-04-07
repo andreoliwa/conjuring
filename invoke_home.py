@@ -59,25 +59,25 @@ def super_up_bclean(c, group=""):
 
 
 @task
-def fork_remote(c, username):
-    """Configure an upstream remote for a fork.
+def fork_remote(c, username, remote="upstream"):
+    """Configure a remote for a fork.
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
     """
     project = c.run(r"git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'", pty=False).stdout.strip()
-    c.run(f"git remote add upstream https://github.com/{username}/{project}.git", warn=True)
+    c.run(f"git remote add {remote} https://github.com/{username}/{project}.git", warn=True)
     c.run("git remote -v")
 
 
 @task
-def fork_sync(c):
+def fork_sync(c, remote="upstream"):
     """Sync a fork.
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork
     """
-    c.run("git fetch upstream")
+    c.run(f"git fetch {remote}")
     existing_branch = Git(c).checkout("master", "main")
-    c.run(f"git merge upstream/{existing_branch}")
+    c.run(f"git merge {remote}/{existing_branch}")
     c.run("git push")
 
 
