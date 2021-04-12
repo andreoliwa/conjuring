@@ -135,6 +135,29 @@ def nitpick_bleed(c):
     pre_commit_install(c, gc=True)
 
 
+@task
+def jrnl_tags(c, sort=False, rg=""):
+    """Query jrnl tags."""
+    cmd = ["jrnl --tags"]
+    if sort:
+        cmd.append("| sort -u")
+    if rg:
+        cmd.append(f"| rg {rg}")
+    c.run(" ".join(cmd))
+
+
+@task
+def jrnl_query(c, n=10, contains="", edit=False):
+    """Query jrnl entries."""
+    cmd = ["jrnl"]
+    cmd.append(f"-n {n}")
+    if contains:
+        cmd.append(f"-contains {contains}")
+    if edit:
+        cmd.append("--edit")
+    c.run(" ".join(cmd))
+
+
 def add_tasks_directly(main_collection: Collection, module_path):
     """Add tasks directly to the collection, without prefix."""
     if isinstance(module_path, str):
