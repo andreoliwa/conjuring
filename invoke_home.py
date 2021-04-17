@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Set
 
 from invoke import Collection, Context, UnexpectedExit, run, task
+from invoke.exceptions import Exit
 
 COLOR_NONE = "\033[0m"
 COLOR_CYAN = "\033[36m"
@@ -64,6 +65,8 @@ def fork_remote(c, username, remote="upstream"):
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
     """
+    if username.startswith("-"):
+        raise Exit("Arguments should be: [username] [--remote]")
     project = c.run(r"git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'", pty=False).stdout.strip()
     c.run(f"git remote add {remote} https://github.com/{username}/{project}.git", warn=True)
     c.run("git remote -v")
@@ -147,15 +150,26 @@ def jrnl_tags(c, sort=False, rg=""):
 
 
 @task
-def jrnl_query(c, n=10, contains="", edit=False):
+def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False):
     """Query jrnl entries."""
-    cmd = ["jrnl"]
-    cmd.append(f"-n {n}")
+    format = "fancy"
+    if pretty:
+        format = "pretty"
+    elif short:
+        format = "short"
+
+    cmd = ["jrnl", f"-n {n}", f"--format {format}"]
     if contains:
         cmd.append(f"-contains {contains}")
     if edit:
         cmd.append("--edit")
     c.run(" ".join(cmd))
+
+
+@task
+def jrnl_edit_last(c):
+    """Edit the last jrnl entry."""
+    c.run("jrnl -1 --edit")
 
 
 def add_tasks_directly(main_collection: Collection, module_path):
