@@ -7,7 +7,7 @@ Helpful docs:
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from invoke import Collection, Context, UnexpectedExit, run, task
 from invoke.exceptions import Exit
@@ -18,15 +18,31 @@ COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
 
 
+def run_stdout(c, cmd: str) -> str:
+    """Run a (hidden) command and return the stripped stdout."""
+    return c.run(cmd, hide=True, pty=False).stdout.strip()
+
+
+def run_lines(c, cmd: str) -> List[str]:
+    """Run a (hidden) command and return the result as lines."""
+    return run_stdout(c, cmd).splitlines()
+
+
 class Git:
     """Git helpers."""
 
     def __init__(self, context: Context) -> None:
         self.context = context
 
-    def branch_name(self):
-        """Current branch name."""
-        return run("git rev-parse --abbrev-ref HEAD", hide=True).stdout.strip()
+    def current_branch(self):
+        """Return the current branch name."""
+        return run_stdout(self.context, "git rev-parse --abbrev-ref HEAD")
+
+    def default_branch(self):
+        """Return the default branch name (master/main/develop/development)."""
+        return run_stdout(
+            self.context, "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1"
+        )
 
     def checkout(self, *branches: str) -> str:
         """Try checking out the specified branches in order."""
@@ -45,7 +61,7 @@ def fixme(c):
     cwd = str(Path.cwd())
     c.run(
         fr"rg --line-number -o 'FIXME\[AA\].+' {cwd} | sort -u | sed -E 's/FIXME\[AA\]://'"
-        f" | cut -b {len(cwd)+2}- | sed 's/^/{Git(c).branch_name()}: /'"
+        f" | cut -b {len(cwd)+2}- | sed 's/^/{Git(c).current_branch()}: /'"
     )
 
 
