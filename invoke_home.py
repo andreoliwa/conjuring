@@ -166,7 +166,7 @@ def jrnl_tags(c, sort=False, rg=""):
 
 
 @task
-def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False):
+def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False, journal=""):
     """Query jrnl entries."""
     format = "fancy"
     if pretty:
@@ -174,7 +174,10 @@ def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False):
     elif short:
         format = "short"
 
-    cmd = ["jrnl", f"-n {n}", f"--format {format}"]
+    cmd = ["jrnl"]
+    if journal:
+        cmd.append(journal)
+    cmd.extend([f"-n {n}", f"--format {format}"])
     if contains:
         cmd.append(f"-contains {contains}")
     if edit:
@@ -183,9 +186,13 @@ def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False):
 
 
 @task
-def jrnl_edit_last(c):
+def jrnl_edit_last(c, journal=""):
     """Edit the last jrnl entry."""
-    c.run("jrnl -1 --edit")
+    cmd = ["jrnl"]
+    if journal:
+        cmd.append(journal)
+    cmd.append(" -1 --edit")
+    c.run(" ".join(cmd))
 
 
 def add_tasks_directly(main_collection: Collection, module_path):
