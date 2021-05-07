@@ -4,6 +4,7 @@ Helpful docs:
 - http://www.pyinvoke.org/
 - http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
 """
+import os
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -16,6 +17,8 @@ COLOR_NONE = "\033[0m"
 COLOR_CYAN = "\033[36m"
 COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
+
+CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
 
 def run_stdout(c, cmd: str) -> str:
@@ -166,11 +169,11 @@ def jrnl_tags(c, sort=False, rg=""):
 
 
 @task
-def jrnl_query(c, n=10, contains="", edit=False, pretty=False, short=False, journal=""):
+def jrnl_query(c, n=10, contains="", edit=False, fancy=False, short=False, journal=""):
     """Query jrnl entries."""
-    format = "fancy"
-    if pretty:
-        format = "pretty"
+    format = "pretty"
+    if fancy:
+        format = "fancy"
     elif short:
         format = "short"
 
@@ -195,12 +198,23 @@ def jrnl_edit_last(c, journal=""):
     c.run(" ".join(cmd))
 
 
+def ignore_module(module_name: str) -> bool:
+    for ignore_str in CONJURING_IGNORE_MODULES:
+        if ignore_str and ignore_str in module_name:
+            return True
+    return False
+
+
 def add_tasks_directly(main_collection: Collection, module_path):
     """Add tasks directly to the collection, without prefix."""
     if isinstance(module_path, str):
         module = import_module(module_path)
+        if ignore_module(module_path):
+            return
     else:
         module = module_path
+        if ignore_module(module.__name__):
+            return
     sub_collection = Collection.from_module(module)
     for t in sub_collection.tasks.values():
         if t.name in main_collection.tasks:
