@@ -199,6 +199,7 @@ def jrnl_edit_last(c, journal=""):
 
 
 def ignore_module(module_name: str) -> bool:
+    """Ignore a module by its name."""
     for ignore_str in CONJURING_IGNORE_MODULES:
         if ignore_str and ignore_str in module_name:
             return True
