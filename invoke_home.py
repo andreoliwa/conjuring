@@ -21,14 +21,30 @@ COLOR_LIGHT_RED = "\033[1;31m"
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
 
-def run_stdout(c, cmd: str) -> str:
+def join_pieces(*pieces: str):
+    """Join pieces, ignoring empty strings."""
+    return " ".join(piece for piece in pieces if piece.strip())
+
+
+def run_command(c, *pieces: str):
+    """Build command from pieces, ignoring empty strings."""
+    return c.run(join_pieces(*pieces))
+
+
+def run_stdout(c, *pieces: str) -> str:
     """Run a (hidden) command and return the stripped stdout."""
-    return c.run(cmd, hide=True, pty=False).stdout.strip()
+    return c.run(join_pieces(*pieces), hide=True, pty=False).stdout.strip()
 
 
-def run_lines(c, cmd: str) -> List[str]:
+def run_lines(c, *pieces: str) -> List[str]:
     """Run a (hidden) command and return the result as lines."""
-    return run_stdout(c, cmd).splitlines()
+    return run_stdout(c, *pieces).splitlines()
+
+
+def print_error(*message: str):
+    """Print an error message."""
+    all_messages = " ".join(message)
+    print(f"{COLOR_LIGHT_RED}{all_messages}{COLOR_NONE}")
 
 
 class Git:
