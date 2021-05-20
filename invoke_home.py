@@ -26,17 +26,17 @@ def join_pieces(*pieces: str):
     return " ".join(piece for piece in pieces if piece.strip())
 
 
-def run_command(c, *pieces: str):
+def run_command(c: Context, *pieces: str):
     """Build command from pieces, ignoring empty strings."""
     return c.run(join_pieces(*pieces))
 
 
-def run_stdout(c, *pieces: str) -> str:
+def run_stdout(c: Context, *pieces: str, hide=True) -> str:
     """Run a (hidden) command and return the stripped stdout."""
-    return c.run(join_pieces(*pieces), hide=True, pty=False).stdout.strip()
+    return c.run(join_pieces(*pieces), hide=hide, pty=False).stdout.strip()
 
 
-def run_lines(c, *pieces: str) -> List[str]:
+def run_lines(c: Context, *pieces: str) -> List[str]:
     """Run a (hidden) command and return the result as lines."""
     return run_stdout(c, *pieces).splitlines()
 
@@ -47,17 +47,27 @@ def print_error(*message: str):
     print(f"{COLOR_LIGHT_RED}{all_messages}{COLOR_NONE}")
 
 
+def run_with_fzf(c: Context, *pieces: str, query="") -> str:
+    """Run a command with fzf and return the chosen entry."""
+    fzf_pieces = ["| fzf --reverse --select-1 --height 40%"]
+    if query:
+        fzf_pieces.append(f"-q '{query}'")
+    return run_stdout(c, *pieces, *fzf_pieces, hide=False)
+
+
 class Git:
     """Git helpers."""
+
+    CMD_LOCAL_BRANCHES = "git branch --list | rg -v develop | cut -b 3-"
 
     def __init__(self, context: Context) -> None:
         self.context = context
 
-    def current_branch(self):
+    def current_branch(self) -> str:
         """Return the current branch name."""
-        return run_stdout(self.context, "git rev-parse --abbrev-ref HEAD")
+        return run_stdout(self.context, "git branch --show-current")
 
-    def default_branch(self):
+    def default_branch(self) -> str:
         """Return the default branch name (master/main/develop/development)."""
         return run_stdout(
             self.context, "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1"
@@ -148,12 +158,7 @@ def pre_commit_install(c, gc=False):
 def pre_commit_run(c, hook=""):
     """Pre-commit run all hooks or a specific one."""
     if hook:
-        result = c.run(
-            "yq -r '.repos[].hooks[].id' .pre-commit-config.yaml | "
-            f"fzf --reverse --select-1 --height 40% -q '{hook}'",
-            pty=False,
-        )
-        chosen_hook = result.stdout.strip()
+        chosen_hook = run_with_fzf(c, "yq -r '.repos[].hooks[].id' .pre-commit-config.yaml", query=hook)
     else:
         chosen_hook = ""
     c.run(f"pre-commit run --all-files {chosen_hook}")
