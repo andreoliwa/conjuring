@@ -215,8 +215,14 @@ def jrnl_edit_last(c, journal=""):
     cmd = ["jrnl"]
     if journal:
         cmd.append(journal)
-    cmd.append(" -1 --edit")
+    cmd.append("-1 --edit")
     c.run(" ".join(cmd))
+
+
+@task
+def onedrive(c, number=1):
+    """Open the latest N OneDrive photo dirs, to sort them out."""
+    c.run(f"fd . -d 1 ~/OneDrive/Pictures/Camera_New/2* | sort -r | head -n {number} | xargs open")
 
 
 def ignore_module(module_name: str) -> bool:
