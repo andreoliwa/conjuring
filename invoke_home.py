@@ -179,9 +179,12 @@ def nitpick_bleed(c):
 
 
 @task
-def jrnl_tags(c, sort=False, rg=""):
+def jrnl_tags(c, sort=False, rg="", journal=""):
     """Query jrnl tags."""
-    cmd = ["jrnl --tags"]
+    cmd = ["jrnl"]
+    if journal:
+        cmd.append(journal)
+    cmd.append("--tags")
     if sort:
         cmd.append("| sort -u")
     if rg:
