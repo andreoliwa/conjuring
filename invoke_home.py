@@ -193,7 +193,7 @@ def jrnl_tags(c, sort=False, rg="", journal=""):
 
 
 @task
-def jrnl_query(c, n=10, contains="", edit=False, fancy=False, short=False, journal=""):
+def jrnl_query(c, n=0, contains="", edit=False, fancy=False, short=False, journal=""):
     """Query jrnl entries."""
     format = "pretty"
     if fancy:
@@ -204,7 +204,9 @@ def jrnl_query(c, n=10, contains="", edit=False, fancy=False, short=False, journ
     cmd = ["jrnl"]
     if journal:
         cmd.append(journal)
-    cmd.extend([f"-n {n}", f"--format {format}"])
+    if n:
+        cmd.append(f"-n {n}")
+    cmd.append(f"--format {format}")
     if contains:
         cmd.append(f"-contains {contains}")
     if edit:
