@@ -225,11 +225,20 @@ def jrnl_edit_last(c, journal=""):
 
 
 @task
-def onedrive(c, number=1):
+def onedrive(c, clean=True, number=1):
     """Open the latest N OneDrive photo dirs, to sort them out."""
-    c.run("fd -uu -0 -tf -i .DS_Store ~/OneDrive | xargs -0 rm -v")
-    c.run("find ~/OneDrive -mindepth 1 -type d -empty -print -delete")
-    c.run(f"fd . -d 1 ~/OneDrive/Pictures/Camera_New/2* | sort -r | head -n {number} | xargs open")
+    if clean:
+        c.run("fd -uu -0 -tf -i .DS_Store ~/OneDrive | xargs -0 rm -v")
+        c.run("find ~/OneDrive -mindepth 1 -type d -empty -print -delete")
+    dirs = [f"~/OneDrive/Pictures/{sub}*" for sub in ["Telegram", "Whats_App_Documents", "Camera_New/20"]]
+    run_command(
+        c,
+        "fd . -t f",
+        *dirs,
+        "| sort -r",
+        f"| head -n {number}",
+        "| xargs open -R",
+    )
 
 
 def ignore_module(module_name: str) -> bool:
