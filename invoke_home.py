@@ -19,6 +19,7 @@ COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
+M3_EVENTS = Path("/Volumes/m3/backup/Pictures/events")
 
 
 def join_pieces(*pieces: str):
@@ -222,6 +223,28 @@ def jrnl_edit_last(c, journal=""):
         cmd.append(journal)
     cmd.append("-1 --edit")
     c.run(" ".join(cmd))
+
+
+@task
+def m3(c, browse=False):
+    """Cleanup and backup pictures from the m3 hard.drive."""
+    for line in c.run(f"fd -a -uu -t d \\.picasaorig {M3_EVENTS}", pty=False).stdout.splitlines():
+        hidden_picasa_dir = Path(line)
+        with c.cd(hidden_picasa_dir.parent):
+            c.run("merge-dirs . .picasaoriginals/")
+
+    year = 2006
+    while year <= 2021:
+        dirs = c.run(f"fd -t d {year} {M3_EVENTS} | sort -u").stdout.splitlines()
+        if dirs:
+            for dir_ in dirs:
+                c.run(f"du -sh '{dir_}'")
+                if browse:
+                    c.run(f"open '{dir_}'")
+            break
+        year += 1
+
+    c.run("df -h")
 
 
 @task
