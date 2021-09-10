@@ -228,12 +228,23 @@ def jrnl_edit_last(c, journal=""):
 @task
 def pix(c, browse=False):
     """Cleanup pictures."""
+    c.run("fd -uu -0 -tf -i .DS_Store | xargs -0 rm -v")
+    c.run("fd -uu -0 -tf -i .nomedia | xargs -0 rm -v")
+    c.run("find . -mindepth 1 -type d -empty -print -delete")
+
+    # Unhide Picasa originals dir
+    for line in c.run("fd -uu -t d .picasaoriginals", pty=False).stdout.splitlines():
+        original_dir = Path(line)
+        c.run(f"mv {original_dir} {original_dir.parent}/Picasa_Originals")
+
+    # Keep the original dir as the main dir and rename parent dir to "_Copy"
     for line in c.run("fd -t d originals", pty=False).stdout.splitlines():
         original_dir = Path(line)
         c.run(f"mv {original_dir} {original_dir.parent}_Temp")
         c.run(f"mv {original_dir.parent} {original_dir.parent}_Copy")
         c.run(f"mv {original_dir.parent}_Temp {original_dir.parent}")
 
+    # Merge the copy dir with the main one
     for line in run_command(c, "fd -a -uu -t d --color never _copy", str(PICTURES_DIR)).stdout.splitlines():
         copy_dir = Path(line)
         original_dir = Path(line.replace("_Copy", ""))
