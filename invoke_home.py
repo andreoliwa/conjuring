@@ -6,7 +6,6 @@ Helpful docs:
 """
 import os
 import sys
-from datetime import date
 from importlib import import_module
 from pathlib import Path
 from typing import List, Set
@@ -20,7 +19,7 @@ COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
-M3_PICTURES = Path("/Volumes/m3/backup/Pictures")
+PICTURES_DIR = Path("~/OneDrive/Pictures/").expanduser()
 
 
 def join_pieces(*pieces: str):
@@ -227,41 +226,16 @@ def jrnl_edit_last(c, journal=""):
 
 
 @task
-def m3(c, browse=False):
-    """Cleanup and backup pictures from the m3 hard.drive."""
-    for line in c.run(f"fd -a -uu -t d \\.picasaorig {M3_PICTURES}", pty=False).stdout.splitlines():
-        hidden_picasa_dir = Path(line)
-        with c.cd(hidden_picasa_dir.parent):
-            c.run("merge-dirs . .picasaoriginals/")
-
-    year = 2000
-    while year < date.today().year:
-        year += 1
-        dirs = c.run(f"fd -t d {year} {M3_PICTURES} | sort -u").stdout.splitlines()
-        if not dirs:
-            continue
-
-        year_dir: Path = M3_PICTURES / str(year)
-        year_dir.mkdir(exist_ok=True)
-
-        for str_picture_dir in dirs:
-            if not str_picture_dir:
-                continue
-
-            picture_dir = Path(str_picture_dir)
-            if picture_dir == year_dir:
-                # Skip the year dir itself
-                continue
-
-            c.run(f"du -sh {str_picture_dir!r}")
-            if browse:
-                c.run(f"open '{str_picture_dir}'")
-
-            if picture_dir.parent != year_dir:
-                # Skip dirs that were already moved
-                c.run(f"mv {str_picture_dir!r} {str(year_dir)!r}")
-
-    c.run("df -h")
+def pix(c, browse=False):
+    """Cleanup pictures."""
+    for line in run_command(c, "fd -a -uu -t d --color never _copy", str(PICTURES_DIR)).stdout.splitlines():
+        copy_dir = Path(line)
+        original_dir = Path(line.replace("_Copy", ""))
+        if original_dir.exists():
+            # c.run(f"open '{original_dir}'")
+            c.run(f"merge-dirs '{original_dir}' '{copy_dir}'")
+        else:
+            c.run(f"mv '{copy_dir}' '{original_dir}'")
 
 
 @task
