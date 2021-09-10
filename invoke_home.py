@@ -255,6 +255,14 @@ def pix(c, browse=False):
         else:
             c.run(f"mv '{copy_dir}' '{original_dir}'")
 
+    # List dirs with _Copy files
+    copy_dirs = set()
+    for line in run_command(c, "fd -uu -t f --color never _copy", str(PICTURES_DIR), hide=True).stdout.splitlines():
+        copy_dirs.add(Path(line).parent)
+
+    for dir_ in sorted(copy_dirs):
+        print(dir_)
+
 
 @task
 def onedrive(c, clean=True, number=1):
