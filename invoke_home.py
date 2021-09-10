@@ -27,9 +27,9 @@ def join_pieces(*pieces: str):
     return " ".join(piece for piece in pieces if piece.strip())
 
 
-def run_command(c: Context, *pieces: str, warn=False):
+def run_command(c: Context, *pieces: str, warn=False, hide=False):
     """Build command from pieces, ignoring empty strings."""
-    return c.run(join_pieces(*pieces), warn=warn)
+    return c.run(join_pieces(*pieces), warn=warn, hide=hide)
 
 
 def run_stdout(c: Context, *pieces: str, hide=True) -> str:
@@ -228,11 +228,18 @@ def jrnl_edit_last(c, journal=""):
 @task
 def pix(c, browse=False):
     """Cleanup pictures."""
+    for line in c.run("fd -t d originals", pty=False).stdout.splitlines():
+        original_dir = Path(line)
+        c.run(f"mv {original_dir} {original_dir.parent}_Temp")
+        c.run(f"mv {original_dir.parent} {original_dir.parent}_Copy")
+        c.run(f"mv {original_dir.parent}_Temp {original_dir.parent}")
+
     for line in run_command(c, "fd -a -uu -t d --color never _copy", str(PICTURES_DIR)).stdout.splitlines():
         copy_dir = Path(line)
         original_dir = Path(line.replace("_Copy", ""))
         if original_dir.exists():
-            # c.run(f"open '{original_dir}'")
+            if browse:
+                c.run(f"open '{original_dir}'")
             c.run(f"merge-dirs '{original_dir}' '{copy_dir}'")
         else:
             c.run(f"mv '{copy_dir}' '{original_dir}'")
