@@ -6,7 +6,9 @@ Helpful docs:
 """
 import os
 import sys
+from datetime import date
 from importlib import import_module
+from itertools import chain
 from pathlib import Path
 from typing import List, Set
 
@@ -270,15 +272,22 @@ def onedrive(c, clean=True, number=1):
     if clean:
         c.run("fd -uu -0 -tf -i .DS_Store ~/OneDrive | xargs -0 rm -v")
         c.run("find ~/OneDrive -mindepth 1 -type d -empty -print -delete")
-    dirs = [f"~/OneDrive/Pictures/{sub}*" for sub in ["Telegram", "Whats_App_Documents", "Camera_New/20"]]
-    run_command(
-        c,
-        "fd . -t f",
-        *dirs,
-        "| sort -r",
-        f"| head -n {number}",
-        "| xargs open -R",
-    )
+
+    current_year = date.today().year
+    for subdir in ["Telegram", *[f"Camera_New/{year}" for year in chain([current_year], range(2008, current_year))]]:
+        path = Path(PICTURES_DIR) / subdir
+        if not path.exists():
+            continue
+
+        run_command(
+            c,
+            "fd . -t f",
+            str(path),
+            "| sort -r",
+            f"| head -n {number}",
+            "| xargs open -R",
+        )
+        break
 
 
 def ignore_module(module_name: str) -> bool:
