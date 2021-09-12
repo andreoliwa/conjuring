@@ -10,6 +10,8 @@ from datetime import date
 from importlib import import_module
 from itertools import chain
 from pathlib import Path
+from string import Template
+from tempfile import NamedTemporaryFile
 from typing import List, Set
 
 from invoke import Collection, Context, UnexpectedExit, task
@@ -288,6 +290,41 @@ def onedrive(c, clean=True, number=1):
             "| xargs open -R",
         )
         break
+
+
+@task(help={"restore": "Restore files instead of backing them up"})
+def duplicity(c, restore=False):
+    """Backup and restore files with duplicity."""
+    clean_hostname = c.run("hostname | sed 's/.local//'").stdout.strip()
+    print(f"Host: {clean_hostname}")
+
+    backup_dir = f"file://$HOME/OneDrive/Backup/{clean_hostname}/duplicity/"
+    # To backup directly on OneDrive:
+    # backup_dir = f"onedrive://Backup/{clean_hostname}/duplicity/"
+    print(f"Backup dir: {backup_dir}")
+
+    if restore:
+        c.run(f"duplicity restore {backup_dir} ~/Downloads/restore/")
+        return
+
+    template_file = Path("~/dotfiles/duplicity-template.cfg").expanduser()
+    print(f"Template file: {template_file}")
+
+    template_contents = template_file.read_text()
+    duplicity_config = Template(template_contents).substitute({"home": Path.home()})
+
+    with NamedTemporaryFile("r+", delete=False) as temp_file:
+        temp_file.write(duplicity_config)
+        temp_file.flush()
+        run_command(
+            c,
+            "duplicity",
+            f"--name='{clean_hostname}-backup'",
+            "-v info",
+            f"--include-filelist={temp_file.name}",
+            "--exclude='**' $HOME/",
+            backup_dir,
+        )
 
 
 def ignore_module(module_name: str) -> bool:
