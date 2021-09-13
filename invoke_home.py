@@ -276,7 +276,10 @@ def onedrive(c, clean=True, number=1):
         c.run("find ~/OneDrive -mindepth 1 -type d -empty -print -delete")
 
     current_year = date.today().year
-    for subdir in ["Telegram", *[f"Camera_New/{year}" for year in chain([current_year], range(2008, current_year))]]:
+    for subdir in [
+        f"Camera_New/{sub}" if isinstance(sub, int) else sub
+        for sub in chain([current_year, "Telegram"], range(2008, current_year))
+    ]:
         path = Path(PICTURES_DIR) / subdir
         if not path.exists():
             continue
