@@ -28,7 +28,7 @@ PICTURES_DIR = Path("~/OneDrive/Pictures/").expanduser()
 
 def join_pieces(*pieces: str):
     """Join pieces, ignoring empty strings."""
-    return " ".join(piece for piece in pieces if piece.strip())
+    return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
 def run_command(c: Context, *pieces: str, warn=False, hide=False):
