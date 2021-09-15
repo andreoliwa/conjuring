@@ -23,7 +23,9 @@ COLOR_LIGHT_GREEN = "\033[1;32m"
 COLOR_LIGHT_RED = "\033[1;31m"
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
-PICTURES_DIR = Path("~/OneDrive/Pictures/").expanduser()
+ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
+BACKUP_DIR = ONE_DRIVE_DIR / "Backup"
+PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
 
 
 def join_pieces(*pieces: str):
@@ -272,8 +274,8 @@ def pix(c, browse=False):
 def onedrive(c, clean=True, number=1):
     """Open the latest N OneDrive photo dirs, to sort them out."""
     if clean:
-        c.run("fd -uu -0 -tf -i .DS_Store ~/OneDrive | xargs -0 rm -v")
-        c.run("find ~/OneDrive -mindepth 1 -type d -empty -print -delete")
+        c.run(f"fd -uu -0 -tf -i .DS_Store {ONE_DRIVE_DIR} | xargs -0 rm -v")
+        c.run(f"find {ONE_DRIVE_DIR} -mindepth 1 -type d -empty -print -delete")
 
     current_year = date.today().year
     for subdir in [
@@ -295,20 +297,23 @@ def onedrive(c, clean=True, number=1):
         break
 
 
-@task(help={"restore": "Restore files instead of backing them up"})
+@task(help={"restore": "Restore files instead of backing them up. You will be prompted to choose a directory."})
 def duplicity(c, restore=False):
     """Backup and restore files with duplicity."""
     clean_hostname = c.run("hostname | sed 's/.local//'").stdout.strip()
     print(f"Host: {clean_hostname}")
 
-    backup_dir = f"file://$HOME/OneDrive/Backup/{clean_hostname}/duplicity/"
+    if restore:
+        chosen_dir = run_with_fzf(c, f"fd -t d duplicity {BACKUP_DIR}")
+        if not chosen_dir:
+            return
+        c.run(f"duplicity restore file://{chosen_dir} ~/Downloads/duplicity-restore/")
+        return
+
+    backup_dir = f"file://{BACKUP_DIR}/{clean_hostname}/duplicity/"
     # To backup directly on OneDrive:
     # backup_dir = f"onedrive://Backup/{clean_hostname}/duplicity/"
     print(f"Backup dir: {backup_dir}")
-
-    if restore:
-        c.run(f"duplicity restore {backup_dir} ~/Downloads/restore/")
-        return
 
     template_file = Path("~/dotfiles/duplicity-template.cfg").expanduser()
     print(f"Template file: {template_file}")
