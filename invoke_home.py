@@ -271,11 +271,10 @@ def pix(c, browse=False):
 
 
 @task
-def onedrive(c, clean=True, number=1):
-    """Open the latest N OneDrive photo dirs, to sort them out."""
-    if clean:
-        c.run(f"fd -uu -0 -tf -i .DS_Store {ONE_DRIVE_DIR} | xargs -0 rm -v")
-        c.run(f"find {ONE_DRIVE_DIR} -mindepth 1 -type d -empty -print -delete")
+def categorize(c, organize=True, number=1):
+    """Open directories with files/photos that have to be categorized/moved/renamed."""
+    if organize:
+        c.run("organize run")
 
     current_year = date.today().year
     for subdir in [
