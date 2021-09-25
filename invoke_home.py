@@ -270,24 +270,34 @@ def pix(c, browse=False):
         print(dir_)
 
 
-@task
-def categorize(c, organize=True, browse=True):
+@task(
+    help={
+        "organize": "Call 'organize run' before categorizing",
+        "browse": "Open dir on Finder",
+        "empty": "Check dirs that are not empty but should be",
+    }
+)
+def categorize(c, organize=True, browse=True, empty=True):
     """Open directories with files/photos that have to be categorized/moved/renamed."""
     if organize:
         c.run("organize run")
 
-    empty_dirs = [
-        Path(d).expanduser()
-        for d in [
-            "~/Downloads",
-            "~/Desktop",
-            "~/Documents/Shared_Downloads",
-            PICTURES_DIR / "Telegram",
-            ONE_DRIVE_DIR / "Documents/Mayan_Staging/Portugues",
-            ONE_DRIVE_DIR / "Documents/Mayan_Staging/English",
-            ONE_DRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
+    empty_dirs = (
+        [
+            Path(d).expanduser()
+            for d in [
+                "~/Downloads",
+                "~/Desktop",
+                "~/Documents/Shared_Downloads",
+                PICTURES_DIR / "Telegram",
+                ONE_DRIVE_DIR / "Documents/Mayan_Staging/Portugues",
+                ONE_DRIVE_DIR / "Documents/Mayan_Staging/English",
+                ONE_DRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
+            ]
         ]
-    ]
+        if empty
+        else []
+    )
 
     current_year = date.today().year
     picture_dirs = [
