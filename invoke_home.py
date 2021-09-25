@@ -271,29 +271,50 @@ def pix(c, browse=False):
 
 
 @task
-def categorize(c, organize=True, number=1):
+def categorize(c, organize=True, browse=True):
     """Open directories with files/photos that have to be categorized/moved/renamed."""
     if organize:
         c.run("organize run")
 
+    empty_dirs = [
+        Path(d).expanduser()
+        for d in [
+            "~/Downloads",
+            "~/Desktop",
+            "~/Documents/Shared_Downloads",
+            PICTURES_DIR / "Telegram",
+            ONE_DRIVE_DIR / "Documents/Mayan_Staging/Portugues",
+            ONE_DRIVE_DIR / "Documents/Mayan_Staging/English",
+            ONE_DRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
+        ]
+    ]
+
     current_year = date.today().year
-    for subdir in [
-        f"Camera_New/{sub}" if isinstance(sub, int) else sub
-        for sub in chain([current_year, "Telegram"], range(2008, current_year))
-    ]:
-        path = Path(PICTURES_DIR) / subdir
+    picture_dirs = [
+        Path(PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
+    ]
+
+    for path in chain(empty_dirs, picture_dirs):  # type: Path
         if not path.exists():
             continue
+        has_files = False
+        for file in path.glob("*"):
+            if not file.name.startswith("."):
+                has_files = True
+                break
+        if not has_files:
+            continue
 
-        run_command(
-            c,
-            "fd . -t f",
-            str(path),
-            "| sort -r",
-            f"| head -n {number}",
-            "| xargs open -R",
-        )
-        break
+        if browse:
+            run_command(
+                c,
+                "fd . -0 -t f --color never -1",
+                str(path),
+                "| xargs -0 open -R",
+            )
+            break
+        else:
+            print(str(path))
 
 
 @task(help={"restore": "Restore files instead of backing them up. You will be prompted to choose a directory."})
