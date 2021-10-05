@@ -289,6 +289,7 @@ def categorize(c, organize=True, browse=True, empty=True):
                 "~/Downloads",
                 "~/Desktop",
                 "~/Documents/Shared_Downloads",
+                PICTURES_DIR / "Telegram",
                 PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
                 ONE_DRIVE_DIR / "Documents/Mayan_Staging/Portugues",
                 ONE_DRIVE_DIR / "Documents/Mayan_Staging/English",
