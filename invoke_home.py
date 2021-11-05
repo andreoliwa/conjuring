@@ -338,7 +338,8 @@ def duplicity(c, restore=False):
         chosen_dir = run_with_fzf(c, f"fd -t d duplicity {BACKUP_DIR}")
         if not chosen_dir:
             return
-        c.run(f"duplicity restore file://{chosen_dir} ~/Downloads/duplicity-restore/")
+        source_computer = Path(chosen_dir).parent.name
+        c.run(f"duplicity restore file://{chosen_dir} ~/Downloads/duplicity-restore/{source_computer}/")
         return
 
     backup_dir = f"file://{BACKUP_DIR}/{clean_hostname}/duplicity/"
