@@ -112,13 +112,16 @@ def super_up_bclean(c, group=""):
 
 
 @task
-def fork_remote(c, username, remote="upstream"):
+def fork_remote(c, username, remote=""):
     """Configure a remote for a fork.
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
     """
     if username.startswith("-"):
-        raise Exit("Arguments should be: [username] [--remote]")
+        raise Exit("Arguments should be: username [--remote]")
+    if not remote:
+        remote = username
+
     project = c.run(r"git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'", pty=False).stdout.strip()
     c.run(f"git remote add {remote} https://github.com/{username}/{project}.git", warn=True)
     c.run("git remote -v")
