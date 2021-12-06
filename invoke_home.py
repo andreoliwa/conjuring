@@ -33,9 +33,10 @@ def join_pieces(*pieces: str):
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, warn=False, hide=False):
+def run_command(c: Context, *pieces: str, warn: bool = False, hide: bool = False, dry: bool = None):
     """Build command from pieces, ignoring empty strings."""
-    return c.run(join_pieces(*pieces), warn=warn, hide=hide)
+    kwargs = {"dry": dry} if dry is not None else {}
+    return c.run(join_pieces(*pieces), warn=warn, hide=hide, **kwargs)
 
 
 def run_stdout(c: Context, *pieces: str, hide=True) -> str:
