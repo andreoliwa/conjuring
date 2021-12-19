@@ -7,12 +7,12 @@ packages = ["conjuring", "conjuring.spells"]
 
 package_data = {"": ["*"]}
 
-install_requires = ["invoke>=1.6.0,<2.0.0", "setuptools>=59.6.0,<60.0.0"]
+install_requires = ["invoke"]
 
 setup_kwargs = {
     "name": "conjuring",
     "version": "0.1.0",
-    "description": "",
+    "description": "🐍🤖 Reusable global Invoke tasks that can be merged with local project tasks",
     "long_description": None,
     "author": "W. Augusto Andreoli",
     "author_email": "andreoliwa@gmail.com",
