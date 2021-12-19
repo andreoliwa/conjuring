@@ -1,14 +1,13 @@
 [tool.poetry]
 name = "conjuring"
 version = "0.1.0"
-description = ""
+description = "🐍🤖 Reusable global Invoke tasks that can be merged with local project tasks"
 authors = ["W. Augusto Andreoli <andreoliwa@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-invoke = "^1.6.0"
-setuptools = "^59.6.0"
+invoke = "*"
 
 [tool.poetry.dev-dependencies]
 

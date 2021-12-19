@@ -9,7 +9,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "76f62e1424584dc0ef8e58de31771b1a54bacb833804788b89a56720986ff340"
+content-hash = "3bc49179a9eac2fe3f8c3349bd8be6d331a8670dde667006b1ac03ea4715e096"
 
 [metadata.files]
 invoke = [
