@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-
 COLOR_NONE = "\033[0m"
 COLOR_BLACK = "\033[30m"
 COLOR_RED = "\033[31m"
@@ -22,8 +19,3 @@ COLOR_BOLD_BLUE = "\033[1;34m"
 COLOR_BOLD_PURPLE = "\033[1;35m"
 COLOR_BOLD_CYAN = "\033[1;36m"
 COLOR_BOLD_WHITE = "\033[1;37m"
-
-CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
-ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
-BACKUP_DIR = ONE_DRIVE_DIR / "Backup"
-PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
