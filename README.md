@@ -1,0 +1,65 @@
+# Conjuring
+
+Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be merged with local project tasks.
+
+## Quick setup
+
+1. Install invoke in an isolated virtualenv with [pipx](https://github.com/pypa/pipx):
+    ```shell
+    pipx install invoke
+    ```
+2. Install Conjuring from GitHub, injecting it directly into the isolated virtualenv:
+    ```shell
+    # Conjuring doesn't have a PyPI package... yet
+    pipx inject invoke git+https://github.com/andreoliwa/conjuring
+    ```
+3. Create a `tasks.py` file on your home dir:
+   ```shell
+    echo "from conjuring.spells.default import *" > ~/tasks.py
+    ``` 
+4. You should see the list of Conjuring tasks from any directory where you type this:
+    ```shell
+    inv --list
+    ```
+
+## Features
+
+### Merge local tasks with the global tasks on the home directory
+
+Create local `conjuring*.py` files and it will be merged with the `tasks.py` in your home dir.
+Your project dir can be anywhere under your home dir. 
+
+1. Create `~/path/to/your/project/conjuring_foo.py` with Invoke tasks.
+   ```python
+   from invoke import task
+   
+   @task
+   def my_foo(c):
+        """My foo task."""
+        pass
+   ```
+2. Create another `~/path/to/your/project/conjuring_bar.py` file with more Invoke tasks.
+   ```python
+   from invoke import task
+   
+   @task
+   def my_bar(c):
+        """My bar task."""
+        pass
+   ```
+3. The task list in your project dir will show tasks from all files, including the home dir task list.
+   ```shell
+   $ cd ~/path/to/your/project/
+   $ inv --list
+   Available tasks:
+   
+     my-bar               My bar task.
+     my-foo               My foo task.
+     <... the Conjuring tasks will show up here...>
+   ```
+
+## Related Projects
+
+- [pyinvoke/invoke: Pythonic task management & command execution.](https://github.com/pyinvoke/invoke)
+- [pyinvoke/invocations: Reusable Invoke tasks](https://github.com/pyinvoke/invocations)
+- [jhermann/rituals: Project automation task library for ‘Invoke’ tasks that are needed again and again.](https://github.com/jhermann/rituals)
