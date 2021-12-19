@@ -4,7 +4,6 @@ Helpful docs:
 - http://www.pyinvoke.org/
 - http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
 """
-import os
 import sys
 from datetime import date
 from importlib import import_module
@@ -12,84 +11,21 @@ from itertools import chain
 from pathlib import Path
 from string import Template
 from tempfile import NamedTemporaryFile
-from typing import List, Set
+from typing import Set
 
-from invoke import Collection, Context, UnexpectedExit, task
+from invoke import Collection, task
 from invoke.exceptions import Exit
 
-COLOR_NONE = "\033[0m"
-COLOR_CYAN = "\033[36m"
-COLOR_LIGHT_GREEN = "\033[1;32m"
-COLOR_LIGHT_RED = "\033[1;31m"
-
-CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
-ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
-BACKUP_DIR = ONE_DRIVE_DIR / "Backup"
-PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
-
-
-def join_pieces(*pieces: str):
-    """Join pieces, ignoring empty strings."""
-    return " ".join(str(piece) for piece in pieces if str(piece).strip())
-
-
-def run_command(c: Context, *pieces: str, warn: bool = False, hide: bool = False, dry: bool = None):
-    """Build command from pieces, ignoring empty strings."""
-    kwargs = {"dry": dry} if dry is not None else {}
-    return c.run(join_pieces(*pieces), warn=warn, hide=hide, **kwargs)
-
-
-def run_stdout(c: Context, *pieces: str, hide=True) -> str:
-    """Run a (hidden) command and return the stripped stdout."""
-    return c.run(join_pieces(*pieces), hide=hide, pty=False).stdout.strip()
-
-
-def run_lines(c: Context, *pieces: str) -> List[str]:
-    """Run a (hidden) command and return the result as lines."""
-    return run_stdout(c, *pieces).splitlines()
-
-
-def print_error(*message: str):
-    """Print an error message."""
-    all_messages = " ".join(message)
-    print(f"{COLOR_LIGHT_RED}{all_messages}{COLOR_NONE}")
-
-
-def run_with_fzf(c: Context, *pieces: str, query="") -> str:
-    """Run a command with fzf and return the chosen entry."""
-    fzf_pieces = ["| fzf --reverse --select-1 --height 40%"]
-    if query:
-        fzf_pieces.append(f"-q '{query}'")
-    return run_stdout(c, *pieces, *fzf_pieces, hide=False)
-
-
-class Git:
-    """Git helpers."""
-
-    CMD_LOCAL_BRANCHES = "git branch --list | rg -v develop | cut -b 3-"
-
-    def __init__(self, context: Context) -> None:
-        self.context = context
-
-    def current_branch(self) -> str:
-        """Return the current branch name."""
-        return run_stdout(self.context, "git branch --show-current")
-
-    def default_branch(self) -> str:
-        """Return the default branch name (master/main/develop/development)."""
-        return run_stdout(
-            self.context, "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1"
-        )
-
-    def checkout(self, *branches: str) -> str:
-        """Try checking out the specified branches in order."""
-        for branch in branches:
-            try:
-                self.context.run(f"git checkout {branch}")
-                return branch
-            except UnexpectedExit:
-                pass
-        return ""
+from conjuring.constants import (
+    BACKUP_DIR,
+    COLOR_LIGHT_RED,
+    COLOR_NONE,
+    CONJURING_IGNORE_MODULES,
+    ONE_DRIVE_DIR,
+    PICTURES_DIR,
+)
+from conjuring.grimoire import run_command, run_with_fzf
+from conjuring.spells.git import Git
 
 
 @task
