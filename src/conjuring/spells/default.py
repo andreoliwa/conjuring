@@ -1,4 +1,8 @@
-"""Load invoke tasks for the home directory and from the current dir.
+"""Default namespace with all the conjuring tasks.
+
+Add it to a ``tasks.py`` file on your home dir:
+
+    from conjuring.spells.default import *
 
 Helpful docs:
 - http://www.pyinvoke.org/
@@ -7,7 +11,9 @@ Helpful docs:
 from conjuring.grimoire import collection_from_modules
 from conjuring.spells import git, pre_commit, nitpick, jrnl, duplicity, pix, fork
 
-namespace = collection_from_modules("tasks.py", "*invoke*.py")
+__all__ = ["namespace"]
+
+namespace = collection_from_modules("tasks.py", "conjuring*.py")
 
 namespace.add_collection(git)
 namespace.add_collection(pre_commit)
