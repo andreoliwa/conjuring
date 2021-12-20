@@ -74,20 +74,21 @@ def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.M
 
     sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
+        task_module = import_module(t.__module__)
+        use_prefix: bool = getattr(task_module, "__CONJURING_PREFIX__", False)
+        if use_prefix:
+            # The module should have a prefix: saved it for later, and add it to the main collection
+            # all at once, as a sub-collection
+            named_collections[task_module] = task_module.__name__.split(".")[-1]
+            continue
+
         if t.name in main_collection.tasks:
             # Task already exists with the same name: add a suffix
-            clean_name = resolved_module.__name__.strip("-_")
+            clean_name = resolved_module.__name__.strip("-_.")
             main_collection.add_task(t, f"{t.name}-{clean_name}")
         else:
-            task_module = import_module(t.__module__)
-            use_prefix: bool = getattr(task_module, "__CONJURING_PREFIX__", False)
-            if use_prefix:
-                # The module should have a prefix: saved it for later, and add it to the main collection
-                # all at once, as a sub-collection
-                named_collections[task_module] = task_module.__name__.split(".")[-1]
-            else:
-                # The module doesn't have a prefix: add the task directly
-                main_collection.add_task(t)
+            # The module doesn't have a prefix: add the task directly
+            main_collection.add_task(t)
 
     for coll_module, name in named_collections.items():
         main_collection.add_collection(coll_module, name)

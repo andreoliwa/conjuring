@@ -10,18 +10,13 @@ Helpful docs:
 """
 import sys
 
-from conjuring.grimoire import collection_from_python_files
+from conjuring.grimoire import collection_from_python_files, add_tasks_directly
 from conjuring.spells import git, pre_commit, nitpick, jrnl, duplicity, pix, fork, poetry
 
 __all__ = ["namespace"]
 
 namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "conjuring*.py")
 
-namespace.add_collection(git)
-namespace.add_collection(pre_commit)
-namespace.add_collection(nitpick)
-namespace.add_collection(jrnl)
-namespace.add_collection(duplicity)
-namespace.add_collection(pix)
-namespace.add_collection(fork)
-namespace.add_collection(poetry)
+# TODO: import all "conjuring.spells" submodules dynamically
+for module in [git, pre_commit, nitpick, jrnl, duplicity, pix, fork, poetry]:
+    add_tasks_directly(namespace, module)
