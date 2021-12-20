@@ -6,6 +6,7 @@ from invoke import task
 
 from conjuring.grimoire import run_command
 
+__CONJURING_PREFIX__ = True
 ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
 PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
 

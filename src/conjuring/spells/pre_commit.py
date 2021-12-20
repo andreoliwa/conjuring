@@ -2,6 +2,8 @@ from invoke import task
 
 from conjuring.grimoire import run_with_fzf
 
+__CONJURING_PREFIX__ = True
+
 
 @task
 def install(c, gc=False):

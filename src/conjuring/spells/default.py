@@ -8,12 +8,14 @@ Helpful docs:
 - http://www.pyinvoke.org/
 - http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
 """
-from conjuring.grimoire import collection_from_modules
+import sys
+
+from conjuring.grimoire import collection_from_python_files
 from conjuring.spells import git, pre_commit, nitpick, jrnl, duplicity, pix, fork, poetry
 
 __all__ = ["namespace"]
 
-namespace = collection_from_modules("tasks.py", "conjuring*.py")
+namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "conjuring*.py")
 
 namespace.add_collection(git)
 namespace.add_collection(pre_commit)

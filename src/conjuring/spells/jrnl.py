@@ -1,5 +1,7 @@
 from invoke import task
 
+__CONJURING_PREFIX__ = True
+
 
 @task
 def tags(c, sort=False, rg="", journal=""):

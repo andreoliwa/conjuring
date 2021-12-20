@@ -1,8 +1,9 @@
 import os
 import sys
+import types
 from importlib import import_module
 from pathlib import Path
-from typing import List, Set
+from typing import List, Set, Dict, Union, Optional
 
 from invoke import Context, Collection
 
@@ -54,27 +55,45 @@ def ignore_module(module_name: str) -> bool:
     return False
 
 
-def add_tasks_directly(main_collection: Collection, module_path):
-    """Add tasks directly to the collection, without prefix."""
-    if isinstance(module_path, str):
-        module = import_module(module_path)
-        if ignore_module(module_path):
-            return
+def resolve_module_str(module_or_str: Union[types.ModuleType, str]) -> Optional[types.ModuleType]:
+    if isinstance(module_or_str, str):
+        module = import_module(module_or_str)
+        if ignore_module(module_or_str):
+            return None
     else:
-        module = module_path
+        module = module_or_str
         if ignore_module(module.__name__):
-            return
-    sub_collection = Collection.from_module(module)
+            return None
+    return module
+
+
+def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.ModuleType, str]) -> None:
+    """Add tasks directly to the collection, with or without prefix, according to __CONJURING_PREFIX__."""
+    resolved_module = resolve_module_str(module_or_str)
+    named_collections: Dict[types.ModuleType, str] = {}
+
+    sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
         if t.name in main_collection.tasks:
             # Task already exists with the same name: add a suffix
-            clean_name = module.__name__.strip("-_")
+            clean_name = resolved_module.__name__.strip("-_")
             main_collection.add_task(t, f"{t.name}-{clean_name}")
         else:
-            main_collection.add_task(t)
+            task_module = import_module(t.__module__)
+            use_prefix: bool = getattr(task_module, "__CONJURING_PREFIX__", False)
+            if use_prefix:
+                # The module should have a prefix: saved it for later, and add it to the main collection
+                # all at once, as a sub-collection
+                named_collections[task_module] = task_module.__name__.split(".")[-1]
+            else:
+                # The module doesn't have a prefix: add the task directly
+                main_collection.add_task(t)
+
+    for coll_module, name in named_collections.items():
+        main_collection.add_collection(coll_module, name)
 
 
-def collection_from_modules(*glob_patterns: str, prefix_root=False):
+def collection_from_python_files(current_module, *glob_patterns: str):
     """Create a custom collection by adding tasks from multiple files.
 
     Search directories for glob patterns:
@@ -89,7 +108,7 @@ def collection_from_modules(*glob_patterns: str, prefix_root=False):
     unique_patterns = set(glob_patterns)
     search_dirs: Set[Path] = {Path.cwd(), Path.home()}
 
-    main_col = Collection()
+    main_colllection = Collection()
 
     for which_dir in search_dirs:
         sys.path.insert(0, str(which_dir))
@@ -98,12 +117,9 @@ def collection_from_modules(*glob_patterns: str, prefix_root=False):
                 if file.stat().st_ino == current_inode:
                     # Don't add this file twice
                     continue
-                add_tasks_directly(main_col, file.stem)
+                add_tasks_directly(main_colllection, file.stem)
         sys.path.pop(0)
 
-    if prefix_root:
-        main_col.add_collection(Collection.from_module(sys.modules[__name__]), "root")
-    else:
-        add_tasks_directly(main_col, sys.modules[__name__])
+    add_tasks_directly(main_colllection, current_module)
 
-    return main_col
+    return main_colllection

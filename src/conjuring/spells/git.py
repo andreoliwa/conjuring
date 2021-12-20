@@ -4,6 +4,8 @@ from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.grimoire import run_stdout, run_with_fzf
 from invoke import Context, UnexpectedExit, task
 
+__CONJURING_PREFIX__ = True
+
 
 class Git:
     """Git helpers."""

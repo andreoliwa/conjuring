@@ -2,6 +2,8 @@ from invoke import task, Exit
 
 from conjuring.spells.git import Git
 
+__CONJURING_PREFIX__ = True
+
 
 @task
 def remote(c, username, remote=""):
