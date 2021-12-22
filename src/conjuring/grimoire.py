@@ -68,6 +68,10 @@ def resolve_module_str(module_or_str: Union[types.ModuleType, str]) -> Optional[
     return module
 
 
+def slugify(name: str) -> str:
+    return name.replace(".", "_")
+
+
 def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.ModuleType, str]) -> None:
     """Add tasks directly to the collection, with or without prefix, according to __CONJURING_PREFIX__."""
     resolved_module = resolve_module_str(module_or_str)
@@ -85,14 +89,20 @@ def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.M
 
         if t.name in main_collection.tasks:
             # Task already exists with the same name: add a suffix
-            clean_name = resolved_module.__name__.strip("-_.")
+            clean_name = slugify(resolved_module.__name__)
             main_collection.add_task(t, f"{t.name}-{clean_name}")
         else:
             # The module doesn't have a prefix: add the task directly
             main_collection.add_task(t)
 
     for coll_module, name in named_collections.items():
-        main_collection.add_collection(coll_module, name)
+        try:
+            main_collection.add_collection(coll_module, name)
+        except ValueError as err:
+            if "this collection has a task name" in str(err):
+                main_collection.add_collection(coll_module, name + "_" + slugify(coll_module.__name__))
+                continue
+            raise
 
 
 def collection_from_python_files(current_module, *glob_patterns: str):
