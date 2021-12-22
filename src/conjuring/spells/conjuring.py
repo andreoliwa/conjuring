@@ -16,7 +16,7 @@ from conjuring.grimoire import run_command
 def setup(c, edit=False, revert=False):
     """Setup Conjuring on your home dir."""
     config_file = Path("~/.invoke.yaml").expanduser()
-    json_config = """'{"tasks":{"collection_name":"conjuring_init"}}'"""
+    json_config = """'{"tasks":{"collection_name":"conjuring_summon"}}'"""
     if config_file.exists():
         message = "Remove this from" if revert else "Add this to"
         print(f"The {config_file} configuration file already exists! {message} the file:")
@@ -30,7 +30,7 @@ def setup(c, edit=False, revert=False):
             c.run(f"cat {config_file}")
 
     default_tasks = Path("~/tasks.py").expanduser()
-    conjuring_tasks = Path("~/conjuring_init.py").expanduser()
+    conjuring_tasks = Path("~/conjuring_summon.py").expanduser()
     if revert:
         if conjuring_tasks.exists():
             conjuring_tasks.rename(default_tasks)

@@ -69,7 +69,7 @@ To avoid that, go to your home dir and run:
 inv conjuring.setup
 ```
 
-This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_init.py`.
+This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_summon.py`.
 
 For more details, read about [default configuration values on Configuration — Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values). 
 
