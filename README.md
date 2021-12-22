@@ -58,6 +58,21 @@ Your project dir can be anywhere under your home dir.
      <... the Conjuring tasks will show up here...>
    ```
 
+### Merge any tasks.py with Conjuring tasks 
+
+If you create a `tasks.py` in a project, it will override the Conjuring `tasks.py` on your home dir.
+You will only see your local project tasks.
+
+To avoid that, go to your home dir and run:
+
+```shell
+inv conjuring.setup
+```
+
+This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_init.py`.
+
+For more details, read about [default configuration values on Configuration — Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values). 
+
 ## Related Projects
 
 - [pyinvoke/invoke: Pythonic task management & command execution.](https://github.com/pyinvoke/invoke)
