@@ -24,6 +24,22 @@ Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be m
 
 ## Features
 
+### Display tasks conditionally
+
+Some modules under the `spells` directory have a `should_display_tasks` boolean function to control whether the tasks are displayed or not.
+
+Example for the `conjuring.spells.git` module:
+```python
+def should_display_tasks() -> bool:
+    """Only display tasks if the current dir is a Git repo."""
+    return Path(".git").exists()
+```
+
+Other examples of usage:
+
+- [Poetry](https://github.com/python-poetry/poetry/) tasks: display only when there is a `pyproject.toml` in the current dir;
+- [pre-commit](https://github.com/pre-commit/pre-commit) tasks: display only when there is a ` .pre-commit-config.yaml` file in the current dir. 
+
 ### Merge local tasks with the global tasks on the home directory
 
 Create local `conjuring*.py` files and it will be merged with the `tasks.py` in your home dir.

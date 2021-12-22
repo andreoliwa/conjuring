@@ -80,6 +80,10 @@ def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.M
     sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
         task_module = import_module(t.__module__)
+        should_display_tasks = getattr(task_module, "should_display_tasks", lambda: True)
+        if not should_display_tasks():
+            continue
+
         use_prefix: bool = getattr(task_module, "__CONJURING_PREFIX__", False)
         if use_prefix:
             # The module should have a prefix: saved it for later, and add it to the main collection

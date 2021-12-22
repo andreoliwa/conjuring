@@ -7,6 +7,11 @@ from invoke import Context, UnexpectedExit, task
 __CONJURING_PREFIX__ = True
 
 
+def should_display_tasks() -> bool:
+    """Only display tasks if the current dir is a Git repo."""
+    return Path(".git").exists()
+
+
 class Git:
     """Git helpers."""
 
