@@ -23,9 +23,9 @@ def run_command(c: Context, *pieces: str, warn: bool = False, hide: bool = False
     return c.run(join_pieces(*pieces), warn=warn, hide=hide, **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, hide=True) -> str:
+def run_stdout(c: Context, *pieces: str, hide=True, **kwargs) -> str:
     """Run a (hidden) command and return the stripped stdout."""
-    return c.run(join_pieces(*pieces), hide=hide, pty=False).stdout.strip()
+    return c.run(join_pieces(*pieces), hide=hide, pty=False, **kwargs).stdout.strip()
 
 
 def run_lines(c: Context, *pieces: str) -> List[str]:
@@ -39,12 +39,13 @@ def print_error(*message: str):
     print(f"{COLOR_LIGHT_RED}{all_messages}{COLOR_NONE}")
 
 
-def run_with_fzf(c: Context, *pieces: str, query="") -> str:
+def run_with_fzf(c: Context, *pieces: str, query="", **kwargs) -> str:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40%"]
     if query:
         fzf_pieces.append(f"-q '{query}'")
-    return run_stdout(c, *pieces, *fzf_pieces, hide=False)
+    kwargs.setdefault("hide", False)
+    return run_stdout(c, *pieces, *fzf_pieces, **kwargs)
 
 
 def ignore_module(module_name: str) -> bool:
