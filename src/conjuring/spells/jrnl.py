@@ -1,6 +1,6 @@
 from invoke import task
 
-__CONJURING_PREFIX__ = True
+SHOULD_PREFIX = True
 
 
 @task

@@ -73,7 +73,7 @@ def slugify(name: str) -> str:
 
 
 def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.ModuleType, str]) -> None:
-    """Add tasks directly to the collection, with or without prefix, according to __CONJURING_PREFIX__."""
+    """Add tasks directly to the collection, with or without prefix, according to SHOULD_PREFIX."""
     resolved_module = resolve_module_str(module_or_str)
     named_collections: Dict[types.ModuleType, str] = {}
 
@@ -84,7 +84,7 @@ def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.M
         if not should_display_tasks():
             continue
 
-        use_prefix: bool = getattr(task_module, "__CONJURING_PREFIX__", False)
+        use_prefix: bool = getattr(task_module, "SHOULD_PREFIX", False)
         if use_prefix:
             # The module should have a prefix: saved it for later, and add it to the main collection
             # all at once, as a sub-collection

@@ -89,6 +89,18 @@ This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/
 
 For more details, read about [default configuration values on Configuration — Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values). 
 
+### Prefix task names of a module
+
+If the module defines this boolean constant with a value of `True`, then the name of the module will be added as a prefix to tasks.
+
+Example for the `conjuring.spells.pre_commit` module:
+
+```python
+SHOULD_PREFIX = True
+```
+
+All the tasks of this module will have a `pre-commit.` prefix when you run `inv --list`.
+
 ## Related Projects
 
 - [pyinvoke/invoke: Pythonic task management & command execution.](https://github.com/pyinvoke/invoke)

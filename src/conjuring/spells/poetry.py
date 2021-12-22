@@ -2,7 +2,7 @@ from pathlib import Path
 
 from invoke import task
 
-__CONJURING_PREFIX__ = True
+SHOULD_PREFIX = True
 
 
 def should_display_tasks() -> bool:

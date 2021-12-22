@@ -3,7 +3,7 @@ from invoke import task, Exit
 from conjuring.spells.git import Git
 from .git import should_display_tasks
 
-__CONJURING_PREFIX__ = True
+SHOULD_PREFIX = True
 
 
 @task
