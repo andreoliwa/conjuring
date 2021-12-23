@@ -7,6 +7,10 @@ SHOULD_PREFIX = True
 from conjuring.grimoire import run_command
 
 
+def should_display_tasks() -> bool:
+    return Path.cwd() == Path.home()
+
+
 @task(
     help={
         "edit": "Open the config file with $EDITOR",
