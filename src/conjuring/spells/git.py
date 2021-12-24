@@ -56,8 +56,8 @@ def update_clean(c, group=""):
     parts = ["gita", "super"]
     if group:
         parts.append(group)
-    cmd = " ".join(parts)
-    c.run(f"{cmd} up && {cmd} bclean")
+    gita_super = " ".join(parts)
+    c.run(f"{gita_super} up && {gita_super} delete-merged-branches")
 
 
 @task
