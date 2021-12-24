@@ -24,7 +24,7 @@ Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be m
 
 ## Features
 
-### Display task modules conditionally
+### Display modules conditionally
 
 Some modules under the `spells` directory have a `should_display_tasks` boolean function to control whether the tasks are displayed or not.
 
@@ -41,6 +41,37 @@ Other examples of usage:
 
 - [Poetry](https://github.com/python-poetry/poetry/) tasks: display only when there is a `pyproject.toml` in the current dir;
 - [pre-commit](https://github.com/pre-commit/pre-commit) tasks: display only when there is a ` .pre-commit-config.yaml` file in the current dir. 
+
+### Display individual tasks conditionally
+
+A task can have its own visibility settings, even if the owner module is configured to not display tasks.
+
+```python
+from invoke import task
+from conjuring.visibility import MagicTask
+from random import randint
+
+
+@task(klass=MagicTask)
+def an_always_visible_task(c):
+    """A MagicTask is always visible by default.
+    
+    If will be always displayed in every directory,
+        regardless of the module ``should_display_tasks()`` function.
+    """
+    pass
+
+@task(klass=MagicTask, should_display=lambda: bool(randint(0,1)))
+def a_conditionally_visible_task(c):
+    """You can use any boolean function to determine visibility."""
+    pass
+```
+
+Use case:
+
+- you want to group tasks in a module, with a prefix and conditional display of tasks;
+- you still want some individual tasks to always be displayed;
+- or you want different conditions to display certain tasks.  
 
 ### Merge local tasks with the global tasks on the home directory
 

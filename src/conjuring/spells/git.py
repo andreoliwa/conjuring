@@ -4,7 +4,7 @@ from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.grimoire import run_stdout, run_with_fzf
 from invoke import Context, UnexpectedExit, task
 
-from conjuring.visibility import is_git_repo, ShouldDisplayTasks
+from conjuring.visibility import is_git_repo, ShouldDisplayTasks, MagicTask
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_git_repo
@@ -50,8 +50,8 @@ def fixme(c):
     )
 
 
-@task
-def update_clean(c, group=""):
+@task(klass=MagicTask)
+def update_all(c, group=""):
     """Run gita super to update and clean branches."""
     parts = ["gita", "super"]
     if group:

@@ -10,6 +10,7 @@ from typing import List, Set, Dict, Union, Optional
 from invoke import Context, Collection
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.visibility import display_task
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
@@ -82,11 +83,14 @@ class SpellBook:
 
 
 def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]) -> None:
-    """Magically add tasks to the collection according to the module configuration.
+    """Magically add tasks to the collection according to the module/task configuration.
 
-    1. If the module has a ``should_display_tasks()`` function,
+    Task-specific configuration has precedence over the module.
+
+    1. If the task is a :py:class:`MagicTask`, then its ``should_display()`` method is used to check visibility.
+    2. If the module has a ``should_display_tasks()`` function,
         it determines if the module is visible in the current directory.
-    2. If the module has a ``SHOULD_PREFIX`` boolean variable defined,
+    3. If the module has a ``SHOULD_PREFIX`` boolean variable defined,
         then the tasks will be added to the collection with a prefix.
     """
     resolved_module = resolve_module_str(from_module_or_str)
@@ -97,14 +101,14 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
         task_module = import_module(t.__module__)
         should_display_tasks = getattr(task_module, "should_display_tasks", lambda: True)
         display_all_tasks = should_display_tasks()
-        if not display_all_tasks:
-            continue
 
         use_prefix: bool = getattr(task_module, "SHOULD_PREFIX", False)
         if use_prefix:
             # The module should have a prefix: add it later as a sub-collection of the main collection
             prefix = task_module.__name__.split(".")[-1]
             prefixed_spell_books[prefix].append(SpellBook(prefix, task_module, display_all_tasks))
+            continue
+        if not display_task(t, display_all_tasks):
             continue
 
         if t.name in to_collection.tasks:
@@ -117,8 +121,13 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
 
     for prefix, spell_book_set in prefixed_spell_books.items():
         for spell_book in spell_book_set:
+            sub_collection = Collection()
+            for t in Collection.from_module(spell_book.module).tasks.values():
+                if display_task(t, spell_book.display_all_tasks):
+                    sub_collection.add_task(t)
+
             try:
-                to_collection.add_collection(spell_book.module, prefix)
+                to_collection.add_collection(sub_collection, prefix)
             except ValueError as err:
                 if "this collection has a task name" in str(err):
                     to_collection.add_collection(spell_book.module, prefix + "_" + slugify(spell_book.module.__name__))

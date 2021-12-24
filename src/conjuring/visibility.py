@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Callable
 
+from invoke import Task
+
 ShouldDisplayTasks = Callable[[], bool]
 
 always_visible: ShouldDisplayTasks = lambda: True
@@ -21,3 +23,48 @@ def is_git_repo() -> bool:
 
 def has_pyproject_toml() -> bool:
     return Path("pyproject.toml").exists()
+
+
+def display_task(task: Task, module_flag: bool) -> bool:
+    if isinstance(task, MagicTask):
+        # This is our custom task, let's check its visibility before the module
+        return task.should_display()
+
+    # This is a regular Invoke Task; let's check if the module should be visible or not
+    return module_flag
+
+
+class MagicTask(Task):
+    def __init__(
+        self,
+        body,
+        name=None,
+        aliases=(),
+        positional=None,
+        optional=(),
+        default=False,
+        auto_shortflags=True,
+        help=None,
+        pre=None,
+        post=None,
+        autoprint=False,
+        iterable=None,
+        incrementable=None,
+        should_display: ShouldDisplayTasks = always_visible,
+    ):
+        self.should_display: ShouldDisplayTasks = should_display
+        super().__init__(
+            body,
+            name,
+            aliases,
+            positional,
+            optional,
+            default,
+            auto_shortflags,
+            help,
+            pre,
+            post,
+            autoprint,
+            iterable,
+            incrementable,
+        )
