@@ -1,6 +1,8 @@
 import os
 import sys
 import types
+from collections import defaultdict
+from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from typing import List, Set, Dict, Union, Optional
@@ -72,6 +74,13 @@ def slugify(name: str) -> str:
     return name.replace(".", "_")
 
 
+@dataclass
+class SpellBook:
+    prefix: str
+    module: types.ModuleType
+    display_all_tasks: bool
+
+
 def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]) -> None:
     """Magically add tasks to the collection according to the module configuration.
 
@@ -81,20 +90,21 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
         then the tasks will be added to the collection with a prefix.
     """
     resolved_module = resolve_module_str(from_module_or_str)
-    named_collections: Dict[types.ModuleType, str] = {}
+    prefixed_spell_books: Dict[str, List[SpellBook]] = defaultdict(list)
 
     sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
         task_module = import_module(t.__module__)
         should_display_tasks = getattr(task_module, "should_display_tasks", lambda: True)
-        if not should_display_tasks():
+        display_all_tasks = should_display_tasks()
+        if not display_all_tasks:
             continue
 
         use_prefix: bool = getattr(task_module, "SHOULD_PREFIX", False)
         if use_prefix:
-            # The module should have a prefix: saved it for later, and add it to the main collection
-            # all at once, as a sub-collection
-            named_collections[task_module] = task_module.__name__.split(".")[-1]
+            # The module should have a prefix: add it later as a sub-collection of the main collection
+            prefix = task_module.__name__.split(".")[-1]
+            prefixed_spell_books[prefix].append(SpellBook(prefix, task_module, display_all_tasks))
             continue
 
         if t.name in to_collection.tasks:
@@ -105,14 +115,15 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
             # The module doesn't have a prefix: add the task directly
             to_collection.add_task(t)
 
-    for collection_module, name in named_collections.items():
-        try:
-            to_collection.add_collection(collection_module, name)
-        except ValueError as err:
-            if "this collection has a task name" in str(err):
-                to_collection.add_collection(collection_module, name + "_" + slugify(collection_module.__name__))
-                continue
-            raise
+    for prefix, spell_book_set in prefixed_spell_books.items():
+        for spell_book in spell_book_set:
+            try:
+                to_collection.add_collection(spell_book.module, prefix)
+            except ValueError as err:
+                if "this collection has a task name" in str(err):
+                    to_collection.add_collection(spell_book.module, prefix + "_" + slugify(spell_book.module.__name__))
+                    continue
+                raise
 
 
 def collection_from_python_files(current_module, *py_glob_patterns: str):
