@@ -4,12 +4,10 @@ from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.grimoire import run_stdout, run_with_fzf
 from invoke import Context, UnexpectedExit, task
 
+from conjuring.visibility import is_git_repo, ShouldDisplayTasks
+
 SHOULD_PREFIX = True
-
-
-def should_display_tasks() -> bool:
-    """Only display tasks if the current dir is a Git repo."""
-    return Path(".git").exists()
+should_display_tasks: ShouldDisplayTasks = is_git_repo
 
 
 class Git:

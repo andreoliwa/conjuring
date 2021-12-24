@@ -72,9 +72,15 @@ def slugify(name: str) -> str:
     return name.replace(".", "_")
 
 
-def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.ModuleType, str]) -> None:
-    """Add tasks directly to the collection, with or without prefix, according to SHOULD_PREFIX."""
-    resolved_module = resolve_module_str(module_or_str)
+def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]) -> None:
+    """Magically add tasks to the collection according to the module configuration.
+
+    1. If the module has a ``should_display_tasks()`` function,
+        it determines if the module is visible in the current directory.
+    2. If the module has a ``SHOULD_PREFIX`` boolean variable defined,
+        then the tasks will be added to the collection with a prefix.
+    """
+    resolved_module = resolve_module_str(from_module_or_str)
     named_collections: Dict[types.ModuleType, str] = {}
 
     sub_collection = Collection.from_module(resolved_module)
@@ -91,25 +97,25 @@ def add_tasks_directly(main_collection: Collection, module_or_str: Union[types.M
             named_collections[task_module] = task_module.__name__.split(".")[-1]
             continue
 
-        if t.name in main_collection.tasks:
+        if t.name in to_collection.tasks:
             # Task already exists with the same name: add a suffix
             clean_name = slugify(resolved_module.__name__)
-            main_collection.add_task(t, f"{t.name}-{clean_name}")
+            to_collection.add_task(t, f"{t.name}-{clean_name}")
         else:
             # The module doesn't have a prefix: add the task directly
-            main_collection.add_task(t)
+            to_collection.add_task(t)
 
-    for coll_module, name in named_collections.items():
+    for collection_module, name in named_collections.items():
         try:
-            main_collection.add_collection(coll_module, name)
+            to_collection.add_collection(collection_module, name)
         except ValueError as err:
             if "this collection has a task name" in str(err):
-                main_collection.add_collection(coll_module, name + "_" + slugify(coll_module.__name__))
+                to_collection.add_collection(collection_module, name + "_" + slugify(collection_module.__name__))
                 continue
             raise
 
 
-def collection_from_python_files(current_module, *glob_patterns: str):
+def collection_from_python_files(current_module, *py_glob_patterns: str):
     """Create a custom collection by adding tasks from multiple files.
 
     Search directories for glob patterns:
@@ -121,7 +127,7 @@ def collection_from_python_files(current_module, *glob_patterns: str):
     # https://docs.python.org/3/library/os.html#os.stat_result
     current_inode = Path(__file__).stat().st_ino
 
-    unique_patterns = set(glob_patterns)
+    unique_patterns = set(py_glob_patterns)
     search_dirs: Set[Path] = {Path.cwd(), Path.home()}
 
     main_colllection = Collection()
@@ -133,9 +139,9 @@ def collection_from_python_files(current_module, *glob_patterns: str):
                 if file.stat().st_ino == current_inode:
                     # Don't add this file twice
                     continue
-                add_tasks_directly(main_colllection, file.stem)
+                magically_add_tasks(main_colllection, file.stem)
         sys.path.pop(0)
 
-    add_tasks_directly(main_colllection, current_module)
+    magically_add_tasks(main_colllection, current_module)
 
     return main_colllection

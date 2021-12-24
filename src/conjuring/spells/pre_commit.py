@@ -3,12 +3,10 @@ from pathlib import Path
 from invoke import task
 
 from conjuring.grimoire import run_with_fzf, run_command
+from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
 
 SHOULD_PREFIX = True
-
-
-def should_display_tasks() -> bool:
-    return Path(".pre-commit-config.yaml").exists()
+should_display_tasks: ShouldDisplayTasks = has_pre_commit_config_yaml
 
 
 @task

@@ -10,7 +10,7 @@ Helpful docs:
 """
 import sys
 
-from conjuring.grimoire import collection_from_python_files, add_tasks_directly
+from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 from conjuring.spells import git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring
 
 __all__ = ["namespace"]
@@ -19,4 +19,4 @@ namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "con
 
 # TODO: import all "conjuring.spells" submodules dynamically
 for module in [git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring]:
-    add_tasks_directly(namespace, module)
+    magically_add_tasks(namespace, module)

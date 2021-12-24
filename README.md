@@ -24,15 +24,17 @@ Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be m
 
 ## Features
 
-### Display tasks conditionally
+### Display task modules conditionally
 
 Some modules under the `spells` directory have a `should_display_tasks` boolean function to control whether the tasks are displayed or not.
 
+The `conjuring.visibility` module has boolean functions that can be reused by your modules and tasks.
+
 Example for the `conjuring.spells.git` module:
 ```python
-def should_display_tasks() -> bool:
-    """Only display tasks if the current dir is a Git repo."""
-    return Path(".git").exists()
+from conjuring.visibility import is_git_repo, ShouldDisplayTasks
+
+should_display_tasks: ShouldDisplayTasks = is_git_repo
 ```
 
 Other examples of usage:

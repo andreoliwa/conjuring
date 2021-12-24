@@ -1,12 +1,9 @@
-from pathlib import Path
-
 from invoke import task
 
+from conjuring.visibility import ShouldDisplayTasks, has_pyproject_toml
+
 SHOULD_PREFIX = True
-
-
-def should_display_tasks() -> bool:
-    return Path("pyproject.toml").exists()
+should_display_tasks: ShouldDisplayTasks = has_pyproject_toml
 
 
 @task
