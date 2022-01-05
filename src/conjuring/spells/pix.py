@@ -14,12 +14,12 @@ PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
 @task
 def cleanup(c, browse=False):
     """Cleanup pictures."""
-    c.run("fd -uu -0 -tf -i .DS_Store | xargs -0 rm -v")
-    c.run("fd -uu -0 -tf -i .nomedia | xargs -0 rm -v")
+    c.run("fd -H -0 -tf -i .DS_Store | xargs -0 rm -v")
+    c.run("fd -H -0 -tf -i .nomedia | xargs -0 rm -v")
     c.run("find . -mindepth 1 -type d -empty -print -delete")
 
     # Unhide Picasa originals dir
-    for line in c.run("fd -uu -t d .picasaoriginals", pty=False).stdout.splitlines():
+    for line in c.run("fd -H -t d .picasaoriginals", pty=False).stdout.splitlines():
         original_dir = Path(line)
         c.run(f"mv {original_dir} {original_dir.parent}/Picasa_Originals")
 
@@ -43,7 +43,7 @@ def cleanup(c, browse=False):
 
     # List dirs with _Copy files
     copy_dirs = set()
-    for line in run_command(c, "fd -uu -t f --color never _copy", str(PICTURES_DIR), hide=True).stdout.splitlines():
+    for line in run_command(c, "fd -H -t f --color never _copy", str(PICTURES_DIR), hide=True).stdout.splitlines():
         copy_dirs.add(Path(line).parent)
 
     for dir_ in sorted(copy_dirs):
