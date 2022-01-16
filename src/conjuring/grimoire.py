@@ -9,7 +9,7 @@ from typing import List, Set, Dict, Union, Optional
 
 from invoke import Context, Collection
 
-from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE, COLOR_LIGHT_GREEN
 from conjuring.visibility import display_task
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -32,24 +32,49 @@ def run_stdout(c: Context, *pieces: str, hide=True, **kwargs) -> str:
     return c.run(join_pieces(*pieces), hide=hide, pty=False, **kwargs).stdout.strip()
 
 
-def run_lines(c: Context, *pieces: str) -> List[str]:
+def run_lines(c: Context, *pieces: str, **kwargs) -> List[str]:
     """Run a (hidden) command and return the result as lines."""
-    return run_stdout(c, *pieces).splitlines()
+    return run_stdout(c, *pieces, **kwargs).splitlines()
 
 
-def print_error(*message: str):
+def run_multiple(c: Context, *commands: str, **kwargs) -> None:
+    """Run multiple commands from a list, ignoring empty ones."""
+    for cmd in [c for c in commands if str(c).strip()]:
+        c.run(cmd, **kwargs)
+
+
+def print_color(*message: str, color=COLOR_NONE, nl=False):
+    """Print a colored message."""
+    all_messages = ("\n" if nl else " ").join(message)
+    print(f"{color}{all_messages}{COLOR_NONE}")
+
+
+def print_success(*message: str, nl=False):
+    """Print a success message."""
+    print_color(*message, color=COLOR_LIGHT_GREEN, nl=nl)
+
+
+def print_error(*message: str, nl=False):
     """Print an error message."""
-    all_messages = " ".join(message)
-    print(f"{COLOR_LIGHT_RED}{all_messages}{COLOR_NONE}")
+    print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
 
 
-def run_with_fzf(c: Context, *pieces: str, query="", **kwargs) -> str:
+def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs) -> str:
     """Run a command with fzf and return the chosen entry."""
-    fzf_pieces = ["| fzf --reverse --select-1 --height 40%"]
+    fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
         fzf_pieces.append(f"-q '{query}'")
+    if header:
+        fzf_pieces.append(f"--header='{header}'")
+    if multi:
+        fzf_pieces.append("--multi")
+        which_function = run_lines
+    else:
+        which_function = run_stdout
+    if preview:
+        fzf_pieces.append(f"--preview='{preview}'")
     kwargs.setdefault("hide", False)
-    return run_stdout(c, *pieces, *fzf_pieces, **kwargs)
+    return which_function(c, *pieces, *fzf_pieces, **kwargs)
 
 
 def ignore_module(module_name: str) -> bool:
