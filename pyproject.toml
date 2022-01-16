@@ -13,7 +13,9 @@ invoke = "*"
 pytest = "*"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+# Support PEP 660 hooks (editable packages)
+# https://github.com/python-poetry/poetry-core/pull/182#issuecomment-1005195851
+requires = ["poetry-core@https://github.com/python-poetry/poetry-core/archive/325312c016d69189ac93c945ba0c1b69296c5e54.zip"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
