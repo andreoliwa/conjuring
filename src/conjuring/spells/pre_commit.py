@@ -31,16 +31,23 @@ def uninstall(c, gc=False):
     c.run(f"pre-commit uninstall {GIT_HOOKS}")
 
 
-@task
+@task(help={"hook": "Comma-separated list of partial hook IDs (fzf will be used to match partial IDs)."})
 def run(c, hook=""):
-    """Pre-commit run all hooks or a specific one."""
-    chosen_hook = run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=hook) if hook else ""
-    c.run(f"pre-commit run --all-files {chosen_hook}")
+    """Pre-commit run all hooks or a specific one. Needs fzf and yq."""
+    all_hooks = hook.split(",") if "," in hook else [hook]
+    chosen_hooks = []
+    for partial_hook in all_hooks:
+        chosen_hooks.append(
+            run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook) if hook else ""
+        )
+
+    for chosen_hook in chosen_hooks:
+        c.run(f"pre-commit run --all-files {chosen_hook}")
 
 
 @task()
 def auto(c, repo="", bleed=False):
-    """Autoupdate a Git hook or all hooks with the latest tag."""
+    """Autoupdate a Git hook or all hooks with the latest tag. Needs fzf and yq."""
     command = ""
     if repo:
         chosen = run_with_fzf(c, "yq e '.repos[].repo' .pre-commit-config.yaml", query=repo, dry=False)
