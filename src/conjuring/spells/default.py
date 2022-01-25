@@ -11,12 +11,12 @@ Helpful docs:
 import sys
 
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
-from conjuring.spells import git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring, aws
+from conjuring.spells import git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring, aws, blanket
 
 __all__ = ["namespace"]
 
 namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "conjuring*.py")
 
 # TODO: import all "conjuring.spells" submodules dynamically
-for module in [git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring, aws]:
+for module in [git, pre_commit, jrnl, duplicity, pix, fork, poetry, conjuring, aws, blanket]:
     magically_add_tasks(namespace, module)

@@ -7,7 +7,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import List, Set, Dict, Union, Optional
 
-from invoke import Context, Collection
+from invoke import Context, Collection, Result
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE, COLOR_LIGHT_GREEN
 from conjuring.visibility import display_task
@@ -15,21 +15,25 @@ from conjuring.visibility import display_task
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
 
-def join_pieces(*pieces: str):
+def join_pieces(*pieces: str) -> str:
     """Join pieces, ignoring empty strings."""
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, warn: bool = False, hide: bool = False, dry: bool = None, **kwargs):
+def run_command(c: Context, *pieces: str, dry: bool = None, **kwargs) -> Result:
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
-    return c.run(join_pieces(*pieces), warn=warn, hide=hide, **kwargs)
+    kwargs.setdefault("warn", False)
+    kwargs.setdefault("hide", False)
+    return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, hide=True, **kwargs) -> str:
+def run_stdout(c: Context, *pieces: str, **kwargs) -> str:
     """Run a (hidden) command and return the stripped stdout."""
-    return c.run(join_pieces(*pieces), hide=hide, pty=False, **kwargs).stdout.strip()
+    kwargs.setdefault("hide", True)
+    kwargs.setdefault("pty", False)
+    return c.run(join_pieces(*pieces), **kwargs).stdout.strip()
 
 
 def run_lines(c: Context, *pieces: str, **kwargs) -> List[str]:
