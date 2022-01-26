@@ -5,11 +5,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from typing import List, Set, Dict, Union, Optional
+from typing import Callable, Optional, Union, overload
 
-from invoke import Context, Collection, Result
+from invoke import Collection, Context, Result
 
-from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE, COLOR_LIGHT_GREEN
+from conjuring.colors import COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.visibility import display_task
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -36,7 +36,7 @@ def run_stdout(c: Context, *pieces: str, **kwargs) -> str:
     return c.run(join_pieces(*pieces), **kwargs).stdout.strip()
 
 
-def run_lines(c: Context, *pieces: str, **kwargs) -> List[str]:
+def run_lines(c: Context, *pieces: str, **kwargs) -> list[str]:
     """Run a (hidden) command and return the result as lines."""
     return run_stdout(c, *pieces, **kwargs).splitlines()
 
@@ -63,7 +63,20 @@ def print_error(*message: str, nl=False):
     print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
 
 
-def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs) -> str:
+# TODO: refactor: Overloaded function signatures 1 and 2 overlap with incompatible return types
+@overload
+def run_with_fzf(c: Context, *pieces: str, query=...) -> str:  # type:ignore[misc]
+    ...
+
+
+@overload
+def run_with_fzf(c: Context, *pieces: str, query=..., multi: bool = ...) -> list[str]:
+    ...
+
+
+def run_with_fzf(
+    c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs
+) -> Union[str, list[str]]:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
@@ -72,7 +85,7 @@ def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, pre
         fzf_pieces.append(f"--header='{header}'")
     if multi:
         fzf_pieces.append("--multi")
-        which_function = run_lines
+        which_function: Callable = run_lines
     else:
         which_function = run_stdout
     if preview:
@@ -112,7 +125,10 @@ class SpellBook:
     display_all_tasks: bool
 
 
-def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]) -> None:
+# TODO: refactor: magically_add_tasks is too complex (12)
+def magically_add_tasks(  # noqa: C901
+    to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]
+) -> None:
     """Magically add tasks to the collection according to the module/task configuration.
 
     Task-specific configuration has precedence over the module.
@@ -124,7 +140,7 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
         then the tasks will be added to the collection with a prefix.
     """
     resolved_module = resolve_module_str(from_module_or_str)
-    prefixed_spell_books: Dict[str, List[SpellBook]] = defaultdict(list)
+    prefixed_spell_books: dict[str, list[SpellBook]] = defaultdict(list)
 
     sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
@@ -141,7 +157,7 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: Union[typ
         if not display_task(t, display_all_tasks):
             continue
 
-        if t.name in to_collection.tasks:
+        if t.name in to_collection.tasks and resolved_module:
             # Task already exists with the same name: add a suffix
             clean_name = slugify(resolved_module.__name__)
             to_collection.add_task(t, f"{t.name}-{clean_name}")
@@ -178,7 +194,7 @@ def collection_from_python_files(current_module, *py_glob_patterns: str):
     current_inode = Path(__file__).stat().st_ino
 
     unique_patterns = set(py_glob_patterns)
-    search_dirs: Set[Path] = {Path.cwd(), Path.home()}
+    search_dirs: set[Path] = {Path.cwd(), Path.home()}
 
     main_colllection = Collection()
 

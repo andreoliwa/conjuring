@@ -1,8 +1,6 @@
-from pathlib import Path
-
 from invoke import task
 
-from conjuring.grimoire import run_with_fzf, run_command
+from conjuring.grimoire import run_command, run_with_fzf
 from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
 
 SHOULD_PREFIX = True

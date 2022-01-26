@@ -1,12 +1,13 @@
 """Generic spells that don't have a prefix and don't fit other modules."""
 from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass
 from shlex import quote
 
 from invoke import task
 
-from conjuring.grimoire import run_lines, print_success, run_command, print_error
+from conjuring.grimoire import print_error, print_success, run_command, run_lines
 
 
 @dataclass(frozen=True)
@@ -32,14 +33,14 @@ class Location:
 
 @task(
     help={
-        "cz": "Run commitizen (cz check) to validate the description of the TODO item as a commit message",
-        "valid": "When using cz check, print valid TODO items",
-        "invalid": "When using cz check, print invalid TODO items",
-        "short": "Short format: only the description, without the lines of code where TODO items were found",
+        "cz": "Run commitizen (cz check) to validate the description of the to-do item as a commit message",
+        "valid": "When using cz check, print valid to-do items",
+        "invalid": "When using cz check, print invalid to-do items",
+        "short": "Short format: only the description, without the lines of code where to-do items were found",
     }
 )
 def todo(c, cz=False, valid=True, invalid=True, short=False):
-    """List TODOs and FIXMEs in code. Optionally check if the description follow Conventional Commits (cz check)."""
+    """List to-dos and fix-mes in code. Optionally check if the description follow Conventional Commits (cz check)."""
     all_todos: dict[Task, list[Location]] = defaultdict(list)
     all_keys: list[Task] = []
     for which in ("FIXME", "TODO"):

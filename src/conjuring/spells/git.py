@@ -1,12 +1,12 @@
+from configparser import ConfigParser
 from functools import lru_cache
 from pathlib import Path
 
-from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
-from conjuring.grimoire import run_stdout, run_with_fzf, run_lines, run_multiple, print_success, print_error
 from invoke import Context, UnexpectedExit, task
-from configparser import ConfigParser
 
-from conjuring.visibility import is_git_repo, ShouldDisplayTasks, MagicTask
+from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.grimoire import print_error, print_success, run_lines, run_multiple, run_stdout, run_with_fzf
+from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_git_repo
@@ -19,7 +19,7 @@ class Git:
     def __init__(self, context: Context) -> None:
         self.context = context
 
-    @lru_cache()
+    @lru_cache
     def global_config(self) -> ConfigParser:
         """Global Git configuration."""
         config = ConfigParser()
@@ -48,21 +48,11 @@ class Git:
 
     @property
     def github_username(self) -> str:
-        """GitHub user name configured in the global settings."""
+        """The GitHub user name configured in the global settings."""
         return self.global_config()["github"]["user"]
 
     def choose_local_branch(self, branch: str) -> str:
         return run_with_fzf(self.context, "git branch --list | rg -v develop | cut -b 3-", query=branch)
-
-
-@task
-def fixme(c):
-    """Display FIXME comments, sorted by file and with the branch name at the end."""
-    cwd = str(Path.cwd())
-    c.run(
-        fr"rg --line-number -o 'FIXME\[AA\].+' {cwd} | sort -u | sed -E 's/FIXME\[AA\]://'"
-        f" | cut -b {len(cwd)+2}- | sed 's/^/{Git(c).current_branch()}: /'"
-    )
 
 
 @task(klass=MagicTask)
@@ -147,7 +137,7 @@ def extract_subtree(c, new_project_dir, sub_dir, choose_files=True, reset=False)
             f"git subtree split --prefix={relative_prefix} -b upstream_subdir",
             "git checkout master",
             "git merge upstream_subdir --allow-unrelated-histories",
-            f"git obliterate " + " ".join(sorted(obliterate)) if obliterate else "",
+            "git obliterate " + " ".join(sorted(obliterate)) if obliterate else "",
             pty=False,
         )
         history(c)

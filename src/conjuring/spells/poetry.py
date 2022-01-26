@@ -1,6 +1,6 @@
 from invoke import task
 
-from conjuring.grimoire import run_command, print_error, run_with_fzf
+from conjuring.grimoire import print_error, run_command, run_with_fzf
 from conjuring.visibility import ShouldDisplayTasks, has_pyproject_toml
 
 SHOULD_PREFIX = True

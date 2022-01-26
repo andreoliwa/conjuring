@@ -4,7 +4,7 @@ from tempfile import NamedTemporaryFile
 
 from invoke import task
 
-from conjuring.grimoire import run_with_fzf, run_command
+from conjuring.grimoire import run_command, run_with_fzf
 
 SHOULD_PREFIX = True
 BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()

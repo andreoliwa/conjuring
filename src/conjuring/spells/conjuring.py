@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from invoke import task
+
 from conjuring.grimoire import run_command
-from conjuring.visibility import is_home_dir, ShouldDisplayTasks
+from conjuring.visibility import ShouldDisplayTasks, is_home_dir
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_home_dir

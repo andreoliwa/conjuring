@@ -1,10 +1,9 @@
 import os
-from typing import List
 
 import pytest
 from invoke import Collection
 
-from conjuring.grimoire import magically_add_tasks, collection_from_python_files
+from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 
 
 @pytest.fixture
@@ -12,8 +11,8 @@ def my_collection():
     return Collection("mine")
 
 
-def assert_tasks(collection: Collection, task_names: List[str], *, by_name=False):
-    # TODO: Something weird in tests: the "collection.tasks" is empty in some cases
+def assert_tasks(collection: Collection, task_names: list[str], *, by_name=False):
+    # TODO: fix: something weird in tests: the "collection.tasks" is empty in some cases
     if by_name:
         assert list(collection.task_names.keys()) == task_names
     else:
@@ -83,13 +82,6 @@ def test_add_task_with_the_same_name(my_collection):
     assert_tasks(my_collection, ["task-c", "task-d", "task-d-same"])
 
 
-def test_add_sub_collection_with_same_name_as_task():
-    pass  # TODO:
-
-
-def test_magic_task_with_its_own_condition_evaluating_to_true():
-    pass  # TODO:
-
-
-def test_magic_task_with_its_own_condition_evaluating_to_false():
-    pass  # TODO:
+# TODO: test: add_sub_collection_with_same_name_as_task()
+# TODO: test: magic_task_with_its_own_condition_evaluating_to_true()
+# TODO: test: magic_task_with_its_own_condition_evaluating_to_false()

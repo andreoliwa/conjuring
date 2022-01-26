@@ -1,7 +1,6 @@
-from invoke import task, Exit
+from invoke import Exit, task
 
 from conjuring.spells.git import Git
-from .git import should_display_tasks
 
 SHOULD_PREFIX = True
 

@@ -1,7 +1,8 @@
-from invoke import task
 from urllib.parse import urlparse
 
-from conjuring.grimoire import run_with_fzf, run_command
+from invoke import task
+
+from conjuring.grimoire import run_command, run_with_fzf
 
 SHOULD_PREFIX = True
 
