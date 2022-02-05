@@ -187,20 +187,32 @@ def history(c, full=False, files=False, author=False, dates=False):
             func(*fields)
 
 
-@task
-def rebase_sign(c, commit=""):
-    """Rebase and GPG sign a range of commits.
+@task(
+    help={
+        "commit": "Base commit to be used for the range (default: --root)",
+        "gpg": "Sign the commit (default: True)",
+        "author": "Set the current author (from 'git config') on the commit range",
+    }
+)
+def rewrite(c, commit="--root", gpg=True, author=True):
+    """Rewrite a range of commits, signing with GPG and setting the author.
 
     https://git-scm.com/docs/git-commit
     https://git-scm.com/docs/git-rebase
     """
-    if not commit:
-        commit = "--root"
+    gpg_flag = " --gpg-sign" if gpg else " --no-gpg-sign"
+
+    author_flag = ""
+    if author:
+        name = run_stdout(c, "git config user.name", dry=False)
+        email = run_stdout(c, "git config user.email", dry=False)
+        author_flag = f' --author "{name} <{email}>"'
+
     c.run(f'git log --format="%H %cI %aI %s" {commit} > $TMPDIR/rebase_sign_hashlist')
     c.run(
         "git rebase --committer-date-is-author-date --exec 'GIT_COMMITTER_DATE="
         '$(fgrep -m 1 "$(git log -1 --format="%aI %s" $GIT_COMMIT)" $TMPDIR/rebase_sign_hashlist'
-        f' | cut -d" " -f3) git commit --amend --no-edit -n -S\' -i {commit}'
+        f' | cut -d" " -f3) git commit --amend --no-edit -n{author_flag}{gpg_flag}\' -i {commit}'
     )
     history(c, dates=True)
     print()
