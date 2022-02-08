@@ -5,7 +5,15 @@ from pathlib import Path
 from invoke import Context, UnexpectedExit, task
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
-from conjuring.grimoire import print_error, print_success, run_lines, run_multiple, run_stdout, run_with_fzf
+from conjuring.grimoire import (
+    print_error,
+    print_success,
+    run_command,
+    run_lines,
+    run_multiple,
+    run_stdout,
+    run_with_fzf,
+)
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 SHOULD_PREFIX = True
@@ -218,3 +226,26 @@ def rewrite(c, commit="--root", gpg=True, author=True):
     print()
     print("NOTE: If commits were modified during the rebase above, their committer date will be the current date")
     print("Rebase again with this command, without changing any commit, and all dates should be green")
+
+
+@task(
+    help={"remote": "List remote branches (default: False)", "update": "Update the repo before merging (default: True)"}
+)
+def merge_default(c, remote=False, update=True):
+    """Merge the default branch of the repo. Also set it with "git config", if not already set."""
+    cmd_extras = "git config git-extras.default-branch"
+    default_branch = run_stdout(c, cmd_extras, warn=True)
+    if not default_branch:
+        default_branch = run_with_fzf(
+            c,
+            "git branch --list",
+            "--all" if remote else "",
+            "| cut -b 3- | grep -v HEAD | sed -E 's#remotes/[^/]+/##g' | sort -u",
+        )
+        run_command(c, cmd_extras, default_branch)
+        run_command(c, "git config init.defaultBranch", default_branch)
+        run_command(c, "git config --list | rg default.*branch")
+
+    if update:
+        c.run("gitup .")
+    run_command(c, "git merge", default_branch)
