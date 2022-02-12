@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from itertools import chain
 from pathlib import Path
@@ -106,3 +107,30 @@ def categorize(c, organize=True, browse=True, empty=True):
             break
         else:
             print(str(path))
+
+
+@task
+def youtube_dl(c, url, min_height=240, download_archive_path=""):
+    """Download video URLs, try different low-res formats until it finds one."""
+    download_archive_path = download_archive_path or os.environ.get("YOUTUBE_DL_DOWNLOAD_ARCHIVE_PATH", "")
+    archive_option = f"--download-archive {download_archive_path!r}" if download_archive_path else ""
+
+    all_heights = [h for h in [240, 360, 480, 0] if h >= min_height or h == 0]
+    for height in all_heights:
+        # https://github.com/ytdl-org/youtube-dl#format-selection-examples
+        # Download best format available but no better than the chosen height
+        fmt = f"-f 'bestvideo[height<={height}]+bestaudio/best[height<={height}]'" if height else ""
+
+        result = run_command(
+            c,
+            "youtube-dl --ignore-errors --restrict-filenames",
+            # "--get-title --get-id",
+            # "--get-thumbnail --get-description --get-duration --get-filename",
+            # "--get-format",
+            archive_option,
+            fmt,
+            url,
+            warn=True,
+        )
+        if result.ok or "Unsupported URL:" in result.stdout:
+            break
