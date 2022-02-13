@@ -61,7 +61,7 @@ def cleanup(c, browse=False):
 def categorize(c, organize=True, browse=True, empty=True):
     """Open directories with files/photos that have to be categorized/moved/renamed."""
     if organize:
-        c.run("organize run")
+        c.run("invoke organize")
 
     empty_dirs = (
         [
