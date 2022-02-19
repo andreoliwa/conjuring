@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
+from shlex import quote
 from typing import Callable, Optional, Union, overload
 
 from invoke import Collection, Context, Result
@@ -89,7 +90,7 @@ def run_with_fzf(
     else:
         which_function = run_stdout
     if preview:
-        fzf_pieces.append(f"--preview='{preview}'")
+        fzf_pieces.append(f"--preview={quote(preview)}")
     kwargs.setdefault("hide", False)
     return which_function(c, *pieces, *fzf_pieces, **kwargs)
 

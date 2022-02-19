@@ -1,8 +1,9 @@
 from configparser import ConfigParser
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from invoke import Context, UnexpectedExit, task
+from invoke import Context, Exit, UnexpectedExit, task
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.grimoire import (
@@ -23,6 +24,9 @@ GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 
 class Git:
     """Git helpers."""
+
+    # Use "tail +2" to remove the blank line at the top
+    SHOW_ALL_FILE_HISTORY = 'git log --pretty="format:" --name-only | sort -u | tail +2'
 
     def __init__(self, context: Context) -> None:
         self.context = context
@@ -63,6 +67,12 @@ class Git:
         return run_with_fzf(self.context, "git branch --list | rg -v develop | cut -b 3-", query=branch)
 
 
+@dataclass(frozen=True)
+class PrefixBranch:
+    prefix: str
+    branch: str
+
+
 @task(klass=MagicTask)
 def update_all(c, group=""):
     """Run gita super to update and clean branches."""
@@ -84,7 +94,9 @@ def switch_url_to(c, remote="origin", https=False):
     if not match:
         print(f"{COLOR_LIGHT_RED}Match not found{COLOR_NONE}")
     else:
-        repo = f"https://{match}" if https else f"git@{match}.git"
+        repo = f"https://{match}" if https else f"git@{match}"
+        if not repo.endswith(".git"):
+            repo += ".git"
         c.run(f"git remote set-url {remote} {repo}")
 
     c.run("git remote -v")
@@ -93,67 +105,100 @@ def switch_url_to(c, remote="origin", https=False):
 @task(
     help={
         "new_project_dir": "Dir of the project to be created. The dir might exist or not",
-        "sub_dir": "Subdir to be extracted from the current project. E.g.: src/my_subdir/",
-        "choose_files": "Use fzf to choose files to extract from the subdir",
         "reset": "Remove the new dir and start over",
+        "keep": "Keep branches and remote after the extracting is done",
     }
 )
-def extract_subtree(c, new_project_dir, sub_dir, choose_files=True, reset=False):
-    """Extract files from a subdirectory of the current Git repo to another repo, using git subtree."""
+def extract_subtree(c, new_project_dir, reset=False, keep=False):
+    """Extract files from subdirectories of the current Git repo to another repo, using git subtree.
+
+    The files will be moved to the root of the new repo.
+
+    Solutions adapted from:
+    - https://serebrov.github.io/html/2021-09-13-git-move-history-to-another-repository.html
+    - https://stackoverflow.com/questions/25574407/git-subtree-split-two-directories/58253979#58253979
+    """
     new_project_path: Path = Path(new_project_dir).expanduser().absolute()
     if reset:
         c.run(f"rm -rf {new_project_path}")
 
     new_project_path.mkdir(parents=False, exist_ok=True)
-    new_project_name = Path(new_project_path).name
-    old_project_name = Path.cwd().name
-    git = Git(c)
-    username = git.github_username
+    old_project_path = Path.cwd()
 
-    # Add slash to the end
-    absolute_subdir = Path(sub_dir).expanduser().absolute()
-    relative_prefix = str(absolute_subdir.relative_to(Path.cwd())).rstrip("/") + "/"
-
-    obliterate = set()
-    if choose_files:
-        find_cmd = ["fd -H .", str(absolute_subdir)]
-        all_files = set(run_lines(c, *find_cmd, dry=False))
-        chosen_files = set(
-            run_with_fzf(
-                c,
-                *find_cmd,
-                dry=False,
-                header="Use TAB to choose the files you want to KEEP",
-                multi=True,
-                preview="head -10 {+}",
-            )
+    all_files = set(run_lines(c, Git.SHOW_ALL_FILE_HISTORY, dry=False))
+    chosen_files = set(
+        run_with_fzf(
+            c,
+            Git.SHOW_ALL_FILE_HISTORY,
+            dry=False,
+            header="Use TAB to choose the files you want to KEEP",
+            multi=True,
+            preview="test -f {} && head -20 {} || echo FILE NOT FOUND, IT EXISTS ONLY IN GIT HISTORY",
         )
-        obliterate = {
-            str(Path(kill_file).relative_to(absolute_subdir)) for kill_file in all_files.difference(chosen_files)
-        }
+    )
+    sub_dirs = {part.rsplit("/", 1)[0] for part in chosen_files}
+    obliterate = set(all_files.difference(chosen_files))
+
+    first_date = run_stdout(c, 'git log --format="%cI" --root | sort -u | head -1')
+
+    prefixes: list[str] = []
+    for sub_dir in sorted(sub_dirs):
+        absolute_subdir = Path(sub_dir).expanduser().absolute()
+        # Add slash to the end
+        prefixes.append(str(absolute_subdir.relative_to(Path.cwd())).rstrip("/") + "/")
 
     with c.cd(new_project_dir):
         run_multiple(
             c,
             "git init",
-            f"git remote add origin git@github.com:{username}/{new_project_name}.git",
             "touch README.md",
             "git add README.md",
-            'git commit -m "chore: first commit"',
-            f"git remote add -f upstream git@github.com:{username}/{old_project_name}.git",
+            f'git commit -m "chore: first commit" --date {first_date}',
+            f"git remote add -f upstream {old_project_path}",
             "git checkout -b upstream_master upstream/master",
-            f"git subtree split --prefix={relative_prefix} -b upstream_subdir",
-            "git checkout master",
-            "git merge upstream_subdir --allow-unrelated-histories",
-            "git obliterate " + " ".join(sorted(obliterate)) if obliterate else "",
             pty=False,
         )
-        history(c)
+        pairs: set[PrefixBranch] = set()
+        for prefix in prefixes:
+            if not Path(prefix).exists():
+                print_error(f"Skipping non-existent prefix {prefix}...")
+                continue
+
+            clean = prefix.strip(" /").replace("/", "_")
+            branch = f"upstream_subtree_{clean}"
+            local_obliterate = {f[len(prefix) :] for f in obliterate if f.startswith(prefix)}
+            pairs.add(PrefixBranch(prefix, branch))
+
+            run_multiple(
+                c,
+                "git checkout upstream_master",
+                f"git subtree split --prefix={prefix} -b {branch}",
+                f"git checkout {branch}",
+                "git obliterate " + " ".join(sorted(local_obliterate)) if obliterate else "",
+                "git checkout master",
+                # TODO: fix: deal with files that have the same name in different subdirs
+                #  The files are merged in the root, without prefix.
+                #  What happens if a file has the same name in multiple subdirs? e.g.: bin/file.py and src/file.py
+                f"git merge {branch} --allow-unrelated-histories -m 'refactor: merge subtree {prefix}'",
+            )
+
+        if obliterate:
+            c.run("git obliterate " + " ".join(sorted(obliterate)))
+        if not keep:
+            run_multiple(
+                c,
+                "git branch -D upstream_master",
+                *[f"git branch -D {pair.branch}" for pair in pairs],
+                "git remote remove upstream",
+            )
+        history(c, full=True)
     print_error("Don't forget to switch to the new repo:", f"  cd {new_project_dir}", nl=True)
     print_success(
         "Next steps:",
         "- Run 'git obliterate' manually for files in Git history (listed above) you still want to remove",
-        "- Create a new empty repo on https://github.com/new without initializing it",
+        "- Run 'invoke git.rewrite' to fix dates and authors",
+        "- Create a new empty repo on https://github.com/new without initializing it (no README/.gitignore/license)",
+        "- Follow the instructions to add a remote (from 'push an existing repository from the command line')",
         "- Push files to the new repo with:",
         "  git push -u origin master",
         nl=True,
@@ -170,13 +215,18 @@ def extract_subtree(c, new_project_dir, sub_dir, choose_files=True, reset=False)
 )
 def history(c, full=False, files=False, author=False, dates=False):
     """Grep the whole Git log and display information."""
+    option_chosen = False
     if full:
+        option_chosen = True
         files = author = dates = True
     if files:
-        c.run('git log --pretty="format:" --name-only | sort -u | tail +2')
+        option_chosen = True
+        c.run(Git.SHOW_ALL_FILE_HISTORY)
     if author:
+        option_chosen = True
         c.run("git log --name-only | rg author | sort -u")
     if dates:
+        option_chosen = True
         header = True
         for line in run_lines(c, 'git log --format="%H|%cI|%aI|%GK|%s"', hide=False):
             if header:
@@ -193,6 +243,8 @@ def history(c, full=False, files=False, author=False, dates=False):
             author_date = fields[2]
             func = print_success if committer_date == author_date else print_error
             func(*fields)
+    if not option_chosen:
+        raise Exit("Choose at least one option: --full, --files, --author, --dates", 1)
 
 
 @task(
