@@ -6,27 +6,33 @@ from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = has_pre_commit_config_yaml
 
-GIT_HOOKS = "-t pre-commit -t commit-msg"
-
 
 def _run_garbage_collector(c):
     c.run("pre-commit gc")
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs"})
-def install(c, gc=False):
+def get_hook_types(commit_msg: bool):
+    """Prepare a list of hook types to install/uninstall."""
+    hooks = ["pre-commit"]
+    if commit_msg:
+        hooks.append("commit-msg")
+    return " ".join([f"--hook-type {h}" for h in hooks])
+
+
+@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install the commit-msg hook"})
+def install(c, gc=False, commit_msg=True):
     """Pre-commit install scripts and hooks."""
     if gc:
         _run_garbage_collector(c)
-    c.run(f"pre-commit install {GIT_HOOKS} --install-hooks")
+    c.run(f"pre-commit install {get_hook_types(commit_msg)} --install-hooks")
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs"})
-def uninstall(c, gc=False):
+@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install the commit-msg hook"})
+def uninstall(c, gc=False, commit_msg=True):
     """Pre-commit uninstall scripts and hooks."""
     if gc:
         _run_garbage_collector(c)
-    c.run(f"pre-commit uninstall {GIT_HOOKS}")
+    c.run(f"pre-commit uninstall {get_hook_types(commit_msg)}")
 
 
 @task(help={"hook": "Comma-separated list of partial hook IDs (fzf will be used to match partial IDs)."})
