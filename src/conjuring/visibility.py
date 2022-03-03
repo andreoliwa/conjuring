@@ -21,7 +21,7 @@ def is_git_repo() -> bool:
     return Path(".git").exists()
 
 
-def has_pyproject_toml() -> bool:
+def is_poetry_project() -> bool:
     return Path("pyproject.toml").exists()
 
 

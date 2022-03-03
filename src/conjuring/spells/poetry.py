@@ -1,10 +1,10 @@
 from invoke import task
 
 from conjuring.grimoire import print_error, run_command, run_with_fzf
-from conjuring.visibility import ShouldDisplayTasks, has_pyproject_toml
+from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
 
 SHOULD_PREFIX = True
-should_display_tasks: ShouldDisplayTasks = has_pyproject_toml
+should_display_tasks: ShouldDisplayTasks = is_poetry_project
 
 
 @task(help={"inject": "Pipx repo to inject this project into"})
