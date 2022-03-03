@@ -4,6 +4,7 @@ import pytest
 from invoke import Collection
 
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
+from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
 
 
 @pytest.fixture
