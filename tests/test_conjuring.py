@@ -1,8 +1,13 @@
 import os
+import sys
 
 import pytest
 from invoke import Collection
 
+# so that collection_from_python_files() finds modules under tests/
+sys.path.append("tests")
+
+from conjuring import visibility
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
 
@@ -33,7 +38,7 @@ def test_add_module_by_name(my_collection):
 
 
 def test_create_collection_from_glob_python_patterns():
-    coll = collection_from_python_files("tests.fixtures.root", "glob*.py")
+    coll = collection_from_python_files("tests.fixtures.root", "tests/glob*.py")
     assert_tasks(coll, ["glob-c", "glob-d", "root.a", "root.b"], by_name=True)
 
 
