@@ -1,8 +1,10 @@
+import re
 from pathlib import Path
 from typing import Callable
 
 from invoke import Task
 
+POETRY_LINE = re.compile(r"\[tool\..*poetry\]")
 ShouldDisplayTasks = Callable[[], bool]
 
 always_visible: ShouldDisplayTasks = lambda: True
@@ -21,8 +23,13 @@ def is_git_repo() -> bool:
     return Path(".git").exists()
 
 
-def has_pyproject_toml() -> bool:
-    return Path("pyproject.toml").exists()
+def is_poetry_project() -> bool:
+    fpath = Path("pyproject.toml")
+    return fpath.exists() and _has_poetry_line(fpath)
+
+
+def _has_poetry_line(fpath: Path) -> bool:
+    return any(re.search(POETRY_LINE, line) for line in fpath.open())
 
 
 def display_task(task: Task, module_flag: bool) -> bool:
