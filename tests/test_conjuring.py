@@ -9,7 +9,6 @@ sys.path.append("tests")
 
 from conjuring import visibility
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
-from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
 
 
 @pytest.fixture
@@ -82,7 +81,7 @@ def test_module_with_magic_task(my_collection):
 def test_detects_this_project_as_poetry_project(my_collection):
     # NOTE: assumes this project has valid pyproject.toml,
     # should add tests for non-poetry projects with pyproject.toml still present
-    assert is_poetry_project()
+    assert visibility.is_poetry_project()
 
 
 @pytest.mark.xfail(reason="Empty collection.tasks is causing this test to fail")
