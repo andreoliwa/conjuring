@@ -285,8 +285,17 @@ def rewrite(c, commit="--root", gpg=True, author=True):
 )
 def merge_default(c, remote=False, update=True):
     """Merge the default branch of the repo. Also set it with "git config", if not already set."""
-    cmd_extras = "git config git-extras.default-branch"
-    default_branch = run_stdout(c, cmd_extras, warn=True)
+    default_branch = set_default_branch(c, remote)
+
+    if update:
+        c.run("gitup .")
+    run_command(c, "git merge", default_branch)
+
+
+def set_default_branch(c: Context, remote=False):
+    """Set the default branch config on the repo, if not configured yet."""
+    cmd_read_default_branch = "git config git-extras.default-branch"
+    default_branch = run_stdout(c, cmd_read_default_branch, warn=True, dry=False)
     if not default_branch:
         default_branch = run_with_fzf(
             c,
@@ -294,10 +303,26 @@ def merge_default(c, remote=False, update=True):
             "--all" if remote else "",
             "| cut -b 3- | grep -v HEAD | sed -E 's#remotes/[^/]+/##g' | sort -u",
         )
-        run_command(c, cmd_extras, default_branch)
+        run_command(c, cmd_read_default_branch, default_branch)
         run_command(c, "git config init.defaultBranch", default_branch)
         run_command(c, "git config --list | rg default.*branch")
+    return default_branch
 
-    if update:
-        c.run("gitup .")
-    run_command(c, "git merge", default_branch)
+
+@task(
+    help={
+        "tag": "Name of the tag to compare to (default: last created tag)",
+        "files": "Display files instead of commits (default: false)",
+        "verbose": "Files: display changes/insertions/deletion. Commits: display the full commit message, author... (default: False)",
+    }
+)
+def changes_since_tag(c, tag="", files=False, verbose=False):
+    """Display changes (commits or files) since the last tag (or a chosen tag)."""
+    which_tag = tag or run_stdout(c, "git tag --list --sort -creatordate | head -1", hide=False, dry=False)
+    default_branch = set_default_branch(c)
+    if files:
+        option = "" if verbose else " --name-only"
+        c.run(f"git diff --stat {which_tag} origin/{default_branch}{option}")
+    else:
+        option = "" if verbose else " --oneline"
+        c.run(f"git log {which_tag}..origin/{default_branch}{option}")
