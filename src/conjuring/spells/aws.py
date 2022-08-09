@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlparse
 
 from invoke import task
@@ -9,6 +10,11 @@ SHOULD_PREFIX = True
 
 def fzf_aws_profile(c, partial_name: str = None) -> str:
     """Select an AWS profile from a partial profile name using fzf."""
+    if not partial_name and (aws_profile := os.environ.get("AWS_PROFILE")):
+        if aws_profile:
+            print(f"Using env variable AWS_PROFILE (set to '{aws_profile}')")
+            return aws_profile
+
     return run_with_fzf(
         c,
         r"rg -o '\[profile[^\]]+' ~/.aws/config | cut -d ' ' -f 2",
