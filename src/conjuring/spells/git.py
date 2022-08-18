@@ -326,3 +326,12 @@ def changes_since_tag(c, tag="", files=False, verbose=False):
     else:
         option = "" if verbose else " --oneline"
         c.run(f"git log {which_tag}..origin/{default_branch}{option}")
+
+
+@task()
+def watch(c):
+    """Watch a build on GitHub Actions, then open a pull request or repo after the build is over."""
+    c.run("gh run watch", warn=True)
+    out = c.run("gh pr view --web", warn=True).stdout.strip()
+    if "no pull requests found for branch" in out:
+        c.run("gh repo view --web")
