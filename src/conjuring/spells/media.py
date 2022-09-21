@@ -134,3 +134,10 @@ def youtube_dl(c, url, min_height=240, download_archive_path=""):
         )
         if result.ok or "Unsupported URL:" in result.stdout:
             break
+
+
+@task
+def slideshow(c, start_at=""):
+    """Show pictures in the current dir with feh."""
+    start_at_option = f"--start-at {start_at}" if start_at else ""
+    run_command(c, "feh -r -. -g 1790x1070 -B black --caption-path .", start_at_option)
