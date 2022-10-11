@@ -18,10 +18,11 @@ def get_hook_types(commit_msg: bool, desired_hooks: list[str] = None):
         hooks.extend(desired_hooks)
     if commit_msg:
         hooks.append("commit-msg")
+        hooks.append("prepare-commit-msg")
     return " ".join([f"--hook-type {h}" for h in hooks])
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install the commit-msg hook"})
+@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install commit message hooks"})
 def install(c, gc=False, commit_msg=True):
     """Pre-commit install hooks."""
     if gc:
@@ -29,7 +30,7 @@ def install(c, gc=False, commit_msg=True):
     c.run(f"pre-commit install {get_hook_types(commit_msg)} --install-hooks")
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install the commit-msg hook"})
+@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Uninstall commit message hooks"})
 def uninstall(c, gc=False, commit_msg=True):
     """Pre-commit uninstall ALL hooks."""
     if gc:
