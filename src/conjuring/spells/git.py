@@ -280,6 +280,16 @@ def rewrite(c, commit="--root", gpg=True, author=True):
     print("Rebase again with this command, without changing any commit, and all dates should be green")
 
 
+@task
+def tidy_up(c):
+    """Update all branches of the repo, delete merged/squashed branches, prune remotes."""
+    c.run("gitup .")
+    c.run("git delete-merged-branches")
+    c.run("git delete-squashed-branches")
+    for remote in run_lines(c, "git remote", dry=False):
+        c.run(f"git remote prune {remote}")
+
+
 @task(
     help={"remote": "List remote branches (default: False)", "update": "Update the repo before merging (default: True)"}
 )
@@ -288,7 +298,7 @@ def merge_default(c, remote=False, update=True):
     default_branch = set_default_branch(c, remote)
 
     if update:
-        c.run("gitup .")
+        tidy_up(c)
     run_command(c, "git merge", default_branch)
 
 
