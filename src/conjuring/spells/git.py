@@ -331,7 +331,10 @@ def changes_since_tag(c, tag="", files=False, verbose=False):
 @task()
 def watch(c):
     """Watch a build on GitHub Actions, then open a pull request or repo after the build is over."""
+    current_branch = Git(c).current_branch()
+    print_success(f"Current branch = {current_branch}")
+
     c.run("gh run watch", warn=True)
-    out = c.run("gh pr view --web", warn=True).stdout.strip()
+    out = c.run(f"gh pr view {current_branch} --web", warn=True).stdout.strip()
     if "no pull requests found for branch" in out:
         c.run("gh repo view --web")
