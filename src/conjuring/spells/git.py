@@ -282,12 +282,12 @@ def rewrite(c, commit="--root", gpg=True, author=True):
 
 @task
 def tidy_up(c):
-    """Update all branches of the repo, delete merged/squashed branches, prune remotes."""
+    """Prune remotes, update all branches of the repo, delete merged/squashed branches."""
+    for remote in run_lines(c, "git remote", dry=False):
+        c.run(f"git remote prune {remote}")
     c.run("gitup .")
     c.run("git delete-merged-branches")
     c.run("git delete-squashed-branches")
-    for remote in run_lines(c, "git remote", dry=False):
-        c.run(f"git remote prune {remote}")
 
 
 @task(
