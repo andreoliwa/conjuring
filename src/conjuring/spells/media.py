@@ -5,7 +5,7 @@ from pathlib import Path
 
 from invoke import task
 
-from conjuring.grimoire import run_command
+from conjuring.grimoire import run_command, run_stdout
 
 SHOULD_PREFIX = True
 ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
@@ -98,12 +98,14 @@ def categorize(c, organize=True, browse=True, empty=True):
             continue
 
         if browse:
-            run_command(
+            last_file = run_stdout(
                 c,
-                "fd . -0 -t f --color never -1",
+                "fd . -t f --color never",
                 str(path),
-                "| xargs -0 open -R",
+                "| sort -ru",
+                "| head -1",
             )
+            run_command(c, f"open -R {last_file!r}")
             break
         else:
             print(str(path))
