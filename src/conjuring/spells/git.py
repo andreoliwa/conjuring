@@ -283,23 +283,28 @@ def rewrite(c, commit="--root", gpg=True, author=True):
 @task
 def tidy_up(c):
     """Prune remotes, update all branches of the repo, delete merged/squashed branches."""
-    for remote in run_lines(c, "git remote", dry=False):
-        c.run(f"git remote prune {remote}")
     c.run("gitup .")
     c.run("git delete-merged-branches")
-    c.run("git delete-squashed-branches")
+
+    # warn=True is needed; apparently, this command fails when there is no branch, and execution is stopped
+    c.run("git delete-squashed-branches", warn=True)
+
+    for remote in run_lines(c, "git remote", dry=False):
+        c.run(f"git remote prune {remote}")
 
 
 @task(
     help={"remote": "List remote branches (default: False)", "update": "Update the repo before merging (default: True)"}
 )
-def merge_default(c, remote=False, update=True):
+def merge_default(c, remote=False, update=True, push=True):
     """Merge the default branch of the repo. Also set it with "git config", if not already set."""
     default_branch = set_default_branch(c, remote)
 
     if update:
         tidy_up(c)
     run_command(c, "git merge", default_branch)
+    if push:
+        c.run("git push")
 
 
 def set_default_branch(c: Context, remote=False):
