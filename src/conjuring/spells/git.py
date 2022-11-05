@@ -353,3 +353,21 @@ def watch(c):
     out = c.run(f"gh pr view {current_branch} --web", warn=True).stdout.strip()
     if "no pull requests found for branch" in out:
         c.run("gh repo view --web")
+
+
+@task()
+def commit_body(c, remove_prefix=True, sort=True):
+    """Prepare a commit body to be used on pull requests and squashed commits."""
+    default_branch = set_default_branch(c)
+    bullets = []
+    for line in run_lines(c, f"git log {default_branch}..", "--format=%s%b"):
+        if "Merge branch" in line:
+            continue
+        if remove_prefix and ":" in line:
+            clean = line.split(":", 1)[1]
+        else:
+            clean = line
+        bullets.append(f"- {clean.strip()}")
+
+    results = sorted(bullets) if sort else bullets
+    print("\n".join(results))
