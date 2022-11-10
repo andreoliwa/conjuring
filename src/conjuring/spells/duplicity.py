@@ -21,7 +21,7 @@ def backup(c):
     """Backup files with Duplicity."""
     host = print_hostname(c)
     backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
-    # To backup directly on OneDrive:
+    # To back up directly on OneDrive:
     # backup_dir = f"onedrive://Backup/{host}/duplicity/"
     print(f"Backup dir: {backup_dir}")
 
@@ -29,7 +29,7 @@ def backup(c):
     print(f"Template file: {template_file}")
 
     template_contents = template_file.read_text()
-    duplicity_config = Template(template_contents).substitute({"home": Path.home()})
+    duplicity_config = Template(template_contents).substitute({"HOME": Path.home()})
 
     with NamedTemporaryFile("r+", delete=False) as temp_file:
         temp_file.write(duplicity_config)
