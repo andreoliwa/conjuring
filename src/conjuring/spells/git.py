@@ -22,6 +22,14 @@ should_display_tasks: ShouldDisplayTasks = is_git_repo
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 
 
+@lru_cache
+def global_config() -> ConfigParser:
+    """Global Git configuration."""
+    config = ConfigParser()
+    config.read(GLOBAL_GITCONFIG_PATH)
+    return config
+
+
 class Git:
     """Git helpers."""
 
@@ -30,13 +38,6 @@ class Git:
 
     def __init__(self, context: Context) -> None:
         self.context = context
-
-    @lru_cache
-    def global_config(self) -> ConfigParser:
-        """Global Git configuration."""
-        config = ConfigParser()
-        config.read(GLOBAL_GITCONFIG_PATH)
-        return config
 
     def current_branch(self) -> str:
         """Return the current branch name."""
@@ -60,8 +61,8 @@ class Git:
 
     @property
     def github_username(self) -> str:
-        """The GitHub user name configured in the global settings."""
-        return self.global_config()["github"]["user"]
+        """The GitHub username configured in the global settings."""
+        return global_config()["github"]["user"]
 
     def choose_local_branch(self, branch: str) -> str:
         return run_with_fzf(self.context, "git branch --list | rg -v develop | cut -b 3-", query=branch)
@@ -355,15 +356,20 @@ def watch(c):
         c.run("gh repo view --web")
 
 
-@task()
-def commit_body(c, remove_prefix=True, sort=True):
+@task(
+    help={
+        "prefix": "Keep the Conventional Commits prefix",
+        "sort": "Sort bullets",
+    }
+)
+def body(c, prefix=True, sort=True):
     """Prepare a commit body to be used on pull requests and squashed commits."""
     default_branch = set_default_branch(c)
     bullets = []
     for line in run_lines(c, f"git log {default_branch}..", "--format=%s%b"):
         if "Merge branch" in line:
             continue
-        if remove_prefix and ":" in line:
+        if not prefix and ":" in line:
             clean = line.split(":", 1)[1]
         else:
             clean = line
