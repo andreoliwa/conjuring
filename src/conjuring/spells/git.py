@@ -1,3 +1,4 @@
+import re
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache
@@ -366,14 +367,19 @@ def body(c, prefix=True, sort=True):
     """Prepare a commit body to be used on pull requests and squashed commits."""
     default_branch = set_default_branch(c)
     bullets = []
-    for line in run_lines(c, f"git log {default_branch}..", "--format=%s%b"):
-        if "Merge branch" in line:
+    for line in run_lines(c, f"git log {default_branch}..", "--format=%s%n%b"):
+        clean = line.strip(" -")
+        if "Merge branch" in clean or "Revert " in clean or "This reverts" in clean or not clean:
             continue
-        if not prefix and ":" in line:
-            clean = line.split(":", 1)[1]
-        else:
-            clean = line
-        bullets.append(f"- {clean.strip()}")
 
-    results = sorted(bullets) if sort else bullets
+        # Split on the Conventional Commit prefix
+        if not prefix and ":" in clean:
+            clean = clean.split(":", 1)[1]
+
+        # Remove Jira ticket with regex
+        clean = re.sub(r"\[\D+-\d+\]", "", clean).strip(" -")
+
+        bullets.append(f"- {clean}")
+
+    results = sorted(set(bullets)) if sort else bullets
     print("\n".join(results))
