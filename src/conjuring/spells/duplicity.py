@@ -47,9 +47,9 @@ def backup(c):
 
 @task
 def restore(c):
-    """Restore files with Duplicity. You will be prompted to choose a directory."""
+    """Restore files with Duplicity. You will be prompted to choose the source dir. Restore dir is ~/Downloads."""
     print_hostname(c)
-    chosen_dir = run_with_fzf(c, f"fd -t d duplicity {BACKUP_DIR}")
+    chosen_dir = run_with_fzf(c, f"fd -d 2 -t d duplicity {BACKUP_DIR}")
     if not chosen_dir:
         return
 

@@ -21,7 +21,7 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: bool = None, **kwargs) -> Result:
+def run_command(c: Context, *pieces: str, dry: Optional[bool] = None, **kwargs) -> Result:
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
