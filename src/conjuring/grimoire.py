@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import types
 from collections import defaultdict
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from typing import Callable, Optional, Union, overload
 
 from invoke import Collection, Context, Result
 
-from conjuring.colors import COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.visibility import display_task
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -62,6 +63,14 @@ def print_success(*message: str, nl=False):
 def print_error(*message: str, nl=False):
     """Print an error message."""
     print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
+
+
+def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE) -> None:
+    """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
+    print()
+    print_color(*message, color=COLOR_LIGHT_RED)
+    time.sleep(0.2)
+    input("Press ENTER to continue or Ctrl-C to abort: ")
 
 
 # TODO: refactor: Overloaded function signatures 1 and 2 overlap with incompatible return types
