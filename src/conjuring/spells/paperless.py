@@ -7,18 +7,19 @@ from invoke import task
 
 from conjuring.grimoire import print_error, print_success, run_lines
 
-PAPERLESS_COMPOSE_YAML = "CONJURING_PAPERLESS_COMPOSE_YAML"
+COMPOSE_YAML = "CONJURING_PAPERLESS_COMPOSE_YAML"
+USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
 
 SHOULD_PREFIX = True
 
 
 def paperless_cmd() -> str:
     """Lazy evaluation of the docker compose command that runs paperless commands."""
-    yaml_file = os.environ.get(PAPERLESS_COMPOSE_YAML)
+    yaml_file = os.environ.get(COMPOSE_YAML)
     if not yaml_file:
         raise RuntimeError(
             "Paperless tasks can't be executed."
-            f" Set the env variable {PAPERLESS_COMPOSE_YAML} with the path of paperless Docker compose file."
+            f" Set the env variable {COMPOSE_YAML} with the path of paperless Docker compose file."
         )
     return f"docker compose -f {yaml_file} exec webserver"
 
@@ -58,11 +59,12 @@ class Document:
     help={
         "hide": "Hide progress bar of sanity command. Default: True",
         "orphans": "Show orphan files. Default: True",
+        "thumbnails": "Show thumbnail files. Default: False",
         "documents": "Show documents with issues. Default: False",
         "unknown": "Show unknown lines from the log. Default: True",
     }
 )
-def sanity(c, hide=True, orphans=True, documents=False, unknown=True):
+def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True):
     """Sanity checker.
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
@@ -71,6 +73,7 @@ def sanity(c, hide=True, orphans=True, documents=False, unknown=True):
 
     progress_bar = []
     orphan_files = []
+    thumbnail_files = []
     current_document: Optional[Document] = None
     documents_with_issues: list[Document] = []
     unknown_lines = []
@@ -80,7 +83,11 @@ def sanity(c, hide=True, orphans=True, documents=False, unknown=True):
             continue
 
         if (msg := "Orphaned file in media dir: ") in line:
-            orphan_files.append(line.split(msg)[1])
+            partial_path = line.split(msg)[1].replace(USR_SRC_DOCUMENTS, "")
+            if partial_path.startswith("thumbnails"):
+                thumbnail_files.append(partial_path)
+            else:
+                orphan_files.append(partial_path)
             continue
 
         if (msg := "Detected following issue(s) with document #") in line:
@@ -108,17 +115,16 @@ def sanity(c, hide=True, orphans=True, documents=False, unknown=True):
     # FIXME: move unmatched files to ~/Downloads/unmatched
 
     # FIXME: delete thumbnails
-    if orphans:
-        print_items("Orphan files", orphan_files)
-    if documents:
-        print_items("Documents with issues", documents_with_issues)
-    if unknown:
-        print_items("Unknown lines", unknown_lines)
+    print_items(orphans, "Orphan files", orphan_files)
+    print_items(thumbnails, "Thumbnail files", thumbnail_files)
+    print_items(documents, "Documents with issues", documents_with_issues)
+    print_items(unknown, "Unknown lines", unknown_lines)
 
 
-def print_items(title: str, collection):
+def print_items(show_details: bool, title: str, collection):
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
-    for item in collection:
-        print(item)
+    if show_details:
+        for item in collection:
+            print(item)
