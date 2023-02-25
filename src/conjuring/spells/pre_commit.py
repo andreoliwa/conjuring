@@ -1,3 +1,5 @@
+from typing import Optional
+
 from invoke import task
 
 from conjuring.grimoire import run_command, run_stdout, run_with_fzf
@@ -11,7 +13,7 @@ def _run_garbage_collector(c):
     c.run("pre-commit gc")
 
 
-def get_hook_types(commit_msg: bool, desired_hooks: list[str] = None):
+def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None):
     """Prepare a list of hook types to install/uninstall."""
     hooks = ["pre-commit"]
     if desired_hooks:

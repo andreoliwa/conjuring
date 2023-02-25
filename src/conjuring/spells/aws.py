@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from urllib.parse import urlparse
 
 from invoke import task
@@ -8,7 +9,7 @@ from conjuring.grimoire import run_command, run_with_fzf
 SHOULD_PREFIX = True
 
 
-def fzf_aws_profile(c, partial_name: str = None) -> str:
+def fzf_aws_profile(c, partial_name: Optional[str] = None) -> str:
     """Select an AWS profile from a partial profile name using fzf."""
     if not partial_name and (aws_profile := os.environ.get("AWS_PROFILE")):
         if aws_profile:
@@ -32,12 +33,12 @@ def fzf_aws_region(c) -> str:
     return run_with_fzf(c, "rg -o '^region.+' ~/.aws/config | tr -d ' ' | cut -d'=' -f 2 | sort -u")
 
 
-def run_aws_vault(c, *pieces, profile: str = None):
+def run_aws_vault(c, *pieces, profile: Optional[str] = None):
     """Run AWS vault commands in a subshell, or open a subshell if no commands were provided."""
     run_command(c, "aws-vault exec", fzf_aws_profile(c, profile), "--", *pieces, pty=False)
 
 
-def clean_aws_url(c, url: str = None):
+def clean_aws_url(c, url: Optional[str] = None):
     if not url:
         account = fzf_aws_account(c)
         region = fzf_aws_region(c)
