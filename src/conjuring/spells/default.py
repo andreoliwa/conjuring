@@ -21,6 +21,7 @@ from conjuring.spells import (
     git,
     jrnl,
     media,
+    paperless,
     poetry,
     pre_commit,
     shell,
@@ -31,5 +32,19 @@ __all__ = ["namespace"]
 namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "conjuring*.py")
 
 # TODO: feat: import all "conjuring.spells" submodules dynamically
-for module in [git, pre_commit, jrnl, duplicity, media, fork, poetry, conjuring, aws, blanket, docker, shell]:
+for module in [
+    git,
+    pre_commit,
+    jrnl,
+    duplicity,
+    media,
+    fork,
+    poetry,
+    conjuring,
+    aws,
+    blanket,
+    docker,
+    shell,
+    paperless,
+]:
     magically_add_tasks(namespace, module)

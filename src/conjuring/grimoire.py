@@ -33,6 +33,7 @@ def run_command(c: Context, *pieces: str, dry: Optional[bool] = None, **kwargs) 
 
 def run_stdout(c: Context, *pieces: str, **kwargs) -> str:
     """Run a (hidden) command and return the stripped stdout."""
+    kwargs.setdefault("warn", False)
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
     return c.run(join_pieces(*pieces), **kwargs).stdout.strip()
