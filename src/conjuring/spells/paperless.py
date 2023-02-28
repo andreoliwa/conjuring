@@ -1,16 +1,23 @@
 """Wrapper tasks for papaerless commands https://github.com/paperless-ngx/paperless-ngx."""
 import os
+from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 from invoke import task
 
 from conjuring.grimoire import print_error, print_success, run_lines
 
+SHOULD_PREFIX = True
+
 COMPOSE_YAML = "CONJURING_PAPERLESS_COMPOSE_YAML"
 USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
-
-SHOULD_PREFIX = True
+ORPHAN_ARCHIVE = "archive"
+ORPHAN_ORIGINALS = "originals"
+ORPHAN_THUMBNAILS = "thumbnails"
+DOWNLOAD_ROOT_DIR = Path("~/Downloads").expanduser()
+DOWNLOAD_DESTINATION_DIR = DOWNLOAD_ROOT_DIR / __name__.rsplit(".")[-1]
 
 
 def paperless_cmd() -> str:
@@ -62,17 +69,21 @@ class Document:
         "thumbnails": "Show thumbnail files. Default: False",
         "documents": "Show documents with issues. Default: False",
         "unknown": "Show unknown lines from the log. Default: True",
+        "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
     }
 )
-def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True):
+def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True, together=False):
     """Sanity checker.
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
     """
     lines = run_lines(c, paperless_cmd(), "document_sanity_checker", hide=hide, warn=True, pty=True)
 
-    progress_bar = []
-    orphan_files = []
+    progress_bar: list[str] = []
+    original_or_archive_files: dict[str, list[str]] = defaultdict(list)
+    matched_files: list[str] = []
+    unmatched_files: list[str] = []
+    orphan_files: list[str] = []
     thumbnail_files = []
     current_document: Optional[Document] = None
     documents_with_issues: list[Document] = []
@@ -83,11 +94,14 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
             continue
 
         if (msg := "Orphaned file in media dir: ") in line:
-            partial_path = line.split(msg)[1].replace(USR_SRC_DOCUMENTS, "")
-            if partial_path.startswith("thumbnails"):
+            partial_path = Path(line.split(msg)[1].replace(USR_SRC_DOCUMENTS, ""))
+            first_part = partial_path.parts[0]
+            if first_part == ORPHAN_THUMBNAILS:
                 thumbnail_files.append(partial_path)
+            elif first_part in (ORPHAN_ARCHIVE, ORPHAN_ORIGINALS):
+                _split_original_archive(original_or_archive_files, partial_path)
             else:
-                orphan_files.append(partial_path)
+                orphan_files.append(str(partial_path))
             continue
 
         if (msg := "Detected following issue(s) with document #") in line:
@@ -106,19 +120,51 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
 
         unknown_lines.append(line)
 
-    # FIXME: match original and archive files
-
     # FIXME: --fix flag
+    _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together)
 
     # FIXME: move matched pairs to ~/Downloads/matched
-
+    print_items(orphans, "Matched files", matched_files)
     # FIXME: move unmatched files to ~/Downloads/unmatched
-
-    # FIXME: delete thumbnails
+    print_items(orphans, "Unmatched files", unmatched_files)
     print_items(orphans, "Orphan files", orphan_files)
+    # FIXME: move thumbnails to ~/Downloads
     print_items(thumbnails, "Thumbnail files", thumbnail_files)
     print_items(documents, "Documents with issues", documents_with_issues)
     print_items(unknown, "Unknown lines", unknown_lines)
+
+
+def _split_original_archive(original_or_archive_files, partial_path):
+    file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
+    destination_parts = []
+    for part in partial_path.parts[:-1]:
+        if "," in part:
+            destination_parts.extend(part.split(","))
+        else:
+            destination_parts.append(part)
+    file_name = partial_path.parts[-1]
+    destination_parts.append(file_name)
+    original_or_archive_files[file_key].append("/".join(destination_parts))
+
+
+def _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together):
+    for single_or_pair in original_or_archive_files.values():
+        if len(single_or_pair) == 2:
+            originals_first = sorted(single_or_pair, reverse=True)
+            if together:
+                for match_str in originals_first:
+                    match_path = Path(match_str)
+                    file_without_first_part = Path("/".join(match_path.parts[1:]))
+                    if match_str.startswith(ORPHAN_ARCHIVE):
+                        # Append ORPHAN_ARCHIVE to the file stem
+                        destination = file_without_first_part.with_stem(f"{match_path.stem}-{ORPHAN_ARCHIVE}")
+                    else:
+                        destination = file_without_first_part
+                    matched_files.append(str(destination))
+            else:
+                matched_files.extend(originals_first)
+        else:
+            unmatched_files.extend(single_or_pair)
 
 
 def print_items(show_details: bool, title: str, collection):
