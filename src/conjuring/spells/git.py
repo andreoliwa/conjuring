@@ -377,7 +377,7 @@ def body(c, prefix=True, sort=True):
             clean = clean.split(":", 1)[1]
 
         # Remove Jira ticket with regex
-        clean = re.sub(r"\[\D+-\d+\]", "", clean).strip(" -")
+        clean = re.sub(r"\[?\D+-\d+[\]:]", "", clean).strip(" -")
 
         bullets.append(f"- {clean}")
 
