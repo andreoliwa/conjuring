@@ -5,11 +5,10 @@ from pathlib import Path
 
 from invoke import task
 
+from conjuring.constants import DESKTOP_DIR, DOWNLOADS_DIR, ONE_DRIVE_DIR, PICTURES_DIR
 from conjuring.grimoire import run_command, run_stdout
 
 SHOULD_PREFIX = True
-ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
-PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
 
 
 @task
@@ -67,8 +66,8 @@ def categorize(c, organize=True, browse=True, empty=True):
         [
             Path(d).expanduser()
             for d in [
-                "~/Downloads",
-                "~/Desktop",
+                DOWNLOADS_DIR,
+                DESKTOP_DIR,
                 "~/Documents/Shared_Downloads",
                 PICTURES_DIR / "Telegram",
                 PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
