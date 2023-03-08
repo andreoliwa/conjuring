@@ -97,8 +97,7 @@ class OrphanFile:
         # FIXME: flag to delete original files?
     }
 )
-# FIXME: fix=False
-def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True, together=False, fix=True):
+def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True, together=False, fix=False):
     """Sanity checker.
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
@@ -154,14 +153,14 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
     _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together)
 
     # FIXME: move matched pairs to ~/Downloads/matched
-    print_items(orphans, "Matched files", matched_files)
+    _print_items(orphans, "Matched files", matched_files)
     # FIXME: move unmatched files to ~/Downloads/unmatched
-    print_items(orphans, "Unmatched files", unmatched_files)
-    print_items(orphans, "Orphan files", orphan_files)
+    _print_items(orphans, "Unmatched files", unmatched_files)
+    _print_items(orphans, "Orphan files", orphan_files)
     # FIXME: move thumbnails to ~/Downloads
-    print_items(thumbnails, "Thumbnail files", thumbnail_files)
-    print_items(documents, "Documents with issues", documents_with_issues)
-    print_items(unknown, "Unknown lines", unknown_lines)
+    _print_items(thumbnails, "Thumbnail files", thumbnail_files)
+    _print_items(documents, "Documents with issues", documents_with_issues)
+    _print_items(unknown, "Unknown lines", unknown_lines)
 
 
 def _split_original_archive(
@@ -207,16 +206,21 @@ def _split_matched_unmatched(
             unmatched_files.extend(single_or_pair)
 
 
-def print_items(show_details: bool, title: str, collection: list[str | OrphanFile]):
+def _print_items(show_details: bool, title: str, collection: list[str | OrphanFile]):
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
-    if show_details:
-        for item in collection:
-            if isinstance(item, OrphanFile):
-                file = item.source
-                # FIXME: don't display all in red when --fix == False
-                print_file_function = print_success if file.exists() else print_error
-                print_file_function(str(file))
+    if not show_details:
+        return
+
+    for item in collection:
+        if isinstance(item, OrphanFile):
+            file = item.source
+            if not file.root:
+                # If the file doesn't start with "/" then we can't check if it exists
+                print_file_function = print
             else:
-                print(str(item))
+                print_file_function = print_success if file.exists() else print_error
+            print_file_function(str(file))
+        else:
+            print(str(item))
