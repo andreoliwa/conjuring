@@ -98,7 +98,7 @@ class OrphanFile:
     }
 )
 def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True, together=False, fix=False):
-    """Sanity checker.
+    """Sanity checker. Optionally fix orphan files (copies or movies them to the download dir).
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
     """
@@ -125,13 +125,7 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
 
         if (msg := "Orphaned file in media dir: ") in line:
             partial_path = Path(line.split(msg)[1].replace(USR_SRC_DOCUMENTS, ""))
-            first_part = partial_path.parts[0]
-            if first_part == ORPHAN_THUMBNAILS:
-                thumbnail_files.append(str(partial_path))
-            elif first_part in (ORPHAN_ARCHIVE, ORPHAN_ORIGINALS):
-                _split_original_archive(original_or_archive_files, partial_path, documents_dir)
-            else:
-                orphan_files.append(str(partial_path))
+            _process_orphans(partial_path, documents_dir, original_or_archive_files, orphan_files, thumbnail_files)
             continue
 
         if (msg := "Detected following issue(s) with document #") in line:
@@ -160,13 +154,25 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
     _handle_items(False, unknown, "Unknown lines", unknown_lines)
 
 
+def _process_orphans(partial_path, documents_dir, original_or_archive_files, orphan_files, thumbnail_files):
+    if partial_path.name == DOT_DS_STORE:
+        return
+
+    first_part = partial_path.parts[0]
+    if first_part == ORPHAN_THUMBNAILS:
+        thumbnail_files.append(str(partial_path))
+        return
+
+    if first_part in (ORPHAN_ARCHIVE, ORPHAN_ORIGINALS):
+        _split_original_archive(original_or_archive_files, partial_path, documents_dir)
+        return
+
+    orphan_files.append(str(partial_path))
+
+
 def _split_original_archive(
     original_or_archive_files: dict[str, list[OrphanFile]], partial_path: Path, documents_dir: Path = None
 ):
-    file_name = partial_path.parts[-1]
-    if file_name == DOT_DS_STORE:
-        return
-
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
     expanded_parts = []
     for part in partial_path.parts[:-1]:
@@ -182,6 +188,7 @@ def _split_original_archive(
         if not (part.isnumeric() and len(part) == 4 and int(part) > 1900 and partial_path.stem.startswith(part))
     ]
 
+    file_name = partial_path.parts[-1]
     filtered_parts.append(file_name)
 
     orphan_dir = documents_dir or Path()
@@ -199,15 +206,17 @@ def _split_matched_unmatched(
         if len(single_or_pair) == 2:
             originals_first = sorted(single_or_pair, reverse=True)
             if together:
-                for match_str in originals_first:
-                    match_path = Path(match_str)
+                for orphan_file in originals_first:
+                    match_path = orphan_file.destination
                     file_without_first_part = Path("/".join(match_path.parts[1:]))
-                    if match_str.startswith(ORPHAN_ARCHIVE):
+                    if str(match_path).startswith(ORPHAN_ARCHIVE):
                         # Append ORPHAN_ARCHIVE to the file stem
-                        destination = file_without_first_part.with_stem(f"{match_path.stem}-{ORPHAN_ARCHIVE}")
+                        orphan_file.destination = file_without_first_part.with_stem(
+                            f"{match_path.stem}-{ORPHAN_ARCHIVE}"
+                        )
                     else:
-                        destination = file_without_first_part
-                    matched_files.append(str(destination))
+                        orphan_file.destination = file_without_first_part
+                    matched_files.append(orphan_file)
             else:
                 matched_files.extend(originals_first)
         else:
