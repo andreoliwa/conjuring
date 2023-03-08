@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import os
+import shutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from invoke import task
 
+from conjuring.constants import DOWNLOADS_DIR
 from conjuring.grimoire import print_error, print_success, run_lines
 
 SHOULD_PREFIX = True
@@ -18,8 +20,7 @@ USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
 ORPHAN_ARCHIVE = "archive"
 ORPHAN_ORIGINALS = "originals"
 ORPHAN_THUMBNAILS = "thumbnails"
-DOWNLOAD_ROOT_DIR = Path("~/Downloads").expanduser()
-DOWNLOAD_DESTINATION_DIR = DOWNLOAD_ROOT_DIR / __name__.rsplit(".")[-1]
+DOWNLOAD_DESTINATION_DIR = DOWNLOADS_DIR / __name__.rsplit(".")[-1]
 
 
 def paperless_cmd() -> str:
@@ -92,7 +93,6 @@ class OrphanFile:
         "documents": "Show documents with issues. Default: False",
         "unknown": "Show unknown lines from the log. Default: True",
         "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
-        # FIXME: actually fix the files
         "fix": "Fix broken files by copying them to the downloads dir",
         # FIXME: flag to delete original files?
     }
@@ -152,15 +152,12 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
 
     _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together)
 
-    # FIXME: move matched pairs to ~/Downloads/matched
-    _print_items(orphans, "Matched files", matched_files)
-    # FIXME: move unmatched files to ~/Downloads/unmatched
-    _print_items(orphans, "Unmatched files", unmatched_files)
-    _print_items(orphans, "Orphan files", orphan_files)
-    # FIXME: move thumbnails to ~/Downloads
-    _print_items(thumbnails, "Thumbnail files", thumbnail_files)
-    _print_items(documents, "Documents with issues", documents_with_issues)
-    _print_items(unknown, "Unknown lines", unknown_lines)
+    _handle_items(fix, orphans, "Matched files", matched_files)
+    _handle_items(fix, orphans, "Unmatched files", unmatched_files)
+    _handle_items(False, orphans, "Orphan files", orphan_files)
+    _handle_items(fix, thumbnails, "Thumbnail files", thumbnail_files)
+    _handle_items(False, documents, "Documents with issues", documents_with_issues)
+    _handle_items(False, unknown, "Unknown lines", unknown_lines)
 
 
 def _split_original_archive(
@@ -168,6 +165,7 @@ def _split_original_archive(
 ):
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
     destination_parts = []
+    # FIXME: skip directories with a year when the file name starts with it
     for part in partial_path.parts[:-1]:
         if "," in part:
             destination_parts.extend(part.split(","))
@@ -177,7 +175,7 @@ def _split_original_archive(
     destination_parts.append(file_name)
 
     orphan_dir = documents_dir or Path()
-    orphan = OrphanFile(source=orphan_dir / partial_path, destination=orphan_dir / "/".join(destination_parts))
+    orphan = OrphanFile(source=orphan_dir / partial_path, destination=Path("/".join(destination_parts)))
     original_or_archive_files[file_key].append(orphan)
 
 
@@ -206,21 +204,28 @@ def _split_matched_unmatched(
             unmatched_files.extend(single_or_pair)
 
 
-def _print_items(show_details: bool, title: str, collection: list[str | OrphanFile]):
+def _handle_items(fix: bool, show_details: bool, title: str, collection: list[str | OrphanFile]):
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
     if not show_details:
         return
 
+    dest_dir = DOWNLOAD_DESTINATION_DIR / title
     for item in collection:
-        if isinstance(item, OrphanFile):
-            file = item.source
-            if not file.root:
-                # If the file doesn't start with "/" then we can't check if it exists
-                print_file_function = print
-            else:
-                print_file_function = print_success if file.exists() else print_error
-            print_file_function(str(file))
-        else:
+        if not isinstance(item, OrphanFile):
             print(str(item))
+            continue
+
+        if not fix:
+            print(str(item.source))
+            continue
+
+        if not item.source.exists():
+            print_error(f"Not found: {item.source}")
+            continue
+
+        dest_file = dest_dir / item.destination
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+        print_success(f"Copying {item.source} to {dest_file}")
+        shutil.copy2(item.source, dest_file)
