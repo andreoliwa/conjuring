@@ -11,6 +11,33 @@ from conjuring.grimoire import run_command, run_stdout
 SHOULD_PREFIX = True
 
 
+@task(
+    help={
+        "dir": "Directory to clean up. Default: current dir",
+        "fd": "Use https://github.com/sharkdp/fd instead of 'find'",
+    },
+    iterable=["dir_"],
+)
+def rm_empty_dirs(c, dir_, fd=True):
+    """Remove some hidden files first, then remove empty dirs.
+
+    The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
+    """
+    if not dir_:
+        dir_ = [Path.cwd()]
+
+    dirs = list({str(Path(d).expanduser().absolute()) for d in dir_})
+    for hidden_file in [DOT_DS_STORE, DOT_NO_MEDIA]:
+        if fd:
+            c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | xargs -0 rm -v")
+        else:
+            for one_dir in dirs:
+                c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | xargs -0 rm -v")
+
+    f_option = " ".join([f"-f {d}/" for d in dirs[:-1]])
+    run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print -delete")
+
+
 @task
 def cleanup(c, browse=False):
     """Cleanup pictures."""
