@@ -9,7 +9,7 @@ from pathlib import Path
 
 from invoke import task
 
-from conjuring.constants import DOWNLOADS_DIR
+from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
 from conjuring.grimoire import print_error, print_success, run_lines
 
 SHOULD_PREFIX = True
@@ -163,19 +163,29 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
 def _split_original_archive(
     original_or_archive_files: dict[str, list[OrphanFile]], partial_path: Path, documents_dir: Path = None
 ):
+    file_name = partial_path.parts[-1]
+    if file_name == DOT_DS_STORE:
+        return
+
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
-    destination_parts = []
-    # FIXME: skip directories with a year when the file name starts with it
+    expanded_parts = []
     for part in partial_path.parts[:-1]:
         if "," in part:
-            destination_parts.extend(part.split(","))
+            expanded_parts.extend(sorted(part.split(",")))
         else:
-            destination_parts.append(part)
-    file_name = partial_path.parts[-1]
-    destination_parts.append(file_name)
+            expanded_parts.append(part)
+
+    # Skip directories with a year when the file name starts with it
+    filtered_parts = [
+        part
+        for part in expanded_parts
+        if not (part.isnumeric() and len(part) == 4 and int(part) > 1900 and partial_path.stem.startswith(part))
+    ]
+
+    filtered_parts.append(file_name)
 
     orphan_dir = documents_dir or Path()
-    orphan = OrphanFile(source=orphan_dir / partial_path, destination=Path("/".join(destination_parts)))
+    orphan = OrphanFile(source=orphan_dir / partial_path, destination=Path("/".join(filtered_parts)))
     original_or_archive_files[file_key].append(orphan)
 
 
@@ -228,4 +238,6 @@ def _handle_items(fix: bool, show_details: bool, title: str, collection: list[st
         dest_file = dest_dir / item.destination
         dest_file.parent.mkdir(parents=True, exist_ok=True)
         print_success(f"Copying {item.source} to {dest_file}")
+
+        # https://docs.python.org/3/library/shutil.html#shutil.copy2
         shutil.copy2(item.source, dest_file)

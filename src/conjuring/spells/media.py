@@ -5,7 +5,7 @@ from pathlib import Path
 
 from invoke import task
 
-from conjuring.constants import DESKTOP_DIR, DOWNLOADS_DIR, ONE_DRIVE_DIR, PICTURES_DIR
+from conjuring.constants import DESKTOP_DIR, DOT_DS_STORE, DOT_NO_MEDIA, DOWNLOADS_DIR, ONE_DRIVE_DIR, PICTURES_DIR
 from conjuring.grimoire import run_command, run_stdout
 
 SHOULD_PREFIX = True
@@ -14,8 +14,8 @@ SHOULD_PREFIX = True
 @task
 def cleanup(c, browse=False):
     """Cleanup pictures."""
-    c.run("fd -H -0 -tf -i .DS_Store | xargs -0 rm -v")
-    c.run("fd -H -0 -tf -i .nomedia | xargs -0 rm -v")
+    c.run(f"fd -H -0 -tf -i {DOT_DS_STORE} | xargs -0 rm -v")
+    c.run(f"fd -H -0 -tf -i {DOT_NO_MEDIA} | xargs -0 rm -v")
     c.run("find . -mindepth 1 -type d -empty -print -delete")
 
     # Unhide Picasa originals dir
