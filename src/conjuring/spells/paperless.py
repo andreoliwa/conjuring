@@ -87,17 +87,19 @@ class OrphanFile:
 
 @task(
     help={
-        "hide": "Hide progress bar of sanity command. Default: True",
-        "orphans": "Show orphan files. Default: True",
-        "thumbnails": "Show thumbnail files. Default: False",
-        "documents": "Show documents with issues. Default: False",
-        "unknown": "Show unknown lines from the log. Default: True",
+        "hide": "Hide progress bar of sanity command",
+        "orphans": "Show orphan files",
+        "thumbnails": "Show thumbnail files",
+        "documents": "Show documents with issues",
+        "unknown": "Show unknown lines from the log",
         "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
         "fix": "Fix broken files by copying them to the downloads dir",
-        # FIXME: flag to delete original files?
+        "move": "Move files instead of copying",
     }
 )
-def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknown=True, together=False, fix=False):
+def sanity(
+    c, hide=True, orphans=False, thumbnails=False, documents=False, unknown=True, together=False, fix=False, move=False
+):
     """Sanity checker. Optionally fix orphan files (copies or movies them to the download dir).
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
@@ -107,6 +109,7 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
     if documents_dir and not documents_dir.exists():
         raise RuntimeError(f"Documents directory doesn't exist: {documents_dir}")
 
+    # TODO: fix(paperless): implement dry-run mode with dry=False and actually avoid files being copied/moved
     lines = run_lines(c, paperless_cmd(), "document_sanity_checker", hide=hide, warn=True, pty=True)
 
     progress_bar: list[str] = []
@@ -146,12 +149,13 @@ def sanity(c, hide=True, orphans=True, thumbnails=False, documents=False, unknow
 
     _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together)
 
-    _handle_items(fix, orphans, "Matched files", matched_files)
-    _handle_items(fix, orphans, "Unmatched files", unmatched_files)
-    _handle_items(False, orphans, "Orphan files", orphan_files)
-    _handle_items(fix, thumbnails, "Thumbnail files", thumbnail_files)
-    _handle_items(False, documents, "Documents with issues", documents_with_issues)
-    _handle_items(False, unknown, "Unknown lines", unknown_lines)
+    _handle_items(fix, move, orphans, "Matched files", matched_files)
+    _handle_items(fix, move, orphans, "Unmatched files", unmatched_files)
+    _handle_items(False, move, orphans, "Orphan files", orphan_files)
+    # TODO: feat(paperless): move thumbnail files to downloads dir
+    _handle_items(fix, move, thumbnails, "Thumbnail files", thumbnail_files)
+    _handle_items(False, move, documents, "Documents with issues", documents_with_issues)
+    _handle_items(False, move, unknown, "Unknown lines", unknown_lines)
 
 
 def _process_orphans(partial_path, documents_dir, original_or_archive_files, orphan_files, thumbnail_files):
@@ -223,12 +227,16 @@ def _split_matched_unmatched(
             unmatched_files.extend(single_or_pair)
 
 
-def _handle_items(fix: bool, show_details: bool, title: str, collection: list[str | OrphanFile]):
+def _handle_items(fix: bool, move: bool, show_details: bool, title: str, collection: list[str | OrphanFile | Document]):
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
     if not show_details:
         return
+
+    # https://docs.python.org/3/library/shutil.html#shutil.copy2
+    copy_function = shutil.move if move else shutil.copy2
+    msg = "Moving" if move else "Copying"
 
     dest_dir = DOWNLOAD_DESTINATION_DIR / title
     for item in collection:
@@ -246,7 +254,6 @@ def _handle_items(fix: bool, show_details: bool, title: str, collection: list[st
 
         dest_file = dest_dir / item.destination
         dest_file.parent.mkdir(parents=True, exist_ok=True)
-        print_success(f"Copying {item.source} to {dest_file}")
+        print_success(f"{msg} {item.source} to {dest_file}")
 
-        # https://docs.python.org/3/library/shutil.html#shutil.copy2
-        shutil.copy2(item.source, dest_file)
+        copy_function(item.source, dest_file)
