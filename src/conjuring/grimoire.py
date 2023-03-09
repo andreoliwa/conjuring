@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 import time
@@ -7,11 +9,11 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
-from typing import Callable, Optional, Union, overload
+from typing import Callable, overload
 
 from invoke import Collection, Context, Result
 
-from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE, COLOR_YELLOW
 from conjuring.visibility import display_task
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -22,7 +24,7 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: Optional[bool] = None, **kwargs) -> Result:
+def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs) -> Result:
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
@@ -66,6 +68,11 @@ def print_error(*message: str, nl=False):
     print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
 
 
+def print_warning(*message: str, nl=False):
+    """Print a warning message."""
+    print_color(*message, color=COLOR_YELLOW, nl=nl)
+
+
 def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE) -> None:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
     print()
@@ -85,9 +92,7 @@ def run_with_fzf(c: Context, *pieces: str, query=..., multi: bool = ...) -> list
     ...
 
 
-def run_with_fzf(
-    c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs
-) -> Union[str, list[str]]:
+def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs) -> str | list[str]:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
@@ -113,7 +118,7 @@ def ignore_module(module_name: str) -> bool:
     return False
 
 
-def resolve_module_str(module_or_str: Union[types.ModuleType, str]) -> Optional[types.ModuleType]:
+def resolve_module_str(module_or_str: types.ModuleType | str) -> types.ModuleType | None:
     if isinstance(module_or_str, str):
         module = import_module(module_or_str)
         if ignore_module(module_or_str):
@@ -137,9 +142,7 @@ class SpellBook:
 
 
 # TODO: refactor: magically_add_tasks is too complex (12)
-def magically_add_tasks(  # noqa: C901
-    to_collection: Collection, from_module_or_str: Union[types.ModuleType, str]
-) -> None:
+def magically_add_tasks(to_collection: Collection, from_module_or_str: types.ModuleType | str) -> None:  # noqa: C901
     """Magically add tasks to the collection according to the module/task configuration.
 
     Task-specific configuration has precedence over the module.
@@ -222,3 +225,12 @@ def collection_from_python_files(current_module, *py_glob_patterns: str):
     magically_add_tasks(main_colllection, current_module)
 
     return main_colllection
+
+
+def lazy_env_variable(variable: str, description: str) -> str:
+    """Fetch environment variable. On error, display a message with its description."""
+    try:
+        return os.environ[variable]
+    except KeyError:
+        print_error(f"Set the {variable!r} environment variable with the {description}.")
+        raise SystemExit

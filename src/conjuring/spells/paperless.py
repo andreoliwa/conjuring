@@ -1,48 +1,45 @@
 """Wrapper tasks for papaerless commands https://github.com/paperless-ngx/paperless-ngx."""
 from __future__ import annotations
 
-import os
+import re
 import shutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import requests
 from invoke import task
 
 from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
-from conjuring.grimoire import print_error, print_success, run_lines
+from conjuring.grimoire import lazy_env_variable, print_error, print_success, print_warning, run_lines
 
 SHOULD_PREFIX = True
 
-ENV_COMPOSE_YAML = "PAPERLESS_COMPOSE_YAML"
-ENV_MEDIA_DOCUMENTS_DIR = "PAPERLESS_MEDIA_DOCUMENTS_DIR"
 USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
 ORPHAN_ARCHIVE = "archive"
 ORPHAN_ORIGINALS = "originals"
 ORPHAN_THUMBNAILS = "thumbnails"
 DOWNLOAD_DESTINATION_DIR = DOWNLOADS_DIR / __name__.rsplit(".")[-1]
+DUPLICATE_OF = " It is a duplicate of "
+REGEX_TITLE_WITH_ID = re.compile(r"(?P<name>.*) ?\(#(?P<id>\d+)\)")
 
 
 def paperless_cmd() -> str:
-    """Lazy evaluation of the docker compose command that runs paperless commands."""
-    yaml_file = os.environ.get(ENV_COMPOSE_YAML)
-    if not yaml_file:
-        raise RuntimeError(
-            "Paperless tasks can't be executed."
-            f" Set the env variable {ENV_COMPOSE_YAML} with the path of paperless Docker compose file."
-        )
+    yaml_file = lazy_env_variable("PAPERLESS_COMPOSE_YAML", "path to the Paperless Docker compose YAML file")
     return f"docker compose -f {yaml_file} exec webserver"
 
 
 def paperless_documents_dir() -> Path:
-    """Lazy evaluation of the local media documents dir."""
-    documents_dir = os.environ.get(ENV_MEDIA_DOCUMENTS_DIR)
-    if not documents_dir:
-        raise RuntimeError(
-            "Paperless tasks can't be executed."
-            f" Set the env variable {ENV_MEDIA_DOCUMENTS_DIR} with the dir where paperless stores documents."
-        )
+    documents_dir = lazy_env_variable("PAPERLESS_MEDIA_DOCUMENTS_DIR", "directory where Paperless stores documents")
     return Path(documents_dir).expanduser()
+
+
+def paperless_url() -> str:
+    return lazy_env_variable("PAPERLESS_URL", "URL where Paperless is running")
+
+
+def paperless_token() -> str:
+    return lazy_env_variable("PAPERLESS_TOKEN", "auth token to access Paperless API")
 
 
 @task
@@ -257,3 +254,57 @@ def _handle_items(fix: bool, move: bool, show_details: bool, title: str, collect
         print_success(f"{msg} {item.source} to {dest_file}")
 
         copy_function(item.source, dest_file)
+
+
+@task
+def delete_failed_duplicates(c, max_delete=100):
+    """Delete records marked as duplicate but that cannot be downloaded. So the PDF files can be reimported."""
+    session = requests.Session()
+    session.headers.update({"authorization": f"token {paperless_token()}"})
+
+    delete_count = 0
+    req_tasks = session.get(f"{paperless_url()}/api/tasks/?format=json")
+    for obj in req_tasks.json():
+        if obj["status"] != "FAILURE":
+            continue
+
+        raw_line = obj["result"]
+        if DUPLICATE_OF not in raw_line:
+            print_error(f"Unknown error: {raw_line}")
+            continue
+
+        clean_line = raw_line.replace(" Not consuming ", "").replace(DUPLICATE_OF, "")
+        first, second, duplicate_with_id = clean_line.split(":", maxsplit=2)
+        if first != second:
+            print_error(f"Files are different: {first=} / {second=}")
+        match = REGEX_TITLE_WITH_ID.match(duplicate_with_id)
+        if not match:
+            print_error(f"Line doesn't match regex {duplicate_with_id=}", clean_line)
+            continue
+
+        data = match.groupdict()
+        document_id = data["id"]
+
+        api_document_url = f"{paperless_url()}/api/documents/{document_id}/"
+        document_url = f"{paperless_url()}/documents/{document_id}"
+        url = f"{api_document_url}download/"
+        req_download = session.head(url)
+        if req_download.status_code != 404:
+            print_success(document_url, f"Document exists {req_download.status_code=}", clean_line)
+            continue
+
+        req_document = session.head(api_document_url)
+        if req_document.status_code == 404:
+            print_warning(document_url, "Document already deleted before", clean_line)
+            continue
+
+        req_delete = session.delete(api_document_url)
+        if req_delete.status_code == 204:
+            print_success(document_url, f"Document deleted #{delete_count}", clean_line)
+            delete_count += 1
+            if delete_count >= max_delete:
+                raise SystemExit
+            continue
+
+        print_error(document_url, clean_line, f"Something wrong: {req_delete.status_code=}")
+        c.run(f"open {document_url}")
