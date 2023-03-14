@@ -22,8 +22,8 @@ from conjuring.spells import (
     jrnl,
     media,
     paperless,
-    poetry,
     pre_commit,
+    python,
     shell,
 )
 
@@ -39,7 +39,7 @@ for module in [
     duplicity,
     media,
     fork,
-    poetry,
+    python,
     conjuring,
     aws,
     blanket,
