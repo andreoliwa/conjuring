@@ -6,7 +6,7 @@ from pathlib import Path
 from invoke import task
 
 from conjuring.constants import DESKTOP_DIR, DOT_DS_STORE, DOT_NO_MEDIA, DOWNLOADS_DIR, ONE_DRIVE_DIR, PICTURES_DIR
-from conjuring.grimoire import run_command, run_stdout
+from conjuring.grimoire import print_warning, run_command, run_stdout
 
 SHOULD_PREFIX = True
 
@@ -15,10 +15,11 @@ SHOULD_PREFIX = True
     help={
         "dir": "Directory to clean up. Default: current dir",
         "fd": "Use https://github.com/sharkdp/fd instead of 'find'",
+        "force": "Delete the actual files (dotfiles are always deleted). Default: False",
     },
     iterable=["dir_"],
 )
-def rm_empty_dirs(c, dir_, fd=True):
+def rm_empty_dirs(c, dir_, fd=True, force=False):
     """Remove some hidden files first, then remove empty dirs.
 
     The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
@@ -27,15 +28,19 @@ def rm_empty_dirs(c, dir_, fd=True):
         dir_ = [Path.cwd()]
 
     dirs = list({str(Path(d).expanduser().absolute()) for d in dir_})
+    xargs = "xargs -0 -n 1 rm -v"
     for hidden_file in [DOT_DS_STORE, DOT_NO_MEDIA]:
         if fd:
-            c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | xargs -0 rm -v")
+            c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | {xargs}")
         else:
             for one_dir in dirs:
-                c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | xargs -0 rm -v")
+                c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | {xargs}")
 
     f_option = " ".join([f"-f {d}/" for d in dirs[:-1]])
-    run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print -delete")
+    delete_flag = "-delete" if force else ""
+    run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print", delete_flag)
+    if not force:
+        print_warning("[DRY RUN] Run with --force to actually delete the files")
 
 
 @task
