@@ -21,6 +21,7 @@ from conjuring.spells import (
     git,
     jrnl,
     media,
+    onedrive,
     paperless,
     pre_commit,
     python,
@@ -46,5 +47,6 @@ for module in [
     docker,
     shell,
     paperless,
+    onedrive,
 ]:
     magically_add_tasks(namespace, module)
