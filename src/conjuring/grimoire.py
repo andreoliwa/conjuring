@@ -73,12 +73,12 @@ def print_warning(*message: str, nl=False):
     print_color(*message, color=COLOR_YELLOW, nl=nl)
 
 
-def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE) -> None:
+def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE) -> str:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
     print()
-    print_color(*message, color=COLOR_LIGHT_RED)
+    print_color(*message, color=color)
     time.sleep(0.2)
-    input("Press ENTER to continue or Ctrl-C to abort: ")
+    return input("Press ENTER to continue or Ctrl-C to abort: ")
 
 
 # TODO: refactor: Overloaded function signatures 1 and 2 overlap with incompatible return types
