@@ -73,12 +73,24 @@ def print_warning(*message: str, nl=False):
     print_color(*message, color=COLOR_YELLOW, nl=nl)
 
 
-def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE) -> str:
+def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: str = "") -> str:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
-    print()
-    print_color(*message, color=color)
-    time.sleep(0.2)
-    return input("Press ENTER to continue or Ctrl-C to abort: ")
+    lowercase_key_list = [char.lower() for char in allowed_keys] if allowed_keys else None
+    options = "/".join(allowed_keys) if allowed_keys else None
+    prefix = f"Type {options} +" if allowed_keys else "Press"
+
+    while True:
+        print()
+        print_color(*message, color=color)
+        time.sleep(0.2)
+
+        typed_input = input(f"{prefix} ENTER to continue or Ctrl-C to abort: ")
+        if not allowed_keys:
+            return typed_input
+
+        lowercase_key = typed_input.lower()
+        if lowercase_key in lowercase_key_list:
+            return lowercase_key
 
 
 # TODO: refactor: Overloaded function signatures 1 and 2 overlap with incompatible return types
