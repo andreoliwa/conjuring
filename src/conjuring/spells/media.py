@@ -19,7 +19,7 @@ SHOULD_PREFIX = True
     },
     iterable=["dir_"],
 )
-def rm_empty_dirs(c, dir_, fd=True, force=False):
+def rm_empty_dirs(c, dir_, force=False, fd=True):
     """Remove some hidden files first, then remove empty dirs.
 
     The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
