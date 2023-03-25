@@ -2,11 +2,20 @@ import os
 from typing import Optional
 from urllib.parse import urlparse
 
-from invoke import task
+from invoke import Context, task
 
-from conjuring.grimoire import run_command, run_with_fzf
+from conjuring.grimoire import run_command, run_lines, run_with_fzf
+
+AWS_CONFIG = "~/.aws/config"
+
+LIST_AWS_PROFILES_COMMAND = rf"rg -o '\[profile[^\]]+' {AWS_CONFIG} | cut -d ' ' -f 2"
 
 SHOULD_PREFIX = True
+
+
+def list_aws_profiles(c: Context) -> list[str]:
+    """List AWS profiles from the config file."""
+    return run_lines(c, LIST_AWS_PROFILES_COMMAND)
 
 
 def fzf_aws_profile(c, partial_name: Optional[str] = None) -> str:
@@ -16,21 +25,17 @@ def fzf_aws_profile(c, partial_name: Optional[str] = None) -> str:
             print(f"Using env variable AWS_PROFILE (set to '{aws_profile}')")
             return aws_profile
 
-    return run_with_fzf(
-        c,
-        r"rg -o '\[profile[^\]]+' ~/.aws/config | cut -d ' ' -f 2",
-        query=partial_name,
-    )
+    return run_with_fzf(c, LIST_AWS_PROFILES_COMMAND, query=partial_name)
 
 
 def fzf_aws_account(c) -> str:
     """Select an AWS account from the config file."""
-    return run_with_fzf(c, "rg -o 'aws:iam::[^:]+' ~/.aws/config | cut -d ':' -f 4 | sort -u")
+    return run_with_fzf(c, f"rg -o 'aws:iam::[^:]+' {AWS_CONFIG} | cut -d ':' -f 4 | sort -u")
 
 
 def fzf_aws_region(c) -> str:
     """Select an AWS region from the config file."""
-    return run_with_fzf(c, "rg -o '^region.+' ~/.aws/config | tr -d ' ' | cut -d'=' -f 2 | sort -u")
+    return run_with_fzf(c, f"rg -o '^region.+' {AWS_CONFIG} | tr -d ' ' | cut -d'=' -f 2 | sort -u")
 
 
 def run_aws_vault(c, *pieces, profile: Optional[str] = None):
