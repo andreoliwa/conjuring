@@ -24,7 +24,7 @@ from conjuring.spells import (
     onedrive,
     paperless,
     pre_commit,
-    python,
+    py,
     shell,
 )
 
@@ -40,7 +40,7 @@ for module in [
     duplicity,
     media,
     fork,
-    python,
+    py,
     conjuring,
     aws,
     blanket,

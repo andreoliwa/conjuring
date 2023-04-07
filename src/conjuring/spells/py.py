@@ -95,9 +95,8 @@ def install(c, force=False):
             poetry.remove_venv(poetry.parse_python_version(venv))
 
     version = poetry.guess_python_version()
-    poetry.use_venv(version)
-
     pyenv = PyEnv(c)
     pyenv.set_local(version)
+    poetry.use_venv(version)
 
     c.run("poetry install")
