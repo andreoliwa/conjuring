@@ -104,7 +104,9 @@ def run_with_fzf(c: Context, *pieces: str, query=..., multi: bool = ...) -> list
     ...
 
 
-def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, preview="", **kwargs) -> str | list[str]:
+def run_with_fzf(
+    c: Context, *pieces: str, query="", header="", multi=False, options="", preview="", **kwargs
+) -> str | list[str]:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
@@ -116,6 +118,8 @@ def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, pre
         which_function: Callable = run_lines
     else:
         which_function = run_stdout
+    if options:
+        fzf_pieces.append(options)
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
     kwargs.setdefault("hide", False)
