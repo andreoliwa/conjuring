@@ -13,6 +13,10 @@ class PyEnv:
     def __init__(self, context: Context) -> None:
         self.context = context
 
+    def has_local(self) -> bool:
+        """Check if a local Python version is set."""
+        return self.context.run("pyenv local").stdout.strip()
+
     def set_local(self, python_version: str):
         """Set the local pyenv version."""
         latest = self.list_versions(python_version)[-1]
@@ -85,18 +89,23 @@ def editable(c, inject=""):
     c.run("rm setup.py")
 
 
-@task(help={"force": "Delete all environments and recreate a single one"})
-def install(c, force=False):
+@task(help={"version": "Python version", "force": "Recreate the environment", "delete_all": "Delete all environments"})
+def install(c, version="", force=False, delete_all=False):
     """Install a Python virtual environment. For now, only works with Poetry."""
     venv_list = run_lines(c, "poetry env list", hide=False)
     poetry = Poetry(c)
-    if force:
+    if delete_all:
         for venv in venv_list:
             poetry.remove_venv(poetry.parse_python_version(venv))
 
-    version = poetry.guess_python_version()
+    if not version:
+        version = poetry.guess_python_version()
     pyenv = PyEnv(c)
-    pyenv.set_local(version)
+    if force or not pyenv.has_local():
+        # TODO: if tox.ini is present in the repo, set all versions from there
+        pyenv.set_local(version)
+    if force and not delete_all:
+        poetry.remove_venv(version)
     poetry.use_venv(version)
 
     c.run("poetry install")
