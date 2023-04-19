@@ -296,15 +296,21 @@ def tidy_up(c):
 
 
 @task(
-    help={"remote": "List remote branches (default: False)", "update": "Update the repo before merging (default: True)"}
+    help={
+        "remote": "List remote branches (default: False)",
+        "update": "Update the repo before merging (default: True)",
+        "push": "Push the merge to the remote (default: True)",
+        "rebase": "Rebase the default branch before merging (default: False)",
+    }
 )
-def merge_default(c, remote=False, update=True, push=True):
+def merge_default(c, remote=False, update=True, push=True, rebase=False):
     """Merge the default branch of the repo. Also set it with "git config", if not already set."""
     default_branch = set_default_branch(c, remote)
 
     if update:
         tidy_up(c)
-    run_command(c, "git merge", default_branch)
+    which_verb = "rebase" if rebase else "merge"
+    run_command(c, f"git {which_verb}", default_branch)
     if push:
         c.run("git push")
 
