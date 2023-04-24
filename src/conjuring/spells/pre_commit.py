@@ -42,18 +42,28 @@ def uninstall(c, gc=False, commit_msg=True):
     c.run(f"pre-commit uninstall {get_hook_types(commit_msg, installed_hooks)}")
 
 
-@task(help={"hook": "Comma-separated list of partial hook IDs (fzf will be used to match partial IDs)."})
-def run(c, hook=""):
+@task(
+    help={
+        "hooks": "Comma-separated list of partial hook IDs (fzf will be used to match them)."
+        " Use 'all', '.' or '-' to run all hooks."
+    }
+)
+def run(c, hooks):
     """Pre-commit run all hooks or a specific one. Needs fzf and yq."""
-    all_hooks = hook.split(",") if "," in hook else [hook]
+    split_hooks = hooks.split(",")
     chosen_hooks = []
-    for partial_hook in all_hooks:
-        chosen_hooks.append(
-            run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook) if hook else ""
-        )
+    for special in ("all", ".", "-"):
+        if special in split_hooks:
+            chosen_hooks.append("")
+            break
+    if not chosen_hooks:
+        for partial_hook in split_hooks:
+            chosen_hooks.append(
+                run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook, dry=False)
+            )
 
     for chosen_hook in chosen_hooks:
-        c.run(f"pre-commit run --all-files {chosen_hook}")
+        run_command(c, "pre-commit run --all-files", chosen_hook)
 
 
 @task()
