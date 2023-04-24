@@ -310,9 +310,10 @@ def merge_default(c, remote=False, update=True, push=True, rebase=False):
     if update:
         tidy_up(c)
     which_verb = "rebase" if rebase else "merge"
-    run_command(c, f"git {which_verb}", default_branch)
+    run_command(c, f"git {which_verb}", f"origin/{default_branch}")
     if push:
-        c.run("git push")
+        force_option = "--force-with-lease" if rebase else ""
+        run_command(c, "git push", force_option)
 
 
 def set_default_branch(c: Context, remote=False):
