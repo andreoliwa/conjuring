@@ -17,7 +17,8 @@ class PyEnv:
 
     def has_local(self) -> bool:
         """Check if a local Python version is set."""
-        return self.context.run("pyenv local").stdout.strip()
+        output = self.context.run("pyenv local", warn=True).stdout.strip()
+        return output and "no local version" not in output
 
     def set_local(self, python_version: str):
         """Set the local pyenv version."""
