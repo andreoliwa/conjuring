@@ -59,12 +59,15 @@ class Poetry:
 
     def guess_python_version(self):
         """Guess Python version from pyproject.toml."""
+        # TODO: rewrite this hack and use a TOML package to read the values directly
         pyproject_lines = run_lines(
             self.context, f"rg --no-line-number -e '^python ' -e python_version {PYPROJECT_TOML}"
         )
         versions: set[str] = set()
         for line in pyproject_lines:
-            clean_version = line.split("=")[1].replace("^", "").replace("~", "").strip('" ')
+            value_with_comment = line.split("=")[1]
+            value_only = value_with_comment.split("#")[0]
+            clean_version = value_only.replace("^", "").replace("~", "").strip('" ')
             versions.add(clean_version)
         if len(versions) > 1:
             print_error(f"Multiple Python versions found in {PYPROJECT_TOML}: {versions=}")
@@ -128,7 +131,7 @@ def install(c, version="", force=False, delete_all=False):
         poetry.remove_venv(version)
     poetry.use_venv(version)
 
-    c.run("poetry install")
+    c.run("poetry lock --check && poetry install")
 
 
 @task(help={"watch": "Watch for changes and re-run affected tests. Install pytest-watch and pytest-testmon first."})
