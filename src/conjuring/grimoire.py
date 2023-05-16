@@ -123,6 +123,7 @@ def run_with_fzf(
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
     kwargs.setdefault("hide", False)
+    kwargs.setdefault("pty", False)
     return which_function(c, *pieces, *fzf_pieces, **kwargs)
 
 

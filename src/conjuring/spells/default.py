@@ -21,6 +21,7 @@ from conjuring.spells import (
     git,
     jrnl,
     media,
+    mr,
     onedrive,
     paperless,
     pre_commit,
@@ -32,21 +33,23 @@ __all__ = ["namespace"]
 
 namespace = collection_from_python_files(sys.modules[__name__], "tasks.py", "conjuring*.py")
 
+# TODO: rename module to "opt_out.py"?
 # TODO: feat: import all "conjuring.spells" submodules dynamically
 for module in [
-    git,
-    pre_commit,
-    jrnl,
-    duplicity,
-    media,
-    fork,
-    py,
-    conjuring,
     aws,
     blanket,
+    conjuring,
     docker,
-    shell,
-    paperless,
+    duplicity,
+    fork,
+    git,
+    jrnl,
+    media,
+    mr,
     onedrive,
+    paperless,
+    pre_commit,
+    py,
+    shell,
 ]:
     magically_add_tasks(namespace, module)
