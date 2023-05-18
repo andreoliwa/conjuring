@@ -27,7 +27,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m mkdocs build
-      - name: Push doc to Github Page
+      - name: Push doc to Github Pages
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v2
         env:

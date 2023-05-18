@@ -1,4 +1,4 @@
-# Conjuring
+# Conjuring (test if it works)
 
 Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be
 merged with local project tasks.
