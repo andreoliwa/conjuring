@@ -3,9 +3,8 @@ name: Publish documentation
 
 on:
   push:
-# FIXME[AA]:any branch, to test until it works
-#    branches:
-#      - master
+    branches:
+      - master
 
 jobs:
   publish-documentation:
