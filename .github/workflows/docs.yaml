@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          token: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+        #   fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -21,7 +24,7 @@ jobs:
       - name: Build docs --strict --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python -m mkdocs build --strict --verbose
+        run: python -m mkdocs build --strict
       - name: Push docs to Github Pages
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v3
