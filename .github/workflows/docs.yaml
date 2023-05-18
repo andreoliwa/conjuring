@@ -1,0 +1,29 @@
+# Adapted from https://github.com/commitizen-tools/commitizen/blob/4060cc22d47761e2b5015b5f2d2484c3d65f92a5/.github/workflows/docspublish.yaml
+name: Publish documentation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: python -m pip install -U mkdocs mkdocs-material
+      - name: Build docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m mkdocs build --strict
+      - name: Push docs to Github Pages
+        # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          publish_dir: ./public
