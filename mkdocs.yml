@@ -1,0 +1,27 @@
+# Docs: https://www.mkdocs.org/user-guide/configuration/
+site_name: "Conjuring: reusable global Invoke tasks"
+site_dir: public
+repo_url: https://github.com/andreoliwa/conjuring
+
+# https://www.mkdocs.org/user-guide/configuration/#build-directories
+theme: material
+
+# https://www.mkdocs.org/user-guide/configuration/#plugins
+plugins:
+  - search
+
+# https://www.mkdocs.org/user-guide/configuration/#markdown_extensions
+markdown_extensions:
+  # https://squidfunk.github.io/mkdocs-material/reference/lists/
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+  # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
