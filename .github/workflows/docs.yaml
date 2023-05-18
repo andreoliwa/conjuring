@@ -21,10 +21,10 @@ jobs:
           python-version: "3.x"
       - name: Install dependencies
         run: python -m pip install -U mkdocs mkdocs-material
-      - name: Build docs --strict --verbose --site-dir site
+      - name: Build docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python -m mkdocs build --strict
+        run: python -m mkdocs build --strict --site-dir site
       - name: Push docs to Github Pages
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v3
