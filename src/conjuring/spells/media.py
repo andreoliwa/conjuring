@@ -10,6 +10,8 @@ from conjuring.grimoire import print_warning, run_command, run_stdout
 
 SHOULD_PREFIX = True
 
+AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma"}
+
 
 @task(
     help={
@@ -174,3 +176,18 @@ def slideshow(c, start_at=""):
     """Show pictures in the current dir with feh."""
     start_at_option = f"--start-at {start_at}" if start_at else ""
     run_command(c, "feh -r -. -g 1790x1070 -B black --caption-path .", start_at_option)
+
+
+@task(help={"dir_": "Directory with audios to transcribe"})
+def whisper(c, dir_):
+    """Transcribe multiple audio file that haven't been transcribed yet, using whisper."""
+    dir_ = Path(dir_).expanduser()
+    audios: list[Path] = []
+    for extension in AUDIO_EXTENSIONS:
+        audios.extend(dir_.glob(f"*.{extension}"))
+    for file in audios:
+        transcript_file = file.with_suffix(".txt")
+        if not transcript_file.exists():
+            c.run(f"whisper --language pt -f txt '{file}' --output_dir '{file.parent}'")
+            continue
+        c.run(f"open '{transcript_file}'")
