@@ -11,10 +11,11 @@ jobs:
   publish-documentation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          token: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
-          fetch-depth: 0
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        # with:
+        #   token: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+        #   fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -22,11 +23,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U mkdocs mkdocs-material
-      - name: Build docs
+      - name: Build docs --strict --verbose --site-dir site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m mkdocs build
+          python -m mkdocs build --strict --verbose --site-dir site
       - name: Push doc to Github Pages
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v2
