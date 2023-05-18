@@ -24,11 +24,10 @@ jobs:
       - name: Build docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python -m mkdocs build --strict --site-dir site
+        run: python -m mkdocs build --strict
       - name: Push docs to Github Pages
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v3
-        env:
-          PERSONAL_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: ./site
+        with:
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          publish_dir: ./public
