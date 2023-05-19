@@ -49,7 +49,7 @@ def uninstall(c, gc=False, commit_msg=True):
     }
 )
 def run(c, hooks):
-    """Pre-commit run all hooks or a specific one. Needs fzf and yq."""
+    """Pre-commit run all hooks or a specific one. Don't stop on failures. Needs fzf and yq."""
     split_hooks = hooks.split(",")
     chosen_hooks = []
     for special in ("all", ".", "-"):
@@ -63,7 +63,7 @@ def run(c, hooks):
             )
 
     for chosen_hook in chosen_hooks:
-        run_command(c, "pre-commit run --all-files", chosen_hook)
+        run_command(c, "pre-commit run --all-files", chosen_hook, warn=True)
 
 
 @task()
