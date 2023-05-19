@@ -16,7 +16,15 @@ pytest = "*"
 [tool.commitizen]
 name = "cz_conventional_commits"
 version = "0.1.0"
-tag_format = "0.1.0"
+
+# https://commitizen-tools.github.io/commitizen/bump/#configuration
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true
+
+# https://commitizen-tools.github.io/commitizen/changelog/#configuration
+changelog_file = "docs/CHANGELOG.md"
+changelog_incremental = true
 
 [build-system]
 # Support PEP 660 hooks (editable packages)

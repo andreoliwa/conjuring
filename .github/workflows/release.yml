@@ -1,15 +1,11 @@
-name: Bump version
-
-on:
-  push:
-    branches:
-      - master
+name: Release new version
+on: workflow_dispatch
 
 jobs:
-  bump-version:
+  bump-changelog-release:
     if: "!startsWith(github.event.head_commit.message, 'bump:')"
     runs-on: ubuntu-latest
-    name: "Bump version and create changelog with commitizen"
+    name: "Bump version, create changelog with commitizen, create GitHub release"
     steps:
       - name: Check out
         uses: actions/checkout@v3

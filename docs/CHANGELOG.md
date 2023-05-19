@@ -1,3 +1,5 @@
+# Changelog
+
 ## 0.1.0 (2023-05-19)
 
 ### Feat
@@ -58,7 +60,7 @@
 - display tasks conditionally
 - merge any tasks.py with Conjuring tasks
 - **pre-commit**: autoupdate one or all hooks
-- use __CONJURING_PREFIX__ to namespace tasks
+- use **CONJURING_PREFIX** to namespace tasks
 - install a Poetry package as editable
 - default module with all conjuring tasks
 - fork tasks in a separate module
@@ -67,7 +69,7 @@
 - **duplicity**: choose a directory when restoring
 - backup/restore with Duplicity
 - **onedrive**: current year first, then others
-- list dirs with _Copy files
+- list dirs with \_Copy files
 - unhide Picasa originals dir
 - merge original dirs
 - merge copy dirs
@@ -131,7 +133,7 @@
 - show Telegram dir after current year dir
 - don't limit jrnl entries by default
 - jrnl improvements
-- allow invoke*.py files
+- allow invoke\*.py files
 - pty=False to remove colors
 
 ### Refactor
