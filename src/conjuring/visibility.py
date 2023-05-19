@@ -29,7 +29,7 @@ def is_poetry_project() -> bool:
 
 
 def _has_poetry_line(fpath: Path) -> bool:
-    return any(re.search(POETRY_LINE, line) for line in fpath.open())
+    return any(re.search(POETRY_LINE, line) for line in fpath.open(encoding="utf-8"))
 
 
 def display_task(task: Task, module_flag: bool) -> bool:

@@ -78,9 +78,6 @@ def test_module_with_magic_task(my_collection):
     assert_tasks(my_collection, ["depends-on-the-module-config", "this-task-is-always-visible"])
 
 
-@pytest.mark.skipif(sys.version_info.minor == 10, reason="UnicodeDecodeError on python3.10")
-# TODO: failing on Python 3.10 with UnicodeDecodeError: 'charmap' codec can't decode
-#  byte 0x90 in position 71: character maps to <undefined>
 def test_detects_this_project_as_poetry_project(my_collection):
     """Assumes this project has a valid pyproject.toml."""
     # TODO: add tests for non-poetry projects with pyproject.toml still present
