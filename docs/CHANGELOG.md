@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.0 (2023-05-19)
+
+### Fix
+
+- read pyproject.toml with UTF-8 encoding
+
 ## 0.1.0 (2023-05-19)
 
 ### Feat
