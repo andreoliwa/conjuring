@@ -13,6 +13,11 @@ requests = "*"
 [tool.poetry.dev-dependencies]
 pytest = "*"
 
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.0.1"
+tag_format = "0.1.0"
+
 [build-system]
 # Support PEP 660 hooks (editable packages)
 # https://github.com/python-poetry/poetry-core/pull/182#issuecomment-1005195851
