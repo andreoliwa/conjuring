@@ -1,9 +1,14 @@
 name: Python
 
-on: [workflow_dispatch, pull_request, push]
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    # Don't run this workflow when tags are pushed (it already runs for commits to master)
+    tags-ignore: ["v*"]
 
 jobs:
-  python-check:
+  test:
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
