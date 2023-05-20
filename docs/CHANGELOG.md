@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0 (2023-05-20)
+
+### Feat
+
+- choose which tasks you want to load (opt-in/opt-out)
+
 ## v0.2.1 (2023-05-20)
 
 ### Fix
