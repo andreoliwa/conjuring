@@ -5,7 +5,8 @@ on:
   pull_request:
   push:
     # Don't run this workflow when tags are pushed (it already runs for commits to master)
-    tags-ignore: ["v*"]
+#    tags-ignore: ["v*"]
+# TODO: tags-ignore didn't work as expected: the workflow didn't run at all
 
 jobs:
   test:
