@@ -5,13 +5,16 @@ merged with local project tasks.
 
 ## Features
 
-Click on the links below to see details about each feature:
+- Merge any local `tasks.py` file with global Conjuring tasks
+- Use all global Conjuring tasks provided by this package
+- Only include the global Conjuring tasks you want (opt-in mode)
+- Use all Conjuring tasks excluding some (opt-out mode)
+- Display your custom task modules conditionally
+- Display your custom individual tasks conditionally
+- Merge your project tasks with the global reusable tasks
+- Prefix task names of your custom module
 
-- [Display modules conditionally](https://andreoliwa.github.io/conjuring/features/#display-modules-conditionally)
-- [Display individual tasks conditionally](https://andreoliwa.github.io/conjuring/features/#display-individual-tasks-conditionally)
-- [Merge local tasks with the global tasks on the home directory](https://andreoliwa.github.io/conjuring/features/#merge-local-tasks-with-the-global-tasks-on-the-home-directory)
-- [Merge any tasks.py with Conjuring tasks](https://andreoliwa.github.io/conjuring/features/#merge-any-taskspy-with-conjuring-tasks)
-- [Prefix task names of a module](https://andreoliwa.github.io/conjuring/features/#prefix-task-names-of-a-module)
+More details on the [features documentation](https://andreoliwa.github.io/conjuring/features/).
 
 ## Tasks
 
@@ -35,7 +38,7 @@ is a collection of Invoke tasks.
 3. Create a `tasks.py` file on your home dir:
 
    ```shell
-    echo "from conjuring.spells.default import *" > ~/tasks.py
+   echo -e "from conjuring import *\n\nnamespace = cast_all_spells()" > ~/tasks.py
    ```
 
 4. You should see the list of Conjuring tasks from any directory where you type this:

@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import fnmatch
 import os
 import sys
 import time
 import types
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from typing import Callable, overload
 
-from invoke import Collection, Context, Result
+from invoke import Collection, Context, Result, Task
 
 from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE, COLOR_YELLOW
 from conjuring.visibility import display_task
@@ -151,6 +153,15 @@ def slugify(name: str) -> str:
     return name.replace(".", "_")
 
 
+def guess_full_task_name(prefix: str | None, name: str) -> str:
+    """Guess how Invoke will name this task.
+
+    NOTE: this is unstable and may break because Invoke has no public API to get the final task name.
+    """
+    formatted_task_name = slugify(name).replace("_", "-")
+    return f"{prefix}.{formatted_task_name}" if prefix else formatted_task_name
+
+
 @dataclass
 class SpellBook:
     prefix: str
@@ -158,8 +169,43 @@ class SpellBook:
     display_all_tasks: bool
 
 
-# TODO: refactor: magically_add_tasks is too complex (12)
-def magically_add_tasks(to_collection: Collection, from_module_or_str: types.ModuleType | str) -> None:  # noqa: C901
+def _is_task_present(name: str, list_: list[str] | None) -> bool:
+    if not list_:
+        return True
+    for element in list_:
+        if fnmatch.fnmatch(name, element):
+            return True
+    return False
+
+
+def add_single_task_to(
+    collection: Collection,
+    task: Task,
+    include: list[str] | None,
+    exclude: list[str] | None,
+    *,
+    prefix: str | None,
+    task_name: str | None,
+) -> bool:
+    guessed_name = guess_full_task_name(prefix, task.name)
+    should_include = not include or _is_task_present(guessed_name, include)
+    should_exclude = exclude and _is_task_present(guessed_name, exclude)
+    if should_include and not should_exclude:
+        if task_name:
+            collection.add_task(task, task_name)
+        else:
+            collection.add_task(task)
+        return True
+    return False
+
+
+def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is too complex (12)
+    to_collection: Collection,
+    from_module_or_str: types.ModuleType | str,
+    *,
+    include: Sequence[str] = None,
+    exclude: Sequence[str] = None,
+) -> None:
     """Magically add tasks to the collection according to the module/task configuration.
 
     Task-specific configuration has precedence over the module.
@@ -191,17 +237,18 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: types.Mod
         if t.name in to_collection.tasks and resolved_module:
             # Task already exists with the same name: add a suffix
             clean_name = slugify(resolved_module.__name__)
-            to_collection.add_task(t, f"{t.name}-{clean_name}")
+            new_task_name = f"{t.name}-{clean_name}"
+            add_single_task_to(to_collection, t, include, exclude, prefix=None, task_name=new_task_name)
         else:
             # The module doesn't have a prefix: add the task directly
-            to_collection.add_task(t)
+            add_single_task_to(to_collection, t, include, exclude, prefix=None, task_name=None)
 
     for prefix, spell_book_set in prefixed_spell_books.items():
         for spell_book in spell_book_set:
             sub_collection = Collection()
             for t in Collection.from_module(spell_book.module).tasks.values():
                 if display_task(t, spell_book.display_all_tasks):
-                    sub_collection.add_task(t)
+                    add_single_task_to(sub_collection, t, include, exclude, prefix=prefix, task_name=None)
 
             try:
                 to_collection.add_collection(sub_collection, prefix)
@@ -212,7 +259,12 @@ def magically_add_tasks(to_collection: Collection, from_module_or_str: types.Mod
                 raise
 
 
-def collection_from_python_files(current_module, *py_glob_patterns: str):
+def collection_from_python_files(
+    current_module,
+    *py_glob_patterns: str,
+    include: Sequence[str] = None,
+    exclude: Sequence[str] = None,
+):
     """Create a custom collection by adding tasks from multiple files.
 
     Search directories for glob patterns:
@@ -236,10 +288,10 @@ def collection_from_python_files(current_module, *py_glob_patterns: str):
                 if file.stat().st_ino == current_inode:
                     # Don't add this file twice
                     continue
-                magically_add_tasks(main_colllection, file.stem)
+                magically_add_tasks(main_colllection, file.stem, include=include, exclude=exclude)
         sys.path.pop(0)
 
-    magically_add_tasks(main_colllection, current_module)
+    magically_add_tasks(main_colllection, current_module, include=include, exclude=exclude)
 
     return main_colllection
 

@@ -32,7 +32,7 @@ def _has_poetry_line(fpath: Path) -> bool:
     return any(re.search(POETRY_LINE, line) for line in fpath.open(encoding="utf-8"))
 
 
-def display_task(task: Task, module_flag: bool) -> bool:
+def display_task(task: Task, module_flag: bool) -> bool:  # TODO: refactor: rename to should_display_task
     if isinstance(task, MagicTask):
         # This is our custom task, let's check its visibility before the module
         return task.should_display()

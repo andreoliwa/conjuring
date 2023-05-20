@@ -1,6 +1,68 @@
 # Features
 
-## Display modules conditionally
+## Merge any local `tasks.py` file with global Conjuring tasks
+
+If you create a `tasks.py` in a project, it will override the Conjuring
+`tasks.py` on your home dir.
+You will only see your local project tasks.
+
+To avoid that, go to your home dir and run:
+
+```shell
+invoke conjuring.setup
+```
+
+This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_summon.py`.
+
+For more details, read about [default configuration values on Configuration —
+Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values).
+
+## Use all global Conjuring tasks provided by this package
+
+If you want to use all tasks included in this package, you can import them all.
+
+```python
+from conjuring import *
+
+namespace = cast_all_spells()
+```
+
+Run `invoke --list` from any directory, and you will see all Conjuring tasks.
+
+## Only include the global Conjuring tasks you want (opt-in mode)
+
+You may want to choose which Conjuring modules and tasks you want to use.
+
+Suppose you only want:
+
+- AWS;
+- Kubernetes;
+- pre-commit;
+- Python;
+- all tasks that install anything.
+
+This is how you can do it:
+
+```python
+from conjuring import *
+
+namespace = cast_only_spells("aws*", "k8s*", "pre-commit*", "py*", "*install")
+```
+
+## Use all Conjuring tasks excluding some (opt-out mode)
+
+You may want to use all Conjuring modules and tasks, except for a few.
+
+Suppose you want all Conjuring tasks except media and OneDrive tasks.
+This is the way:
+
+```python
+from conjuring import *
+
+namespace = cast_all_spells_except("media*", "onedrive*")
+```
+
+## Display your custom task modules conditionally
 
 Some modules under the `spells` directory have a `should_display_tasks` boolean
 function to control whether the tasks are displayed or not.
@@ -8,7 +70,7 @@ function to control whether the tasks are displayed or not.
 The `conjuring.visibility` module has boolean functions that can be reused by
 your modules and tasks.
 
-Example for the `conjuring.spells.git` module:
+Example from the `conjuring.spells.git` module:
 
 ```python
 from conjuring.visibility import is_git_repo, ShouldDisplayTasks
@@ -16,14 +78,14 @@ from conjuring.visibility import is_git_repo, ShouldDisplayTasks
 should_display_tasks: ShouldDisplayTasks = is_git_repo
 ```
 
-Other examples of usage:
+Other use cases:
 
 - [Poetry](https://github.com/python-poetry/poetry/) tasks: display only when
   there is a `pyproject.toml` in the current dir;
 - [pre-commit](https://github.com/pre-commit/pre-commit) tasks: display only
   when there is a `.pre-commit-config.yaml` file in the current dir.
 
-## Display individual tasks conditionally
+## Display your custom individual tasks conditionally
 
 A task can have its own visibility settings, even if the owner module is
 configured to not display tasks.
@@ -56,9 +118,9 @@ Use case:
 - you still want some individual tasks to always be displayed;
 - or you want different conditions to display certain tasks.
 
-## Merge local tasks with the global tasks on the home directory
+## Merge your project tasks with the global reusable tasks
 
-Create local `conjuring*.py` files and it will be merged with the `tasks.py`
+Create local `conjuring*.py` files, and they will be merged with the `tasks.py`
 in your home dir.
 Your project dir can be anywhere under your home dir.
 
@@ -97,27 +159,10 @@ Your project dir can be anywhere under your home dir.
 
      my-bar               My bar task.
      my-foo               My foo task.
-     <... the Conjuring tasks will show up here...>
+     <... the global Conjuring tasks will show up here...>
    ```
 
-## Merge any tasks.py with Conjuring tasks
-
-If you create a `tasks.py` in a project, it will override the Conjuring
-`tasks.py` on your home dir.
-You will only see your local project tasks.
-
-To avoid that, go to your home dir and run:
-
-```shell
-invoke conjuring.setup
-```
-
-This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_summon.py`.
-
-For more details, read about [default configuration values on Configuration —
-Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values).
-
-## Prefix task names of a module
+## Prefix task names of your custom module
 
 If the module defines this boolean constant with a value of `True`, then the
 name of the module will be added as a prefix to tasks.

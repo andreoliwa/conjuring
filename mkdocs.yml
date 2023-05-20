@@ -4,9 +4,21 @@ site_dir: public
 repo_url: https://github.com/andreoliwa/conjuring
 
 # https://www.mkdocs.org/user-guide/configuration/#build-directories
-theme: material
+theme:
+  name: material
+  language: en
+  # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/
+  palette:
+    primary: deep orange
 
-# https://www.mkdocs.org/user-guide/configuration/#plugins
+# TODO: fail build if some page is missing from nav
+nav:
+  - README.md
+  - features.md
+  - related.md
+  - CHANGELOG.md
+
+  # https://www.mkdocs.org/user-guide/configuration/#plugins
 plugins:
   - search
 

@@ -23,7 +23,7 @@ def deploy(c):
     c.run("mkdocs gh-deploy")
 
 
-@task
+@task(pre=[build])
 def serve(c):
     """Start the live-reloading server to test the docs locally."""
     c.run("mkdocs serve")
