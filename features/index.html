@@ -9,13 +9,13 @@
       
       
       
-        <link rel="prev" href="../CHANGELOG/">
+        <link rel="prev" href="..">
       
       
         <link rel="next" href="../related/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.13">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
@@ -24,6 +24,9 @@
     
     
       <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
       
       
 
@@ -49,11 +52,14 @@
   </head>
   
   
-    <body dir="ltr">
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="indigo">
   
     
-    
-      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -102,6 +108,8 @@
         </div>
       </div>
     </div>
+    
+      
     
     
     
@@ -219,21 +227,6 @@
 
   
   
-  
-    <li class="md-nav__item">
-      <a href="../CHANGELOG/" class="md-nav__link">
-        Changelog
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
     
   
   
@@ -270,36 +263,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#display-modules-conditionally" class="md-nav__link">
-    Display modules conditionally
+  <a href="#merge-any-local-taskspy-file-with-global-conjuring-tasks" class="md-nav__link">
+    Merge any local tasks.py file with global Conjuring tasks
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#display-individual-tasks-conditionally" class="md-nav__link">
-    Display individual tasks conditionally
+  <a href="#use-all-global-conjuring-tasks-provided-by-this-package" class="md-nav__link">
+    Use all global Conjuring tasks provided by this package
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#merge-local-tasks-with-the-global-tasks-on-the-home-directory" class="md-nav__link">
-    Merge local tasks with the global tasks on the home directory
+  <a href="#only-include-the-global-conjuring-tasks-you-want-opt-in-mode" class="md-nav__link">
+    Only include the global Conjuring tasks you want (opt-in mode)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#merge-any-taskspy-with-conjuring-tasks" class="md-nav__link">
-    Merge any tasks.py with Conjuring tasks
+  <a href="#use-all-conjuring-tasks-excluding-some-opt-out-mode" class="md-nav__link">
+    Use all Conjuring tasks excluding some (opt-out mode)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#prefix-task-names-of-a-module" class="md-nav__link">
-    Prefix task names of a module
+  <a href="#display-your-custom-task-modules-conditionally" class="md-nav__link">
+    Display your custom task modules conditionally
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#display-your-custom-individual-tasks-conditionally" class="md-nav__link">
+    Display your custom individual tasks conditionally
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge-your-project-tasks-with-the-global-reusable-tasks" class="md-nav__link">
+    Merge your project tasks with the global reusable tasks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prefix-task-names-of-your-custom-module" class="md-nav__link">
+    Prefix task names of your custom module
   </a>
   
 </li>
@@ -322,6 +336,21 @@
     <li class="md-nav__item">
       <a href="../related/" class="md-nav__link">
         Related projects
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        Changelog
       </a>
     </li>
   
@@ -354,36 +383,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#display-modules-conditionally" class="md-nav__link">
-    Display modules conditionally
+  <a href="#merge-any-local-taskspy-file-with-global-conjuring-tasks" class="md-nav__link">
+    Merge any local tasks.py file with global Conjuring tasks
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#display-individual-tasks-conditionally" class="md-nav__link">
-    Display individual tasks conditionally
+  <a href="#use-all-global-conjuring-tasks-provided-by-this-package" class="md-nav__link">
+    Use all global Conjuring tasks provided by this package
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#merge-local-tasks-with-the-global-tasks-on-the-home-directory" class="md-nav__link">
-    Merge local tasks with the global tasks on the home directory
+  <a href="#only-include-the-global-conjuring-tasks-you-want-opt-in-mode" class="md-nav__link">
+    Only include the global Conjuring tasks you want (opt-in mode)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#merge-any-taskspy-with-conjuring-tasks" class="md-nav__link">
-    Merge any tasks.py with Conjuring tasks
+  <a href="#use-all-conjuring-tasks-excluding-some-opt-out-mode" class="md-nav__link">
+    Use all Conjuring tasks excluding some (opt-out mode)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#prefix-task-names-of-a-module" class="md-nav__link">
-    Prefix task names of a module
+  <a href="#display-your-custom-task-modules-conditionally" class="md-nav__link">
+    Display your custom task modules conditionally
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#display-your-custom-individual-tasks-conditionally" class="md-nav__link">
+    Display your custom individual tasks conditionally
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge-your-project-tasks-with-the-global-reusable-tasks" class="md-nav__link">
+    Merge your project tasks with the global reusable tasks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prefix-task-names-of-your-custom-module" class="md-nav__link">
+    Prefix task names of your custom module
   </a>
   
 </li>
@@ -407,45 +457,85 @@
 
 
 <h1 id="features">Features</h1>
-<h2 id="display-modules-conditionally">Display modules conditionally</h2>
+<h2 id="merge-any-local-taskspy-file-with-global-conjuring-tasks">Merge any local <code>tasks.py</code> file with global Conjuring tasks</h2>
+<p>If you create a <code>tasks.py</code> in a project, it will override the Conjuring
+<code>tasks.py</code> on your home dir.
+You will only see your local project tasks.</p>
+<p>To avoid that, go to your home dir and run:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>invoke<span class="w"> </span>conjuring.setup
+</span></code></pre></div>
+<p>This will create an <code>~/.invoke.yaml</code> file and rename your main tasks file to <code>~/conjuring_summon.py</code>.</p>
+<p>For more details, read about <a href="https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values">default configuration values on Configuration —
+Invoke documentation</a>.</p>
+<h2 id="use-all-global-conjuring-tasks-provided-by-this-package">Use all global Conjuring tasks provided by this package</h2>
+<p>If you want to use all tasks included in this package, you can import them all.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">conjuring</span> <span class="kn">import</span> <span class="o">*</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">cast_all_spells</span><span class="p">()</span>
+</span></code></pre></div>
+<p>Run <code>invoke --list</code> from any directory, and you will see all Conjuring tasks.</p>
+<h2 id="only-include-the-global-conjuring-tasks-you-want-opt-in-mode">Only include the global Conjuring tasks you want (opt-in mode)</h2>
+<p>You may want to choose which Conjuring modules and tasks you want to use.</p>
+<p>Suppose you only want:</p>
+<ul>
+<li>AWS;</li>
+<li>Kubernetes;</li>
+<li>pre-commit;</li>
+<li>Python;</li>
+<li>all tasks that install anything.</li>
+</ul>
+<p>This is how you can do it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">conjuring</span> <span class="kn">import</span> <span class="o">*</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">cast_only_spells</span><span class="p">(</span><span class="s2">&quot;aws*&quot;</span><span class="p">,</span> <span class="s2">&quot;k8s*&quot;</span><span class="p">,</span> <span class="s2">&quot;pre-commit*&quot;</span><span class="p">,</span> <span class="s2">&quot;py*&quot;</span><span class="p">,</span> <span class="s2">&quot;*install&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="use-all-conjuring-tasks-excluding-some-opt-out-mode">Use all Conjuring tasks excluding some (opt-out mode)</h2>
+<p>You may want to use all Conjuring modules and tasks, except for a few.</p>
+<p>Suppose you want all Conjuring tasks except media and OneDrive tasks.
+This is the way:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">conjuring</span> <span class="kn">import</span> <span class="o">*</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">cast_all_spells_except</span><span class="p">(</span><span class="s2">&quot;media*&quot;</span><span class="p">,</span> <span class="s2">&quot;onedrive*&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="display-your-custom-task-modules-conditionally">Display your custom task modules conditionally</h2>
 <p>Some modules under the <code>spells</code> directory have a <code>should_display_tasks</code> boolean
 function to control whether the tasks are displayed or not.</p>
 <p>The <code>conjuring.visibility</code> module has boolean functions that can be reused by
 your modules and tasks.</p>
-<p>Example for the <code>conjuring.spells.git</code> module:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">conjuring.visibility</span> <span class="kn">import</span> <span class="n">is_git_repo</span><span class="p">,</span> <span class="n">ShouldDisplayTasks</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">should_display_tasks</span><span class="p">:</span> <span class="n">ShouldDisplayTasks</span> <span class="o">=</span> <span class="n">is_git_repo</span>
+<p>Example from the <code>conjuring.spells.git</code> module:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">conjuring.visibility</span> <span class="kn">import</span> <span class="n">is_git_repo</span><span class="p">,</span> <span class="n">ShouldDisplayTasks</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">should_display_tasks</span><span class="p">:</span> <span class="n">ShouldDisplayTasks</span> <span class="o">=</span> <span class="n">is_git_repo</span>
 </span></code></pre></div>
-<p>Other examples of usage:</p>
+<p>Other use cases:</p>
 <ul>
 <li><a href="https://github.com/python-poetry/poetry/">Poetry</a> tasks: display only when
   there is a <code>pyproject.toml</code> in the current dir;</li>
 <li><a href="https://github.com/pre-commit/pre-commit">pre-commit</a> tasks: display only
   when there is a <code>.pre-commit-config.yaml</code> file in the current dir.</li>
 </ul>
-<h2 id="display-individual-tasks-conditionally">Display individual tasks conditionally</h2>
+<h2 id="display-your-custom-individual-tasks-conditionally">Display your custom individual tasks conditionally</h2>
 <p>A task can have its own visibility settings, even if the owner module is
 configured to not display tasks.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">conjuring.visibility</span> <span class="kn">import</span> <span class="n">MagicTask</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">def</span> <span class="nf">an_always_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A MagicTask is always visible by default.</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    It will always be displayed in every directory,</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">        regardless of the module ``should_display_tasks()`` function.</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="k">pass</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">,</span> <span class="n">should_display</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="k">def</span> <span class="nf">a_conditionally_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;You can use any boolean function to determine visibility.&quot;&quot;&quot;</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="k">pass</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span> <span class="nn">conjuring.visibility</span> <span class="kn">import</span> <span class="n">MagicTask</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">def</span> <span class="nf">an_always_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A MagicTask is always visible by default.</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="sd">    It will always be displayed in every directory,</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="sd">        regardless of the module ``should_display_tasks()`` function.</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">pass</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">,</span> <span class="n">should_display</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="k">def</span> <span class="nf">a_conditionally_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;You can use any boolean function to determine visibility.&quot;&quot;&quot;</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="k">pass</span>
 </span></code></pre></div>
 <p>Use case:</p>
 <ul>
@@ -453,60 +543,50 @@ configured to not display tasks.</p>
 <li>you still want some individual tasks to always be displayed;</li>
 <li>or you want different conditions to display certain tasks.</li>
 </ul>
-<h2 id="merge-local-tasks-with-the-global-tasks-on-the-home-directory">Merge local tasks with the global tasks on the home directory</h2>
-<p>Create local <code>conjuring*.py</code> files and it will be merged with the <code>tasks.py</code>
+<h2 id="merge-your-project-tasks-with-the-global-reusable-tasks">Merge your project tasks with the global reusable tasks</h2>
+<p>Create local <code>conjuring*.py</code> files, and they will be merged with the <code>tasks.py</code>
 in your home dir.
 Your project dir can be anywhere under your home dir.</p>
 <ol>
 <li>Create <code>~/path/to/your/project/conjuring_foo.py</code> with Invoke tasks.</li>
 </ol>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nd">@task</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">def</span> <span class="nf">my_foo</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My foo task.&quot;&quot;&quot;</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">pass</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nd">@task</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span> <span class="nf">my_foo</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My foo task.&quot;&quot;&quot;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="k">pass</span>
 </span></code></pre></div>
 <ol>
 <li>Create another <code>~/path/to/your/project/conjuring_bar.py</code> file with more
    Invoke tasks.</li>
 </ol>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nd">@task</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span> <span class="nf">my_bar</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My bar task.&quot;&quot;&quot;</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="k">pass</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span> <span class="nn">invoke</span> <span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nd">@task</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">def</span> <span class="nf">my_bar</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My bar task.&quot;&quot;&quot;</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">pass</span>
 </span></code></pre></div>
 <ol>
 <li>The task list in your project dir will show tasks from all files, including
    the home dir task list.</li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/path/to/your/project/
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>$<span class="w"> </span>invoke<span class="w"> </span>--list
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Available<span class="w"> </span>tasks:
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>my-bar<span class="w">               </span>My<span class="w"> </span>bar<span class="w"> </span>task.
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>my-foo<span class="w">               </span>My<span class="w"> </span>foo<span class="w"> </span>task.
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>&lt;...<span class="w"> </span>the<span class="w"> </span>Conjuring<span class="w"> </span>tasks<span class="w"> </span>will<span class="w"> </span>show<span class="w"> </span>up<span class="w"> </span>here...&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/path/to/your/project/
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>$<span class="w"> </span>invoke<span class="w"> </span>--list
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>Available<span class="w"> </span>tasks:
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>my-bar<span class="w">               </span>My<span class="w"> </span>bar<span class="w"> </span>task.
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span>my-foo<span class="w">               </span>My<span class="w"> </span>foo<span class="w"> </span>task.
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span>&lt;...<span class="w"> </span>the<span class="w"> </span>global<span class="w"> </span>Conjuring<span class="w"> </span>tasks<span class="w"> </span>will<span class="w"> </span>show<span class="w"> </span>up<span class="w"> </span>here...&gt;
 </span></code></pre></div>
-<h2 id="merge-any-taskspy-with-conjuring-tasks">Merge any tasks.py with Conjuring tasks</h2>
-<p>If you create a <code>tasks.py</code> in a project, it will override the Conjuring
-<code>tasks.py</code> on your home dir.
-You will only see your local project tasks.</p>
-<p>To avoid that, go to your home dir and run:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>invoke<span class="w"> </span>conjuring.setup
-</span></code></pre></div>
-<p>This will create an <code>~/.invoke.yaml</code> file and rename your main tasks file to <code>~/conjuring_summon.py</code>.</p>
-<p>For more details, read about <a href="https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values">default configuration values on Configuration —
-Invoke documentation</a>.</p>
-<h2 id="prefix-task-names-of-a-module">Prefix task names of a module</h2>
+<h2 id="prefix-task-names-of-your-custom-module">Prefix task names of your custom module</h2>
 <p>If the module defines this boolean constant with a value of <code>True</code>, then the
 name of the module will be added as a prefix to tasks.</p>
 <p>Example for the <code>conjuring.spells.pre_commit</code> module:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">SHOULD_PREFIX</span> <span class="o">=</span> <span class="kc">True</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">SHOULD_PREFIX</span> <span class="o">=</span> <span class="kc">True</span>
 </span></code></pre></div>
 <p>All the tasks of this module will have a <code>pre-commit.</code> prefix when you run
 <code>invoke --list</code>.</p>
