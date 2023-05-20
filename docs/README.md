@@ -7,11 +7,11 @@ merged with local project tasks.
 
 Click on the links below to see details about each feature:
 
-- [Display modules conditionally](features.md#display-modules-conditionally)
-- [Display individual tasks conditionally](features.md#display-individual-tasks-conditionally)
-- [Merge local tasks with the global tasks on the home directory](features.md#merge-local-tasks-with-the-global-tasks-on-the-home-directory)
-- [Merge any tasks.py with Conjuring tasks](features.md#merge-any-taskspy-with-conjuring-tasks)
-- [Prefix task names of a module](features.md#prefix-task-names-of-a-module)
+- [Display modules conditionally](https://andreoliwa.github.io/conjuring/features/#display-modules-conditionally)
+- [Display individual tasks conditionally](https://andreoliwa.github.io/conjuring/features/#display-individual-tasks-conditionally)
+- [Merge local tasks with the global tasks on the home directory](https://andreoliwa.github.io/conjuring/features/#merge-local-tasks-with-the-global-tasks-on-the-home-directory)
+- [Merge any tasks.py with Conjuring tasks](https://andreoliwa.github.io/conjuring/features/#merge-any-taskspy-with-conjuring-tasks)
+- [Prefix task names of a module](https://andreoliwa.github.io/conjuring/features/#prefix-task-names-of-a-module)
 
 ## Tasks
 
@@ -29,8 +29,7 @@ is a collection of Invoke tasks.
 2. Install Conjuring from GitHub, injecting it directly into the isolated virtualenv:
 
    ```shell
-   # Conjuring doesn't have a PyPI package... yet
-   pipx inject invoke git+https://github.com/andreoliwa/conjuring
+   pipx inject invoke conjuring
    ```
 
 3. Create a `tasks.py` file on your home dir:

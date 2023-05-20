@@ -60,7 +60,7 @@ class MyRepos:
     }
 )
 def grep(c, search_text, config="", echo=False):
-    """Grep mr repositories with a seacrh text and print the directories in which the text was found.
+    """Grep mr repositories with a search text and print the directories in which the text was found.
 
     Needs mr to be preconfigured with files starting with the ".mrconfig" prefix.
     """
