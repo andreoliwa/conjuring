@@ -89,7 +89,7 @@ def cleanup(c, browse=False):
         "organize": "Call 'organize run' before categorizing",
         "browse": "Open dir on Finder",
         "empty": "Check dirs that are not empty but should be",
-    }
+    },
 )
 def categorize(c, organize=True, browse=True, empty=True):
     """Open directories with files/photos that have to be categorized/moved/renamed."""

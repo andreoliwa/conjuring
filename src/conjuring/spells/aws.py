@@ -20,10 +20,9 @@ def list_aws_profiles(c: Context) -> list[str]:
 
 def fzf_aws_profile(c, partial_name: Optional[str] = None) -> str:
     """Select an AWS profile from a partial profile name using fzf."""
-    if not partial_name and (aws_profile := os.environ.get("AWS_PROFILE")):
-        if aws_profile:
-            print(f"Using env variable AWS_PROFILE (set to '{aws_profile}')")
-            return aws_profile
+    if not partial_name and (aws_profile := os.environ.get("AWS_PROFILE")) and aws_profile:
+        print(f"Using env variable AWS_PROFILE (set to '{aws_profile}')")
+        return aws_profile
 
     return run_with_fzf(c, LIST_AWS_PROFILES_COMMAND, query=partial_name)
 

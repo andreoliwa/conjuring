@@ -39,7 +39,11 @@ def cast_all_spells_except(*exclude: str) -> Collection:  # TODO: test
 def _cast_chosen_spells(*, include: Optional[Sequence[str]], exclude: Optional[Sequence[str]]) -> Collection:
     """Load the chosen spell modules dynamically and add their tasks to the namespace."""
     namespace = collection_from_python_files(
-        sys.modules[__name__], "tasks.py", "conjuring*.py", include=include, exclude=exclude
+        sys.modules[__name__],
+        "tasks.py",
+        "conjuring*.py",
+        include=include,
+        exclude=exclude,
     )
 
     spell_dir = (Path(__file__).parent / "spells").absolute()

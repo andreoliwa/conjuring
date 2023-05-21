@@ -47,7 +47,8 @@ class Git:
     def default_branch(self) -> str:
         """Return the default branch name (master/main/develop/development)."""
         return run_stdout(
-            self.context, "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1"
+            self.context,
+            "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1",
         )
 
     def checkout(self, *branches: str) -> str:
@@ -109,7 +110,7 @@ def switch_url_to(c, remote="origin", https=False):
         "new_project_dir": "Dir of the project to be created. The dir might exist or not",
         "reset": "Remove the new dir and start over",
         "keep": "Keep branches and remote after the extracting is done",
-    }
+    },
 )
 def extract_subtree(c, new_project_dir, reset=False, keep=False):
     """Extract files from subdirectories of the current Git repo to another repo, using git subtree.
@@ -136,7 +137,7 @@ def extract_subtree(c, new_project_dir, reset=False, keep=False):
             header="Use TAB to choose the files you want to KEEP",
             multi=True,
             preview="test -f {} && head -20 {} || echo FILE NOT FOUND, IT EXISTS ONLY IN GIT HISTORY",
-        )
+        ),
     )
     sub_dirs = {part.rsplit("/", 1)[0] for part in chosen_files}
     obliterate = set(all_files.difference(chosen_files))
@@ -213,7 +214,7 @@ def extract_subtree(c, new_project_dir, reset=False, keep=False):
         "files": "Display all files in Git history, even the ones that were deleted and don't exist anymore",
         "author": "Display authors",
         "dates": "Display committer and author dates in different colors",
-    }
+    },
 )
 def history(c, full=False, files=False, author=False, dates=False):
     """Grep the whole Git log and display information."""
@@ -236,7 +237,7 @@ def history(c, full=False, files=False, author=False, dates=False):
                 print_error("Red = dates are different")
                 print(
                     "Commit                                   Committer Date            "
-                    "Author Date               GPG key          Subject"
+                    "Author Date               GPG key          Subject",
                 )
                 header = False
 
@@ -246,7 +247,8 @@ def history(c, full=False, files=False, author=False, dates=False):
             func = print_success if committer_date == author_date else print_error
             func(*fields)
     if not option_chosen:
-        raise Exit("Choose at least one option: --full, --files, --author, --dates", 1)
+        msg = "Choose at least one option: --full, --files, --author, --dates"
+        raise Exit(msg, 1)
 
 
 @task(
@@ -254,7 +256,7 @@ def history(c, full=False, files=False, author=False, dates=False):
         "commit": "Base commit to be used for the range (default: --root)",
         "gpg": "Sign the commit (default: True)",
         "author": "Set the current author (from 'git config') on the commit range",
-    }
+    },
 )
 def rewrite(c, commit="--root", gpg=True, author=True):
     """Rewrite a range of commits, signing with GPG and setting the author.
@@ -274,7 +276,7 @@ def rewrite(c, commit="--root", gpg=True, author=True):
     c.run(
         "git rebase --committer-date-is-author-date --exec 'GIT_COMMITTER_DATE="
         '$(fgrep -m 1 "$(git log -1 --format="%aI %s" $GIT_COMMIT)" $TMPDIR/rebase_sign_hashlist'
-        f' | cut -d" " -f3) git commit --amend --no-edit -n{author_flag}{gpg_flag}\' -i {commit}'
+        f' | cut -d" " -f3) git commit --amend --no-edit -n{author_flag}{gpg_flag}\' -i {commit}',
     )
     history(c, dates=True)
     print()
@@ -301,7 +303,7 @@ def tidy_up(c):
         "update": "Update the repo before merging (default: True)",
         "push": "Push the merge to the remote (default: True)",
         "rebase": "Rebase the default branch before merging (default: False)",
-    }
+    },
 )
 def merge_default(c, remote=False, update=True, push=True, rebase=False):
     """Merge the default branch of the repo. Also set it with "git config", if not already set."""
@@ -338,7 +340,7 @@ def set_default_branch(c: Context, remote=False):
         "tag": "Name of the tag to compare to (default: last created tag)",
         "files": "Display files instead of commits (default: false)",
         "verbose": "Files: display changes/insertions/deletion. Commits: display the full commit message, author... (default: False)",
-    }
+    },
 )
 def changes_since_tag(c, tag="", files=False, verbose=False):
     """Display changes (commits or files) since the last tag (or a chosen tag)."""
@@ -368,7 +370,7 @@ def watch(c):
     help={
         "prefix": "Keep the Conventional Commits prefix",
         "sort": "Sort bullets",
-    }
+    },
 )
 def body(c, prefix=True, sort=True):
     """Prepare a commit body to be used on pull requests and squashed commits."""

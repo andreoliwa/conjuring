@@ -93,10 +93,18 @@ class OrphanFile:
         "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
         "fix": "Fix broken files by copying them to the downloads dir",
         "move": "Move files instead of copying",
-    }
+    },
 )
 def sanity(
-    c, hide=True, orphans=False, thumbnails=False, documents=False, unknown=True, together=False, fix=False, move=False
+    c,
+    hide=True,
+    orphans=False,
+    thumbnails=False,
+    documents=False,
+    unknown=True,
+    together=False,
+    fix=False,
+    move=False,
 ):
     """Sanity checker. Optionally fix orphan files (copies or movies them to the download dir).
 
@@ -105,7 +113,8 @@ def sanity(
     # Fail fast if the env var is not set
     documents_dir = paperless_documents_dir() if fix else None
     if documents_dir and not documents_dir.exists():
-        raise RuntimeError(f"Documents directory doesn't exist: {documents_dir}")
+        msg = f"Documents directory doesn't exist: {documents_dir}"
+        raise RuntimeError(msg)
 
     # TODO: fix(paperless): implement dry-run mode with dry=False and actually avoid files being copied/moved
     lines = run_lines(c, paperless_cmd(), "document_sanity_checker", hide=hide, warn=True, pty=True)
@@ -173,7 +182,9 @@ def _process_orphans(partial_path, documents_dir, original_or_archive_files, orp
 
 
 def _split_original_archive(
-    original_or_archive_files: dict[str, list[OrphanFile]], partial_path: Path, documents_dir: Path | None = None
+    original_or_archive_files: dict[str, list[OrphanFile]],
+    partial_path: Path,
+    documents_dir: Path | None = None,
 ):
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
     expanded_parts = []
@@ -214,7 +225,7 @@ def _split_matched_unmatched(
                     if str(match_path).startswith(ORPHAN_ARCHIVE):
                         # Append ORPHAN_ARCHIVE to the file stem
                         orphan_file.destination = file_without_first_part.with_stem(
-                            f"{match_path.stem}-{ORPHAN_ARCHIVE}"
+                            f"{match_path.stem}-{ORPHAN_ARCHIVE}",
                         )
                     else:
                         orphan_file.destination = file_without_first_part

@@ -10,7 +10,7 @@ SHOULD_PREFIX = True
         "container": "Container name to remove (regexp)",
         "all_": "All containers",
         "exited": "Exited containers",
-    }
+    },
 )
 def rm_containers(c, container="", all_=False, exited=False):
     """Remove Docker containers."""

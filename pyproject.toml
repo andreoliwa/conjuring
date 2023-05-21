@@ -50,3 +50,114 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
+
+[tool.ruff]
+# https://beta.ruff.rs/docs/settings/#select
+select = ["ALL"]
+
+# https://beta.ruff.rs/docs/settings/#show-fixes
+show-fixes = true
+
+# https://beta.ruff.rs/docs/settings/#ignore
+ignore = [
+    "ERA", # https://beta.ruff.rs/docs/rules/#eradicate-era
+    "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
+    "TD003", # Missing issue link on the line following this
+]
+
+# https://beta.ruff.rs/docs/settings/#line-length
+line-length = 120
+
+# https://beta.ruff.rs/docs/settings/#target-version
+target-version = "py39"
+
+# https://beta.ruff.rs/docs/settings/#src
+src = ["src"]
+
+# https://beta.ruff.rs/docs/rules/#flake8-quotes-q
+[tool.ruff.flake8-quotes]
+inline-quotes = "double"
+
+# https://beta.ruff.rs/docs/rules/#mccabe-c90
+[tool.ruff.mccabe]
+# https://beta.ruff.rs/docs/settings/#max-complexity
+max-complexity = 10
+
+# https://beta.ruff.rs/docs/settings/#per-file-ignores
+[tool.ruff.per-file-ignores]
+# D103 Missing docstring in public function
+# D100 Missing docstring in public module https://beta.ruff.rs/docs/rules/?q=D100
+# S101 Use of ? detected https://beta.ruff.rs/docs/rules/?q=S101
+"tests/**" = [
+    "D103",
+    "D100",
+    "S101",
+]
+# TODO: Ignores to fix
+# A001 Variable ? is shadowing a Python builtin https://beta.ruff.rs/docs/rules/?q=A001
+# A002 Argument ? is shadowing a Python builtin https://beta.ruff.rs/docs/rules/?q=A002
+# ANN001 Missing type annotation for function argument ? https://beta.ruff.rs/docs/rules/?q=ANN001
+# ANN002 Missing type annotation for ? https://beta.ruff.rs/docs/rules/?q=ANN002
+# ANN003 Missing type annotation for ? https://beta.ruff.rs/docs/rules/?q=ANN003
+# ANN101 Missing type annotation for ? in method https://beta.ruff.rs/docs/rules/?q=ANN101
+# ANN201 Missing return type annotation for public function ? https://beta.ruff.rs/docs/rules/?q=ANN201
+# ANN202 Missing return type annotation for private function ? https://beta.ruff.rs/docs/rules/?q=ANN202
+# ANN204 Missing return type annotation for special method ? https://beta.ruff.rs/docs/rules/?q=ANN204
+# ARG001 Unused function argument: ? https://beta.ruff.rs/docs/rules/?q=ARG001
+# B904 Within an ? clause, raise exceptions with ? or ? to distinguish them from errors in exception handling https://beta.ruff.rs/docs/rules/?q=B904
+# D100 Missing docstring in public module https://beta.ruff.rs/docs/rules/?q=D100
+# D101 Missing docstring in public class https://beta.ruff.rs/docs/rules/?q=D101
+# D102 Missing docstring in public method https://beta.ruff.rs/docs/rules/?q=D102
+# D103 Missing docstring in public function https://beta.ruff.rs/docs/rules/?q=D103
+# D104 Missing docstring in public package https://beta.ruff.rs/docs/rules/?q=D104
+# D105 Missing docstring in magic method https://beta.ruff.rs/docs/rules/?q=D105
+# D107 Missing docstring in ? https://beta.ruff.rs/docs/rules/?q=D107
+# D401 First line of docstring should be in imperative mood: "Setup Conjuring on your home dir." https://beta.ruff.rs/docs/rules/?q=D401
+# DTZ011 The use of ? is not allowed, use ? instead https://beta.ruff.rs/docs/rules/?q=DTZ011
+# E402 Module level import not at top of file https://beta.ruff.rs/docs/rules/?q=E402
+# E501 Line too long (134 > 120 characters) https://beta.ruff.rs/docs/rules/?q=E501
+# FBT001 Boolean positional arg in function definition https://beta.ruff.rs/docs/rules/?q=FBT001
+# FBT002 Boolean default value in function definition https://beta.ruff.rs/docs/rules/?q=FBT002
+# FBT003 Boolean positional value in function call https://beta.ruff.rs/docs/rules/?q=FBT003
+# ISC003 Explicitly concatenated string should be implicitly concatenated https://beta.ruff.rs/docs/rules/?q=ISC003
+# PGH003 Use specific rule codes when ignoring type issues https://beta.ruff.rs/docs/rules/?q=PGH003
+# PLR0913 Too many arguments to function call (15 > 5),Too many arguments to function call (6 > 5),Too many arguments to function call (7 > 5),Too many arguments to function call (9 > 5) https://beta.ruff.rs/docs/rules/?q=PLR0913
+# PLR2004 Magic value used in comparison, consider replacing 1900 with a constant variable,Magic value used in comparison, consider replacing 2 with a constant variable,Magic value used in comparison, consider replacing 204 with a constant variable,Magic value used in comparison, consider replacing 4 with a constant variable,Magic value used in comparison, consider replacing 404 with a constant variable https://beta.ruff.rs/docs/rules/?q=PLR2004
+# PLR5501 Consider using ? instead of ? then ? to remove one indentation level https://beta.ruff.rs/docs/rules/?q=PLR5501
+# RET504 Unnecessary variable assignment before ? statement https://beta.ruff.rs/docs/rules/?q=RET504
+# RET508 Unnecessary ? after ? statement https://beta.ruff.rs/docs/rules/?q=RET508
+# T201 ? found https://beta.ruff.rs/docs/rules/?q=T201
+# TCH003 Move standard library import ? into a type-checking block https://beta.ruff.rs/docs/rules/?q=TCH003
+# TRY300 Consider moving this statement to an ? block https://beta.ruff.rs/docs/rules/?q=TRY300
+"src/conjuring/colors.py" = ["D100"]
+"src/conjuring/constants.py" = ["D100"]
+"src/conjuring/grimoire.py" = ["ANN001", "ANN003", "ANN201", "B904", "D100", "D101", "D103", "PLR0913", "T201", "TCH003"]
+"src/conjuring/spells/__init__.py" = ["D104"]
+"src/conjuring/spells/aws.py" = ["ANN001", "ANN002", "ANN201", "D100", "D103", "T201"]
+"src/conjuring/spells/blanket.py" = ["ANN001", "ANN101", "ANN201", "ANN204", "D101", "D105", "FBT002", "ISC003", "PGH003", "PLR0913", "T201"]
+"src/conjuring/spells/conjuring.py" = ["ANN001", "ANN201", "D100", "D401", "FBT002", "PLR5501", "T201"]
+"src/conjuring/spells/docker.py" = ["ANN001", "ANN201", "D100", "FBT002"]
+"src/conjuring/spells/duplicity.py" = ["ANN001", "ANN201", "D100", "D103", "T201"]
+"src/conjuring/spells/fork.py" = ["ANN001", "ANN201", "D100"]
+"src/conjuring/spells/git.py" = ["ANN001", "ANN101", "ANN201", "D100", "D101", "D102", "D107", "E501", "FBT002", "T201", "TRY300"]
+"src/conjuring/spells/jrnl.py" = ["A001", "ANN001", "ANN201", "D100", "FBT002", "PLR0913"]
+"src/conjuring/spells/k8s.py" = ["ANN001", "ANN101", "ANN201", "FBT002"]
+"src/conjuring/spells/media.py" = ["ANN001", "ANN201", "D100", "DTZ011", "FBT002", "RET508", "T201"]
+"src/conjuring/spells/mkdocs.py" = ["ANN001", "ANN201"]
+"src/conjuring/spells/mr.py" = ["ANN001", "ANN101", "ANN201", "D101", "FBT002", "T201"]
+"src/conjuring/spells/onedrive.py" = ["ANN001", "ANN201", "D100", "T201"]
+"src/conjuring/spells/paperless.py" = ["ANN001", "ANN101", "ANN201", "ANN202", "ANN204", "D101", "D103", "D105", "FBT001", "FBT002", "FBT003", "PLR0913", "PLR2004", "T201", "TCH003"]
+"src/conjuring/spells/pre_commit.py" = ["ANN001", "ANN201", "ANN202", "D100", "FBT001", "FBT002"]
+"src/conjuring/spells/py.py" = ["ANN001", "ANN101", "ANN201", "ANN202", "D100", "D101", "D102", "D107", "FBT001", "FBT002", "FBT003", "PLR0913", "RET504", "T201"]
+"src/conjuring/spells/shell.py" = ["ANN001", "ANN201"]
+"src/conjuring/visibility.py" = ["A002", "ANN001", "ANN101", "ANN201", "D100", "D101", "D103", "D107", "FBT001", "FBT002", "PLR0913"]
+"tests/__init__.py" = ["D104"]
+"tests/fixtures/__init__.py" = ["D104"]
+"tests/fixtures/conditional.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/fixtures/magic.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/fixtures/not_prefixed.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/fixtures/prefixed.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/fixtures/root.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/fixtures/same.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/glob_this.py" = ["ANN001", "ANN201", "ARG001"]
+"tests/test_conjuring.py" = ["ANN001", "ANN201", "ARG001", "E402"]

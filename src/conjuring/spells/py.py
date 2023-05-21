@@ -1,4 +1,7 @@
+import re
+from collections import defaultdict
 from pathlib import Path
+from textwrap import dedent
 from typing import Optional
 
 from invoke import Context, task
@@ -10,6 +13,8 @@ SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_poetry_project
 
 PYPROJECT_TOML = "pyproject.toml"
+REGEX_RUFF_LINE = re.compile(r"^(?P<filename>.*?):\d+:\d+: (?P<code>.*?)(?P<message> .*)$")
+REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
 
 
 class PyEnv:
@@ -44,8 +49,11 @@ class Poetry:
         """Check if Poetry is being used."""
         used = int(
             run_command(
-                self.context, f"grep tool.poetry {PYPROJECT_TOML} 2>/dev/null | wc -c", hide=True, warn=True
-            ).stdout.strip()
+                self.context,
+                f"grep tool.poetry {PYPROJECT_TOML} 2>/dev/null | wc -c",
+                hide=True,
+                warn=True,
+            ).stdout.strip(),
         )
         if not used and display_error:
             print_error("This task only works with Poetry projects (so far).")
@@ -62,7 +70,8 @@ class Poetry:
         """Guess Python version from pyproject.toml."""
         # TODO: rewrite this hack and use a TOML package to read the values directly
         pyproject_lines = run_lines(
-            self.context, f"rg --no-line-number -e '^python ' -e python_version {PYPROJECT_TOML}"
+            self.context,
+            f"rg --no-line-number -e '^python ' -e python_version {PYPROJECT_TOML}",
         )
         versions: set[str] = set()
         for line in pyproject_lines:
@@ -167,7 +176,7 @@ def coverage(c, show_all=False):
         "pudb": "Install https://pypi.org/project/pudb/",
         "icecream": "Install https://pypi.org/project/icecream/",
         "devtools": "Install https://pypi.org/project/devtools/",
-    }
+    },
 )
 def debug_tools(c, all_=False, ipython=False, ipdb=False, pudb=False, icecream=False, devtools=False):
     """Install debug tools."""
@@ -183,3 +192,62 @@ def debug_tools(c, all_=False, ipython=False, ipdb=False, pudb=False, icecream=F
         "devtools[pygments]" if devtools or all_ else "",
     ]
     run_command(c, "poetry run pip install --upgrade", *tools)
+
+
+@task
+def ruff_config(c):
+    """Generate ruff configuration from existing warnings."""
+    # TODO: feat: check if the global ruff is installed and use it if it is
+    ignore: dict[str, set[str]] = defaultdict(set)
+    per_file_ignores: dict[str, set[str]] = defaultdict(set)
+    for line in run_lines(c, "pre-commit run --all-files ruff", warn=True):
+        if line.startswith("warning:"):
+            print(line)
+            continue
+
+        match = REGEX_RUFF_LINE.match(line)
+        if not match:
+            continue
+
+        filename = match.group("filename")
+        code = match.group("code")
+        message = match.group("message")
+        clean_message = REGEX_RUFF_MESSAGE.sub("?", message)
+
+        ignore[code].add(clean_message.strip())
+        per_file_ignores[filename].add(code)
+
+    def _print_ruff_codes(ignore_section: bool):
+        for _code, messages in sorted(ignore.items()):
+            joined_messages = ",".join(sorted(messages))
+            if ignore_section:
+                print(f'    "{_code}", # {joined_messages}', end="")
+            else:
+                print(f"# {_code} {joined_messages}", end="")
+            print(f" https://beta.ruff.rs/docs/rules/?q={_code}")
+
+    # TODO: edit pyproject.toml existing config for both sections,
+    #  skipping existing lines and adding new codes at the bottom
+    if ignore:
+        header = """
+            # https://beta.ruff.rs/docs/settings/#ignore
+            ignore = [
+                # Ignores to keep
+                # TODO: Ignores to fix
+        """
+        print(dedent(header).strip())
+        _print_ruff_codes(True)
+        print("]\n")
+
+    if per_file_ignores:
+        header = """
+            # https://beta.ruff.rs/docs/settings/#per-file-ignores
+            [tool.ruff.per-file-ignores]
+            # Ignores to keep
+            # TODO: Ignores to fix
+        """
+        print(dedent(header).strip())
+        _print_ruff_codes(False)
+        for file, codes in sorted(per_file_ignores.items()):
+            sorted_codes = '", "'.join(sorted(codes))
+            print(f'"{file}" = ["{sorted_codes}"]')

@@ -12,7 +12,8 @@ def remote(c, username, remote=""):
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
     """
     if username.startswith("-"):
-        raise Exit("Arguments should be: username [--remote]")
+        msg = "Arguments should be: username [--remote]"
+        raise Exit(msg)
     if not remote:
         remote = username
 

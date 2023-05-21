@@ -20,10 +20,7 @@ class MyRepos:
     def find_configs(self, partial_name: str, echo=False) -> list[Path]:
         """Find config files in the current dir or dirs above."""
         lower_partial_name = partial_name.lower()
-        if not lower_partial_name:
-            glob_pattern = MRCONFIG_FILE
-        else:
-            glob_pattern = f"{MRCONFIG_FILE}*{lower_partial_name}*"
+        glob_pattern = MRCONFIG_FILE if not lower_partial_name else f"{MRCONFIG_FILE}*{lower_partial_name}*"
         config_dir = self._find_dir_with_mrconfigs(glob_pattern)
         if not config_dir:
             msg = f"No {MRCONFIG_FILE}* file was found in {Path.cwd()} or its parents"
@@ -57,7 +54,7 @@ class MyRepos:
     help={
         "config": f"Specific config file to use. Use fzf if multiple are found. Default: {MRCONFIG_FILE}",
         "echo": "Echo the commands being executed, for debugging purposes. Default: False",
-    }
+    },
 )
 def grep(c, search_text, config="", echo=False):
     """Grep mr repositories with a search text and print the directories in which the text was found.

@@ -7,7 +7,9 @@ from invoke import Task
 POETRY_LINE = re.compile(r"\[tool\..*poetry\]")
 ShouldDisplayTasks = Callable[[], bool]
 
-always_visible: ShouldDisplayTasks = lambda: True
+
+def always_visible():
+    return True
 
 
 def has_pre_commit_config_yaml() -> bool:
@@ -58,7 +60,7 @@ class MagicTask(Task):
         iterable=None,
         incrementable=None,
         should_display: ShouldDisplayTasks = always_visible,
-    ):
+    ) -> None:
         self.should_display: ShouldDisplayTasks = should_display
         super().__init__(
             body,

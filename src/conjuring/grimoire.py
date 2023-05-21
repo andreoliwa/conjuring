@@ -118,10 +118,7 @@ def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, opt
 
 def ignore_module(module_name: str) -> bool:
     """Ignore a module by its name."""
-    for ignore_str in CONJURING_IGNORE_MODULES:
-        if ignore_str and ignore_str in module_name:
-            return True
-    return False
+    return any(ignore_str and ignore_str in module_name for ignore_str in CONJURING_IGNORE_MODULES)
 
 
 def resolve_module_str(module_or_str: types.ModuleType | str) -> types.ModuleType | None:
@@ -159,10 +156,7 @@ class SpellBook:
 def _is_task_present(name: str, list_: Sequence[str] | None) -> bool:
     if not list_:
         return True
-    for element in list_:
-        if fnmatch.fnmatch(name, element):
-            return True
-    return False
+    return any(fnmatch.fnmatch(name, element) for element in list_)
 
 
 def add_single_task_to(

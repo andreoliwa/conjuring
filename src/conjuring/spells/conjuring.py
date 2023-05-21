@@ -13,7 +13,7 @@ should_display_tasks: ShouldDisplayTasks = is_home_dir
     help={
         "edit": "Open the config file with $EDITOR",
         "revert": "Revert the changes and go back to using tasks.py as the default tasks file",
-    }
+    },
 )
 def setup(c, edit=False, revert=False):
     """Setup Conjuring on your home dir."""

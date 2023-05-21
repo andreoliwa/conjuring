@@ -45,8 +45,8 @@ def uninstall(c, gc=False, commit_msg=True):
 @task(
     help={
         "hooks": "Comma-separated list of partial hook IDs (fzf will be used to match them)."
-        " Use 'all', '.' or '-' to run all hooks."
-    }
+        " Use 'all', '.' or '-' to run all hooks.",
+    },
 )
 def run(c, hooks):
     """Pre-commit run all hooks or a specific one. Don't stop on failures. Needs fzf and yq."""
@@ -59,7 +59,7 @@ def run(c, hooks):
     if not chosen_hooks:
         for partial_hook in split_hooks:
             chosen_hooks.append(
-                run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook, dry=False)
+                run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook, dry=False),
             )
 
     for chosen_hook in chosen_hooks:

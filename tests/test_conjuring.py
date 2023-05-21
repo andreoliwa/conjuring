@@ -11,7 +11,7 @@ from conjuring import visibility
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 
 
-@pytest.fixture
+@pytest.fixture()
 def my_collection():
     return Collection("mine")
 

@@ -51,7 +51,7 @@ class Location:
         "invalid": "When using cz check, print invalid to-do items",
         "short": "Short format: only the description, without the lines of code where to-do items were found",
         "priority": f"Show only higher priority tasks ({FIX_ME})",
-    }
+    },
 )
 def todo(c, cz=False, valid=True, invalid=True, short=False, priority=False):
     """List to-dos and fix-mes in code. Optionally check if the description follows Conventional Commits (cz check)."""

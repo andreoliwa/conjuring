@@ -36,4 +36,3 @@ def completion_uninstall(c, app):
         with c.cd(completion_dir):
             c.run(f"rm -v {app}*", warn=True)
     completion_list(c)
-    return
