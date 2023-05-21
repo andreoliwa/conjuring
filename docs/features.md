@@ -9,10 +9,10 @@ You will only see your local project tasks.
 To avoid that, go to your home dir and run:
 
 ```shell
-invoke conjuring.setup
+invoke conjuring.init
 ```
 
-This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_summon.py`.
+This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_init.py`.
 
 For more details, read about [default configuration values on Configuration —
 Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values).

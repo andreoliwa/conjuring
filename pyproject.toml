@@ -61,6 +61,8 @@ show-fixes = true
 # https://beta.ruff.rs/docs/settings/#ignore
 ignore = [
     "ERA", # https://beta.ruff.rs/docs/rules/#eradicate-era
+    "D203", # 1 blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the second line
     "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
     "TD003", # Missing issue link on the line following this
 ]
