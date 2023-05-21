@@ -404,24 +404,20 @@ merged with local project tasks.</p>
 is a collection of Invoke tasks.</p>
 <h2 id="quick-setup">Quick setup</h2>
 <ol>
-<li>Install invoke in an isolated virtualenv with <a href="https://github.com/pypa/pipx">pipx</a>:</li>
+<li>Install Conjuring in an isolated virtualenv with <a href="https://github.com/pypa/pipx">pipx</a>:</li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipx<span class="w"> </span>install<span class="w"> </span>invoke
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipx<span class="w"> </span>install<span class="w"> </span>--include-deps<span class="w"> </span>conjuring
 </span></code></pre></div>
-<ol>
-<li>Install Conjuring from GitHub, injecting it directly into the isolated virtualenv:</li>
-</ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pipx<span class="w"> </span>inject<span class="w"> </span>invoke<span class="w"> </span>conjuring
-</span></code></pre></div>
+<p>The <code>--include-deps</code> flag is needed to install Invoke's apps (<code>invoke</code> and <code>inv</code>).</p>
 <ol>
 <li>Create a <code>tasks.py</code> file on your home dir:</li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;from conjuring import *\n\nnamespace = cast_all_spells()&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>~/tasks.py
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;from conjuring import *\n\nnamespace = cast_all_spells()&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>~/tasks.py
 </span></code></pre></div>
 <ol>
 <li>You should see the list of Conjuring tasks from any directory where you type this:</li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>invoke<span class="w"> </span>--list
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>invoke<span class="w"> </span>--list
 </span></code></pre></div>
 
 
