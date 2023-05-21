@@ -22,9 +22,10 @@ Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration
 If you want to use all tasks included in this package, you can import them all.
 
 ```python
-from conjuring import *
+# ~/conjuring_init.py
+from conjuring import Spellbook
 
-namespace = cast_all_spells()
+namespace = Spellbook().cast_all()
 ```
 
 Run `invoke --list` from any directory, and you will see all Conjuring tasks.
@@ -44,9 +45,10 @@ Suppose you only want:
 This is how you can do it:
 
 ```python
-from conjuring import *
+# ~/conjuring_init.py
+from conjuring import Spellbook
 
-namespace = cast_only_spells("aws*", "k8s*", "pre-commit*", "py*", "*install")
+namespace = Spellbook().cast_only("aws*", "k8s*", "pre-commit*", "py*", "*install")
 ```
 
 ## Use all Conjuring tasks excluding some (opt-out mode)
@@ -57,9 +59,36 @@ Suppose you want all Conjuring tasks except media and OneDrive tasks.
 This is the way:
 
 ```python
-from conjuring import *
+# ~/conjuring_init.py
+from conjuring import Spellbook
 
-namespace = cast_all_spells_except("media*", "onedrive*")
+namespace = Spellbook().cast_all_except("media*", "onedrive*")
+```
+
+## Add your own custom tasks from Python modules or packages to global tasks
+
+You can create your own Python modules or packages with Invoke tasks, and they
+can be added to the global scope and be available from any directory.
+
+- On the init file, call `import_dirs()` with the path to your modules or packages;
+- The import method detects if the directory is a Python package or not,
+  and imports it accordingly;
+- The example uses `cast_all()`, but you can use any of the other `cast_*`
+  methods described above ([opt-in](#only-include-the-global-conjuring-tasks-you-want-opt-in-mode)
+  or [opt-out](#use-all-conjuring-tasks-excluding-some-opt-out-mode)).
+
+```python
+# ~/conjuring_init.py
+from conjuring import Spellbook
+
+namespace = (
+    Spellbook()
+    .import_dirs(
+        "~/path/to/your/src/my_package",
+        "~/path/to/a/some-directory-with-py-files",
+    )
+    .cast_all()
+)
 ```
 
 ## Display your custom task modules conditionally
@@ -73,6 +102,7 @@ your modules and tasks.
 Example from the `conjuring.spells.git` module:
 
 ```python
+# /path/to/your_task_module.py
 from conjuring.visibility import is_git_repo, ShouldDisplayTasks
 
 should_display_tasks: ShouldDisplayTasks = is_git_repo
@@ -91,6 +121,7 @@ A task can have its own visibility settings, even if the owner module is
 configured to not display tasks.
 
 ```python
+# /path/to/another_task_module.py
 from invoke import task
 from conjuring.visibility import MagicTask
 from random import randint
@@ -124,43 +155,41 @@ Create local `conjuring*.py` files, and they will be merged with the `tasks.py`
 in your home dir.
 Your project dir can be anywhere under your home dir.
 
-1. Create `~/path/to/your/project/conjuring_foo.py` with Invoke tasks.
+Create two modules with Invoke tasks:
 
-   ```python
-   from invoke import task
-
-
-   @task
-   def my_foo(c):
-       """My foo task."""
-       pass
-   ```
-
-2. Create another `~/path/to/your/project/conjuring_bar.py` file with more
-   Invoke tasks.
-
-   ```python
-   from invoke import task
+```python
+# ~/path/to/project/conjuring_foo.py
+from invoke import task
 
 
-   @task
-   def my_bar(c):
-       """My bar task."""
-       pass
-   ```
+@task
+def my_foo(c):
+    """My foo task."""
+    pass
 
-3. The task list in your project dir will show tasks from all files, including
-   the home dir task list.
 
-   ```shell
-   $ cd ~/path/to/your/project/
-   $ invoke --list
-   Available tasks:
+# ~/path/to/project/conjuring_bar.py
+from invoke import task
 
-     my-bar               My bar task.
-     my-foo               My foo task.
-     <... the global Conjuring tasks will show up here...>
-   ```
+
+@task
+def my_bar(c):
+    """My bar task."""
+    pass
+```
+
+The task list in your project dir will show tasks from all files, including
+the home dir task list.
+
+```shell
+$ cd ~/path/to/project/
+$ invoke --list
+Available tasks:
+
+ my-bar               My bar task.
+ my-foo               My foo task.
+ <... the global Conjuring tasks will show up here...>
+```
 
 ## Prefix task names of your custom module
 

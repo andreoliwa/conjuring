@@ -60,7 +60,9 @@ show-fixes = true
 
 # https://beta.ruff.rs/docs/settings/#ignore
 ignore = [
+    "ANN101", # Missing type annotation for ? in method
     "ERA", # https://beta.ruff.rs/docs/rules/#eradicate-era
+    "D107", # Missing docstring in ? https://beta.ruff.rs/docs/rules/?q=D107
     "D203", # 1 blank line required before class docstring
     "D213", # Multi-line docstring summary should start at the second line
     "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
@@ -101,7 +103,6 @@ max-complexity = 10
 # ANN001 Missing type annotation for function argument ? https://beta.ruff.rs/docs/rules/?q=ANN001
 # ANN002 Missing type annotation for ? https://beta.ruff.rs/docs/rules/?q=ANN002
 # ANN003 Missing type annotation for ? https://beta.ruff.rs/docs/rules/?q=ANN003
-# ANN101 Missing type annotation for ? in method https://beta.ruff.rs/docs/rules/?q=ANN101
 # ANN201 Missing return type annotation for public function ? https://beta.ruff.rs/docs/rules/?q=ANN201
 # ANN202 Missing return type annotation for private function ? https://beta.ruff.rs/docs/rules/?q=ANN202
 # ANN204 Missing return type annotation for special method ? https://beta.ruff.rs/docs/rules/?q=ANN204
@@ -113,7 +114,6 @@ max-complexity = 10
 # D103 Missing docstring in public function https://beta.ruff.rs/docs/rules/?q=D103
 # D104 Missing docstring in public package https://beta.ruff.rs/docs/rules/?q=D104
 # D105 Missing docstring in magic method https://beta.ruff.rs/docs/rules/?q=D105
-# D107 Missing docstring in ? https://beta.ruff.rs/docs/rules/?q=D107
 # D401 First line of docstring should be in imperative mood: "Setup Conjuring on your home dir." https://beta.ruff.rs/docs/rules/?q=D401
 # DTZ011 The use of ? is not allowed, use ? instead https://beta.ruff.rs/docs/rules/?q=DTZ011
 # E402 Module level import not at top of file https://beta.ruff.rs/docs/rules/?q=E402
@@ -136,23 +136,23 @@ max-complexity = 10
 "src/conjuring/grimoire.py" = ["ANN001", "ANN003", "ANN201", "B904", "D100", "D101", "D103", "PLR0913", "T201", "TCH003"]
 "src/conjuring/spells/__init__.py" = ["D104"]
 "src/conjuring/spells/aws.py" = ["ANN001", "ANN002", "ANN201", "D100", "D103", "T201"]
-"src/conjuring/spells/blanket.py" = ["ANN001", "ANN101", "ANN201", "ANN204", "D101", "D105", "FBT002", "ISC003", "PGH003", "PLR0913", "T201"]
+"src/conjuring/spells/blanket.py" = ["ANN001", "ANN201", "ANN204", "D101", "D105", "FBT002", "ISC003", "PGH003", "PLR0913", "T201"]
 "src/conjuring/spells/conjuring.py" = ["ANN001", "ANN201", "D100", "D401", "FBT002", "PLR5501", "T201"]
 "src/conjuring/spells/docker.py" = ["ANN001", "ANN201", "D100", "FBT002"]
 "src/conjuring/spells/duplicity.py" = ["ANN001", "ANN201", "D100", "D103", "T201"]
 "src/conjuring/spells/fork.py" = ["ANN001", "ANN201", "D100"]
-"src/conjuring/spells/git.py" = ["ANN001", "ANN101", "ANN201", "D100", "D101", "D102", "D107", "E501", "FBT002", "T201", "TRY300"]
+"src/conjuring/spells/git.py" = ["ANN001", "ANN201", "D100", "D101", "D102", "E501", "FBT002", "T201", "TRY300"]
 "src/conjuring/spells/jrnl.py" = ["A001", "ANN001", "ANN201", "D100", "FBT002", "PLR0913"]
-"src/conjuring/spells/k8s.py" = ["ANN001", "ANN101", "ANN201", "FBT002"]
+"src/conjuring/spells/k8s.py" = ["ANN001", "ANN201", "FBT002"]
 "src/conjuring/spells/media.py" = ["ANN001", "ANN201", "D100", "DTZ011", "FBT002", "RET508", "T201"]
 "src/conjuring/spells/mkdocs.py" = ["ANN001", "ANN201"]
-"src/conjuring/spells/mr.py" = ["ANN001", "ANN101", "ANN201", "D101", "FBT002", "T201"]
+"src/conjuring/spells/mr.py" = ["ANN001", "ANN201", "D101", "FBT002", "T201"]
 "src/conjuring/spells/onedrive.py" = ["ANN001", "ANN201", "D100", "T201"]
-"src/conjuring/spells/paperless.py" = ["ANN001", "ANN101", "ANN201", "ANN202", "ANN204", "D101", "D103", "D105", "FBT001", "FBT002", "FBT003", "PLR0913", "PLR2004", "T201", "TCH003"]
+"src/conjuring/spells/paperless.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "D101", "D103", "D105", "FBT001", "FBT002", "FBT003", "PLR0913", "PLR2004", "T201", "TCH003"]
 "src/conjuring/spells/pre_commit.py" = ["ANN001", "ANN201", "ANN202", "D100", "FBT001", "FBT002"]
-"src/conjuring/spells/py.py" = ["ANN001", "ANN101", "ANN201", "ANN202", "D100", "D101", "D102", "D107", "FBT001", "FBT002", "FBT003", "PLR0913", "RET504", "T201"]
+"src/conjuring/spells/py.py" = ["ANN001", "ANN201", "ANN202", "D100", "D101", "D102", "FBT001", "FBT002", "FBT003", "PLR0913", "RET504", "T201"]
 "src/conjuring/spells/shell.py" = ["ANN001", "ANN201"]
-"src/conjuring/visibility.py" = ["A002", "ANN001", "ANN101", "ANN201", "D100", "D101", "D103", "D107", "FBT001", "FBT002", "PLR0913"]
+"src/conjuring/visibility.py" = ["A002", "ANN001", "ANN201", "D100", "D101", "D103", "FBT001", "FBT002", "PLR0913"]
 "tests/__init__.py" = ["D104"]
 "tests/fixtures/__init__.py" = ["D104"]
 "tests/fixtures/conditional.py" = ["ANN001", "ANN201", "ARG001"]

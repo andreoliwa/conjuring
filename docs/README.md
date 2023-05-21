@@ -9,6 +9,7 @@ merged with local project tasks.
 - Use all global Conjuring tasks provided by this package
 - Only include the global Conjuring tasks you want (opt-in mode)
 - Use all Conjuring tasks excluding some (opt-out mode)
+- Add your own custom tasks from Python modules or packages to global tasks
 - Display your custom task modules conditionally
 - Display your custom individual tasks conditionally
 - Merge your project tasks with the global reusable tasks
