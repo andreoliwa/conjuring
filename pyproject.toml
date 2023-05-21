@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "conjuring"
-version = "0.3.0"
+version = "0.4.0"
 description = "🐍🤖 Reusable global Invoke tasks that can be merged with local project tasks"
 authors = ["W. Augusto Andreoli <andreoliwa@gmail.com>"]
 license = "MIT"
@@ -28,7 +28,7 @@ pytest = "*"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.3.0"
+version = "0.4.0"
 
 # https://commitizen-tools.github.io/commitizen/bump/#configuration
 version_files = [

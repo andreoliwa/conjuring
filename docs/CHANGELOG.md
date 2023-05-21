@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.0 (2023-05-21)
+
+### Feat
+
+- **py**: task to generate Ruff config from warnings
+
 ## v0.3.0 (2023-05-20)
 
 ### Feat
