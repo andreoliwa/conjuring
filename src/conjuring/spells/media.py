@@ -98,7 +98,7 @@ def categorize(c, organize=True, browse=True, empty=True):
 
     empty_dirs = (
         [
-            Path(d).expanduser()
+            Path(str(d)).expanduser()
             for d in [
                 DOWNLOADS_DIR,
                 DESKTOP_DIR,

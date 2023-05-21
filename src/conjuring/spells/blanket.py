@@ -64,7 +64,7 @@ def todo(c, cz=False, valid=True, invalid=True, short=False, priority=False):
             before, after = line.split(which, maxsplit=1)  # type: str,str
             key = Task(which, after.strip(": "))
             all_keys.append(key)
-            location = Location(*before.strip("/# ").split(":", maxsplit=2))
+            location = Location(*before.strip("/# ").split(":", maxsplit=2))  # type: ignore
             all_todos[key].append(location)
 
     for item, locations in sorted(all_todos.items()):  # type: Task, list[Location]

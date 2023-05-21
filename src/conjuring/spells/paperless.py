@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import shutil
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -172,7 +173,7 @@ def _process_orphans(partial_path, documents_dir, original_or_archive_files, orp
 
 
 def _split_original_archive(
-    original_or_archive_files: dict[str, list[OrphanFile]], partial_path: Path, documents_dir: Path = None
+    original_or_archive_files: dict[str, list[OrphanFile]], partial_path: Path, documents_dir: Path | None = None
 ):
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
     expanded_parts = []
@@ -224,7 +225,13 @@ def _split_matched_unmatched(
             unmatched_files.extend(single_or_pair)
 
 
-def _handle_items(fix: bool, move: bool, show_details: bool, title: str, collection: list[str | OrphanFile | Document]):
+def _handle_items(
+    fix: bool,
+    move: bool,
+    show_details: bool,
+    title: str,
+    collection: Sequence[str | OrphanFile | Document],
+):
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
@@ -232,7 +239,6 @@ def _handle_items(fix: bool, move: bool, show_details: bool, title: str, collect
         return
 
     # https://docs.python.org/3/library/shutil.html#shutil.copy2
-    copy_function = shutil.move if move else shutil.copy2
     msg = "Moving" if move else "Copying"
 
     dest_dir = DOWNLOAD_DESTINATION_DIR / title
@@ -253,7 +259,10 @@ def _handle_items(fix: bool, move: bool, show_details: bool, title: str, collect
         dest_file.parent.mkdir(parents=True, exist_ok=True)
         print_success(f"{msg} {item.source} to {dest_file}")
 
-        copy_function(item.source, dest_file)
+        if move:
+            shutil.move(item.source, dest_file)
+        else:
+            shutil.copy2(item.source, dest_file)
 
 
 @task

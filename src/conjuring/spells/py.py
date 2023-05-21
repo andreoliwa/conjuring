@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from invoke import Context, task
 
@@ -25,7 +26,7 @@ class PyEnv:
         latest = self.list_versions(python_version)[-1]
         self.context.run(f"pyenv local {latest}")
 
-    def list_versions(self, python_version: str = None):
+    def list_versions(self, python_version: Optional[str] = None):
         """List all installed Python versions, or only the ones matching the desired version."""
         all_versions = run_lines(self.context, "pyenv versions --bare")
         if not python_version:

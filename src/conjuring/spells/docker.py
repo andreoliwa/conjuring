@@ -33,7 +33,7 @@ def rm_containers(c, container="", all_=False, exited=False):
 @task(help=({"dangling": "Dangling volumes"}))
 def rm_volumes(c, dangling=False):
     """Remove Docker volumes."""
-    cmd = []
+    cmd = ""
     if dangling:
         cmd = 'docker volume ls -f "dangling=true"'
     if not cmd:

@@ -1,5 +1,6 @@
 """Kubernetes."""
 from dataclasses import dataclass
+from typing import Optional, cast
 
 from invoke import Context, Result, task
 
@@ -14,13 +15,16 @@ class Kubectl:
 
     context: Context
 
-    def choose_apps(self, partial_app_name: str = None, *, multi=False) -> list[str]:
+    def choose_apps(self, partial_app_name: Optional[str] = None, *, multi=False) -> list[str]:
         """Select apps from Kubernetes deployments, using a partial app name and fzf."""
-        return run_with_fzf(
-            self.context,
-            """kubectl get deployments.apps -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'""",
-            query=partial_app_name,
-            multi=multi,
+        return cast(
+            list[str],
+            run_with_fzf(
+                self.context,
+                """kubectl get deployments.apps -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'""",
+                query=partial_app_name,
+                multi=multi,
+            ),
         )
 
     @staticmethod

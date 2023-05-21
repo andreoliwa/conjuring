@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
-from typing import Callable, overload
+from typing import Callable
 
 from invoke import Collection, Context, Result, Task
 
@@ -77,7 +77,7 @@ def print_warning(*message: str, nl=False):
 
 def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: str = "") -> str:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
-    lowercase_key_list = [char.lower() for char in allowed_keys] if allowed_keys else None
+    lowercase_key_list = [char.lower() for char in allowed_keys] if allowed_keys else []
     options = "/".join(allowed_keys) if allowed_keys else None
     prefix = f"Type {options} +" if allowed_keys else "Press"
 
@@ -95,20 +95,7 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
             return lowercase_key
 
 
-# TODO: refactor: Overloaded function signatures 1 and 2 overlap with incompatible return types
-@overload
-def run_with_fzf(c: Context, *pieces: str, query=...) -> str:  # type:ignore[misc]
-    ...
-
-
-@overload
-def run_with_fzf(c: Context, *pieces: str, query=..., multi: bool = ...) -> list[str]:
-    ...
-
-
-def run_with_fzf(
-    c: Context, *pieces: str, query="", header="", multi=False, options="", preview="", **kwargs
-) -> str | list[str]:
+def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, options="", preview="", **kwargs) -> str:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
@@ -169,7 +156,7 @@ class SpellBook:
     display_all_tasks: bool
 
 
-def _is_task_present(name: str, list_: list[str] | None) -> bool:
+def _is_task_present(name: str, list_: Sequence[str] | None) -> bool:
     if not list_:
         return True
     for element in list_:
@@ -181,8 +168,8 @@ def _is_task_present(name: str, list_: list[str] | None) -> bool:
 def add_single_task_to(
     collection: Collection,
     task: Task,
-    include: list[str] | None,
-    exclude: list[str] | None,
+    include: Sequence[str] | None,
+    exclude: Sequence[str] | None,
     *,
     prefix: str | None,
     task_name: str | None,
@@ -203,8 +190,8 @@ def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is 
     to_collection: Collection,
     from_module_or_str: types.ModuleType | str,
     *,
-    include: Sequence[str] = None,
-    exclude: Sequence[str] = None,
+    include: Sequence[str] | None = None,
+    exclude: Sequence[str] | None = None,
 ) -> None:
     """Magically add tasks to the collection according to the module/task configuration.
 
@@ -262,8 +249,8 @@ def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is 
 def collection_from_python_files(
     current_module,
     *py_glob_patterns: str,
-    include: Sequence[str] = None,
-    exclude: Sequence[str] = None,
+    include: Sequence[str] | None = None,
+    exclude: Sequence[str] | None = None,
 ):
     """Create a custom collection by adding tasks from multiple files.
 
