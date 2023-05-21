@@ -23,25 +23,21 @@ is a collection of Invoke tasks.
 
 ## Quick setup
 
-1. Install invoke in an isolated virtualenv with [pipx](https://github.com/pypa/pipx):
+1. Install Conjuring in an isolated virtualenv with [pipx](https://github.com/pypa/pipx):
 
    ```shell
-   pipx install invoke
+   pipx install --include-deps conjuring
    ```
 
-2. Install Conjuring from GitHub, injecting it directly into the isolated virtualenv:
+   The `--include-deps` flag is needed to install Invoke's apps (`invoke` and `inv`).
 
-   ```shell
-   pipx inject invoke conjuring
-   ```
-
-3. Create a `tasks.py` file on your home dir:
+2. Create a `tasks.py` file on your home dir:
 
    ```shell
    echo -e "from conjuring import *\n\nnamespace = cast_all_spells()" > ~/tasks.py
    ```
 
-4. You should see the list of Conjuring tasks from any directory where you type this:
+3. You should see the list of Conjuring tasks from any directory where you type this:
 
    ```shell
    invoke --list
