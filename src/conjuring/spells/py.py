@@ -7,7 +7,7 @@ from typing import Optional
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
-from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
+from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_poetry_project
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_poetry_project
@@ -194,7 +194,7 @@ def debug_tools(c, all_=False, ipython=False, ipdb=False, pudb=False, icecream=F
     run_command(c, "poetry run pip install --upgrade", *tools)
 
 
-@task
+@task(klass=MagicTask)
 def ruff_config(c):
     """Generate ruff configuration from existing warnings."""
     # TODO: feat: check if the global ruff is installed and use it if it is
