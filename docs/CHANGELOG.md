@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.0 (2023-05-22)
+
+### Feat
+
+- add global tasks from Python modules or packages
+
+### Fix
+
+- **py**: always show ruff-config even on non-Poetry projects
+- improved messages on conjuring.init
+
 ## v0.4.0 (2023-05-21)
 
 ### Feat
