@@ -4,6 +4,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Optional
 
+import typer
 from invoke import Context, task
 
 from conjuring.grimoire import run_stdout, run_with_fzf
@@ -75,4 +76,4 @@ def grep(c: Context, search_text: str, config: str = "", echo: bool = False) -> 
             "| rg --color=never 'mr grep: (.+)$' --replace '$1'",
             echo=echo,
         )
-        print(output_without_linefeed)
+        typer.echo(output_without_linefeed)

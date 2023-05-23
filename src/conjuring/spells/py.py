@@ -5,6 +5,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 
+import typer
 from invoke import Context, Result, task
 
 from conjuring.constants import PYPROJECT_TOML
@@ -217,7 +218,7 @@ def ruff_config(c: Context) -> None:
     per_file_ignores: dict[str, set[str]] = defaultdict(set)
     for line in run_lines(c, "pre-commit run --all-files ruff", warn=True):
         if line.startswith("warning:"):
-            print(line)
+            typer.echo(line)
             continue
 
         match = REGEX_RUFF_LINE.match(line)
@@ -236,10 +237,10 @@ def ruff_config(c: Context) -> None:
         for _code, messages in sorted(ignore.items()):
             joined_messages = ",".join(sorted(messages))
             if ignore_section:
-                print(f'    "{_code}", # {joined_messages}', end="")
+                typer.echo(f'    "{_code}", # {joined_messages}', nl=False)
             else:
-                print(f"# {_code} {joined_messages}", end="")
-            print(f" https://beta.ruff.rs/docs/rules/?q={_code}")
+                typer.echo(f"# {_code} {joined_messages}", nl=False)
+            typer.echo(f" https://beta.ruff.rs/docs/rules/?q={_code}")
 
     # TODO: edit pyproject.toml existing config for both sections,
     #  skipping existing lines and adding new codes at the bottom
@@ -250,9 +251,9 @@ def ruff_config(c: Context) -> None:
                 # Ignores to keep
                 # TODO: Ignores to fix
         """
-        print(dedent(header).strip())
+        typer.echo(dedent(header).strip())
         _print_ruff_codes(True)
-        print("]\n")
+        typer.echo("]\n")
 
     if per_file_ignores:
         header = """
@@ -261,8 +262,8 @@ def ruff_config(c: Context) -> None:
             # Ignores to keep
             # TODO: Ignores to fix
         """
-        print(dedent(header).strip())
+        typer.echo(dedent(header).strip())
         _print_ruff_codes(False)
         for file, codes in sorted(per_file_ignores.items()):
             sorted_codes = '", "'.join(sorted(codes))
-            print(f'"{file}" = ["{sorted_codes}"]')
+            typer.echo(f'"{file}" = ["{sorted_codes}"]')

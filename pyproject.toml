@@ -22,6 +22,7 @@ classifiers = [
 python = "^3.9"
 invoke = "*"
 requests = "*"
+typer = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -43,9 +44,7 @@ changelog_file = "docs/CHANGELOG.md"
 changelog_incremental = true
 
 [build-system]
-# Support PEP 660 hooks (editable packages)
-# https://github.com/python-poetry/poetry-core/pull/182#issuecomment-1005195851
-requires = ["poetry-core@https://github.com/python-poetry/poetry-core/archive/325312c016d69189ac93c945ba0c1b69296c5e54.zip"]
+requires = ["poetry-core>=1.1.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
@@ -78,7 +77,6 @@ ignore = [
     "FBT001", # Boolean positional arg in function definition
     "FBT002", # Boolean default value in function definition
     "FBT003", # Boolean positional value in function call
-    "T201", # print found # TODO: replace print() with typer.echo()
     "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
     "TD003", # Missing issue link on the line following this
 ]

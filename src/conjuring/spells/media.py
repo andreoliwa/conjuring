@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from itertools import chain
 from pathlib import Path
 
+import typer
 from invoke import Context, task
 
 from conjuring.constants import (
@@ -96,7 +97,7 @@ def cleanup(c: Context, browse: bool = False) -> None:
         copy_dirs.add(Path(line).parent)
 
     for dir_ in sorted(copy_dirs):
-        print(dir_)
+        typer.echo(dir_)
 
 
 @task(
@@ -156,7 +157,7 @@ def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bo
             run_command(c, f"open -R {last_file!r}")
             break
 
-        print(str(path))
+        typer.echo(str(path))
 
 
 @task

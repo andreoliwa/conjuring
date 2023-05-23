@@ -3,6 +3,7 @@ from pathlib import Path
 from string import Template
 from tempfile import NamedTemporaryFile
 
+import typer
 from invoke import Context, task
 
 from conjuring.grimoire import run_command, run_with_fzf
@@ -14,7 +15,7 @@ BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
 def print_hostname(c: Context) -> str:
     """Print the hostname of the current machine."""
     host = c.run("hostname | sed 's/.local//'").stdout.strip()
-    print(f"Host: {host}")
+    typer.echo(f"Host: {host}")
     return host
 
 
@@ -25,10 +26,10 @@ def backup(c: Context) -> None:
     backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
     # To back up directly on OneDrive:
     # backup_dir = f"onedrive://Backup/{host}/duplicity/"
-    print(f"Backup dir: {backup_dir}")
+    typer.echo(f"Backup dir: {backup_dir}")
 
     template_file = Path("~/dotfiles/duplicity-template.cfg").expanduser()
-    print(f"Template file: {template_file}")
+    typer.echo(f"Template file: {template_file}")
 
     template_contents = template_file.read_text()
     duplicity_config = Template(template_contents).substitute({"HOME": Path.home()})

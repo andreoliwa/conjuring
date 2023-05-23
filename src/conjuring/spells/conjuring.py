@@ -1,6 +1,7 @@
 """Init Invoke configuration files for Conjuring."""
 from pathlib import Path
 
+import typer
 from invoke import Context, task
 
 from conjuring.constants import CONJURING_INIT, ROOT_INVOKE_YAML
@@ -27,7 +28,7 @@ def init(c: Context, edit: bool = False, revert: bool = False) -> None:
             run_command(c, f"cat {config_file}")
         else:
             message = "Remove this from" if revert else "Add this to"
-            print(f"The {config_file} configuration file already exists! {message} the file:")
+            typer.echo(f"The {config_file} configuration file already exists! {message} the file:")
             run_command(c, "yq eval -n", json_config)
             if edit:
                 run_command(c, "$EDITOR", str(config_file))

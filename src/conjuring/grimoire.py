@@ -13,6 +13,7 @@ from shlex import quote
 from shutil import which
 from typing import TYPE_CHECKING, Callable
 
+import typer
 from invoke import Collection, Context, Result, Task
 
 from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE, COLOR_YELLOW
@@ -61,7 +62,7 @@ def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
 def print_color(*message: str, color: str = COLOR_NONE, nl: bool = False) -> None:
     """Print a colored message."""
     all_messages = ("\n" if nl else " ").join(message)
-    print(f"{color}{all_messages}{COLOR_NONE}")
+    typer.echo(f"{color}{all_messages}{COLOR_NONE}")
 
 
 def print_success(*message: str, nl: bool = False) -> None:
@@ -86,7 +87,7 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
     prefix = f"Type {options} +" if allowed_keys else "Press"
 
     while True:
-        print()
+        typer.echo()
         print_color(*message, color=color)
         time.sleep(0.2)
 

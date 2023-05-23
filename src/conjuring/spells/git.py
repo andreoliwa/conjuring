@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+import typer
 from invoke import Context, Exit, UnexpectedExit, task
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
@@ -100,7 +101,7 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
     result = c.run(f"git remote -v | rg {remote} | head -1 | rg -o {regex} -r {replace}", warn=True, pty=False)
     match = result.stdout.strip()
     if not match:
-        print(f"{COLOR_LIGHT_RED}Match not found{COLOR_NONE}")
+        typer.echo(f"{COLOR_LIGHT_RED}Match not found{COLOR_NONE}")
     else:
         repo = f"https://{match}" if https else f"git@{match}"
         if not repo.endswith(".git"):
@@ -240,7 +241,7 @@ def history(c: Context, full: bool = False, files: bool = False, author: bool = 
             if header:
                 print_success("Green = dates are equal")
                 print_error("Red = dates are different")
-                print(
+                typer.echo(
                     "Commit                                   Committer Date            "
                     "Author Date               GPG key          Subject",
                 )
@@ -284,9 +285,9 @@ def rewrite(c: Context, commit: str = "--root", gpg: bool = True, author: bool =
         f' | cut -d" " -f3) git commit --amend --no-edit -n{author_flag}{gpg_flag}\' -i {commit}',
     )
     history(c, dates=True)
-    print()
-    print("NOTE: If commits were modified during the rebase above, their committer date will be the current date")
-    print("Rebase again with this command, without changing any commit, and all dates should be green")
+    typer.echo()
+    typer.echo("NOTE: If commits were modified during the rebase above, their committer date will be the current date")
+    typer.echo("Rebase again with this command, without changing any commit, and all dates should be green")
 
 
 @task
@@ -403,4 +404,4 @@ def body(c: Context, prefix: bool = True, sort: bool = True) -> None:
         bullets.append(f"- {clean}")
 
     results = sorted(set(bullets)) if sort else bullets
-    print("\n".join(results))
+    typer.echo("\n".join(results))

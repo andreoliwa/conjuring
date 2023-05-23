@@ -83,3 +83,7 @@ def pods(c: Context, app: str, replica_set: bool = False) -> None:
         )
         for name in replica_set_names:
             run_command(c, f"kubectl get replicaset {name}")
+
+
+# TODO: You can verify the containers running in a given pod with the following command
+#  > kubectl get pods <pod name> -o jsonpath='{.spec.containers[*].name}'

@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from shlex import quote
 
+import typer
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, print_success, run_command, run_lines
@@ -95,4 +96,4 @@ def todo(  # noqa: PLR0913
         if short:
             continue
         for loc in locations:  # type: Location
-            print(f"   {loc.file}:{loc.line} {loc.comment}")
+            typer.echo(f"   {loc.file}:{loc.line} {loc.comment}")

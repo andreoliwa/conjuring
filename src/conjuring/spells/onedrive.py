@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import typer
 from invoke import Context, task
 
 from conjuring.grimoire import run_lines, run_stdout
@@ -26,4 +27,4 @@ def conflicts(c: Context, dir_: list[str | Path]) -> None:
             duplicated = Path(line)
             original_name = duplicated.stem[: -len(suffix)]
             original = duplicated.with_stem(original_name)
-            print(run_stdout(c, f"diff {duplicated} {original}", warn=True).strip())
+            typer.echo(run_stdout(c, f"diff {duplicated} {original}", warn=True).strip())

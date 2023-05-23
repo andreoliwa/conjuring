@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
+import typer
 from invoke import Context, task
 
 from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
@@ -284,11 +285,11 @@ def _handle_items(
     dest_dir = DOWNLOAD_DESTINATION_DIR / title
     for item in collection:
         if not isinstance(item, OrphanFile):
-            print(str(item))
+            typer.echo(str(item))
             continue
 
         if not fix:
-            print(str(item.source))
+            typer.echo(str(item.source))
             continue
 
         if not item.source.exists():
