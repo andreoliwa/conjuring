@@ -1,6 +1,7 @@
+"""Init Invoke configuration files for Conjuring."""
 from pathlib import Path
 
-from invoke import task
+from invoke import Context, task
 
 from conjuring.constants import CONJURING_INIT, ROOT_INVOKE_YAML
 from conjuring.grimoire import print_success, print_warning, run_command, run_stdout
@@ -14,7 +15,7 @@ SHOULD_PREFIX = True
         "revert": "Revert the changes and go back to using tasks.py as the default tasks file",
     },
 )
-def init(c, edit=False, revert=False):
+def init(c: Context, edit: bool = False, revert: bool = False) -> None:
     """Init Conjuring on your home dir to merge any local `tasks.py` file with global Conjuring tasks."""
     config_file = ROOT_INVOKE_YAML
 
@@ -30,23 +31,20 @@ def init(c, edit=False, revert=False):
             run_command(c, "yq eval -n", json_config)
             if edit:
                 run_command(c, "$EDITOR", str(config_file))
-    else:
-        if not revert:
-            c.run(f"touch {config_file}")
-            run_command(c, "yq eval -i", json_config, str(config_file))
-            c.run(f"cat {config_file}")
+    elif not revert:
+        c.run(f"touch {config_file}")
+        run_command(c, "yq eval -i", json_config, str(config_file))
+        c.run(f"cat {config_file}")
 
     default_tasks = Path("~/tasks.py").expanduser()
     conjuring_init = Path(f"~/{CONJURING_INIT}.py").expanduser()
     if revert:
         if conjuring_init.exists():
             conjuring_init.rename(default_tasks)
+    elif default_tasks.exists():
+        default_tasks.rename(conjuring_init)
+    elif conjuring_init.exists():
+        print_success("Global tasks file already exists.")
+        run_command(c, f"cat {conjuring_init}")
     else:
-        if default_tasks.exists():
-            default_tasks.rename(conjuring_init)
-        else:
-            if conjuring_init.exists():
-                print_success("Global tasks file already exists.")
-                run_command(c, f"cat {conjuring_init}")
-            else:
-                print_warning(f"Nothing to do: file {default_tasks} does not exist!")
+        print_warning(f"Nothing to do: file {default_tasks} does not exist!")

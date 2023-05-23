@@ -61,7 +61,7 @@ def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
 def print_color(*message: str, color: str = COLOR_NONE, nl: bool = False) -> None:
     """Print a colored message."""
     all_messages = ("\n" if nl else " ").join(message)
-    print(f"{color}{all_messages}{COLOR_NONE}")  # noqa: T201
+    print(f"{color}{all_messages}{COLOR_NONE}")
 
 
 def print_success(*message: str, nl: bool = False) -> None:
@@ -86,7 +86,7 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
     prefix = f"Type {options} +" if allowed_keys else "Press"
 
     while True:
-        print()  # noqa: T201
+        print()
         print_color(*message, color=color)
         time.sleep(0.2)
 

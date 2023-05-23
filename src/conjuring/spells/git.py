@@ -1,3 +1,4 @@
+"""Git: update all, extract subtree, rewrite history, ..."""
 import re
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -56,9 +57,10 @@ class Git:
         for branch in branches:
             try:
                 self.context.run(f"git checkout {branch}")
-                return branch
             except UnexpectedExit:
                 pass
+            else:
+                return branch
         return ""
 
     @property
@@ -67,17 +69,20 @@ class Git:
         return global_config()["github"]["user"]
 
     def choose_local_branch(self, branch: str) -> str:
+        """Choose a local branch."""
         return run_with_fzf(self.context, "git branch --list | rg -v develop | cut -b 3-", query=branch)
 
 
 @dataclass(frozen=True)
 class PrefixBranch:
+    """Tuple of prefix and branch name."""
+
     prefix: str
     branch: str
 
 
 @task(klass=MagicTask)
-def update_all(c, group=""):
+def update_all(c: Context, group: str = "") -> None:
     """Run gita super to update and clean branches."""
     parts = ["gita", "super"]
     if group:
@@ -87,7 +92,7 @@ def update_all(c, group=""):
 
 
 @task
-def switch_url_to(c, remote="origin", https=False):
+def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> None:
     """Set an SSH or HTTPS URL for a remote."""
     regex = r"'git@(.+\.com):(.+/.+)\.git\s'" if https else r"'/([^/]+\.com)/([^/]+/.+)\s\('"
     replace = "'$1/$2'" if https else "'$1:$2'"
@@ -112,7 +117,7 @@ def switch_url_to(c, remote="origin", https=False):
         "keep": "Keep branches and remote after the extracting is done",
     },
 )
-def extract_subtree(c, new_project_dir, reset=False, keep=False):
+def extract_subtree(c: Context, new_project_dir: str, reset: bool = False, keep: bool = False) -> None:
     """Extract files from subdirectories of the current Git repo to another repo, using git subtree.
 
     The files will be moved to the root of the new repo.
@@ -216,7 +221,7 @@ def extract_subtree(c, new_project_dir, reset=False, keep=False):
         "dates": "Display committer and author dates in different colors",
     },
 )
-def history(c, full=False, files=False, author=False, dates=False):
+def history(c: Context, full: bool = False, files: bool = False, author: bool = False, dates: bool = False) -> None:
     """Grep the whole Git log and display information."""
     option_chosen = False
     if full:
@@ -258,7 +263,7 @@ def history(c, full=False, files=False, author=False, dates=False):
         "author": "Set the current author (from 'git config') on the commit range",
     },
 )
-def rewrite(c, commit="--root", gpg=True, author=True):
+def rewrite(c: Context, commit: str = "--root", gpg: bool = True, author: bool = True) -> None:
     """Rewrite a range of commits, signing with GPG and setting the author.
 
     https://git-scm.com/docs/git-commit
@@ -285,7 +290,7 @@ def rewrite(c, commit="--root", gpg=True, author=True):
 
 
 @task
-def tidy_up(c):
+def tidy_up(c: Context) -> None:
     """Prune remotes, update all branches of the repo, delete merged/squashed branches."""
     c.run("gitup .")
     c.run("git delete-merged-branches")
@@ -305,7 +310,13 @@ def tidy_up(c):
         "rebase": "Rebase the default branch before merging (default: False)",
     },
 )
-def merge_default(c, remote=False, update=True, push=True, rebase=False):
+def merge_default(
+    c: Context,
+    remote: bool = False,
+    update: bool = True,
+    push: bool = True,
+    rebase: bool = False,
+) -> None:
     """Merge the default branch of the repo. Also set it with "git config", if not already set."""
     default_branch = set_default_branch(c, remote)
 
@@ -318,7 +329,7 @@ def merge_default(c, remote=False, update=True, push=True, rebase=False):
         run_command(c, "git push", force_option)
 
 
-def set_default_branch(c: Context, remote=False):
+def set_default_branch(c: Context, remote: bool = False) -> str:
     """Set the default branch config on the repo, if not configured yet."""
     cmd_read_default_branch = "git config git-extras.default-branch"
     default_branch = run_stdout(c, cmd_read_default_branch, warn=True, dry=False)
@@ -339,10 +350,11 @@ def set_default_branch(c: Context, remote=False):
     help={
         "tag": "Name of the tag to compare to (default: last created tag)",
         "files": "Display files instead of commits (default: false)",
-        "verbose": "Files: display changes/insertions/deletion. Commits: display the full commit message, author... (default: False)",
+        "verbose": "Files: display changes/insertions/deletion."
+        " Commits: display the full commit message, author... (default: False)",
     },
 )
-def changes_since_tag(c, tag="", files=False, verbose=False):
+def changes_since_tag(c: Context, tag: str = "", files: bool = False, verbose: bool = False) -> None:
     """Display changes (commits or files) since the last tag (or a chosen tag)."""
     which_tag = tag or run_stdout(c, "git tag --list --sort -creatordate | head -1", hide=False, dry=False)
     default_branch = set_default_branch(c)
@@ -355,7 +367,7 @@ def changes_since_tag(c, tag="", files=False, verbose=False):
 
 
 @task()
-def watch(c):
+def watch(c: Context) -> None:
     """Watch a build on GitHub Actions, then open a pull request or repo after the build is over."""
     current_branch = Git(c).current_branch()
     print_success(f"Current branch = {current_branch}")
@@ -372,7 +384,7 @@ def watch(c):
         "sort": "Sort bullets",
     },
 )
-def body(c, prefix=True, sort=True):
+def body(c: Context, prefix: bool = True, sort: bool = True) -> None:
     """Prepare a commit body to be used on pull requests and squashed commits."""
     default_branch = set_default_branch(c)
     bullets = []

@@ -1,4 +1,5 @@
-from invoke import Exit, task
+"""GitHub forks: configure remote, sync..."""
+from invoke import Context, Exit, task
 
 from conjuring.spells.git import Git
 
@@ -6,7 +7,7 @@ SHOULD_PREFIX = True
 
 
 @task
-def remote(c, username, remote=""):
+def remote(c: Context, username: str, remote: str = "") -> None:
     """Configure a remote for a fork.
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
@@ -23,7 +24,7 @@ def remote(c, username, remote=""):
 
 
 @task
-def sync(c, remote="upstream"):
+def sync(c: Context, remote: str = "upstream") -> None:
     """Sync a fork.
 
     https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork

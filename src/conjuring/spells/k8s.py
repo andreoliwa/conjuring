@@ -1,4 +1,4 @@
-"""Kubernetes."""
+"""Kubernetes: get pods, show variables from config maps, validate score and more."""
 from dataclasses import dataclass
 from typing import Optional, cast
 
@@ -15,14 +15,14 @@ class Kubectl:
 
     context: Context
 
-    def choose_apps(self, partial_app_name: Optional[str] = None, *, multi=False) -> list[str]:
+    def choose_apps(self, partial_app_name: Optional[str] = None, *, multi: bool = False) -> list[str]:
         """Select apps from Kubernetes deployments, using a partial app name and fzf."""
         return cast(
             list[str],
             run_with_fzf(
                 self.context,
                 """kubectl get deployments.apps -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'""",
-                query=partial_app_name,
+                query=partial_app_name or "",
                 multi=multi,
             ),
         )
@@ -46,7 +46,7 @@ class Kubectl:
 
 
 @task()
-def validate_score(c):
+def validate_score(c: Context) -> None:
     """Validate and score files that were changed from the master branch."""
     # TODO: handle branches named "main"
     # Continue even if there are errors
@@ -55,7 +55,7 @@ def validate_score(c):
 
 
 @task(help={"rg": "Filter results with rg"})
-def config_map(c, app, rg=""):
+def config_map(c: Context, app: str, rg: str = "") -> None:
     """Show the config map for an app."""
     chosen_app = Kubectl(c).choose_apps(app)
     run_command(
@@ -68,7 +68,7 @@ def config_map(c, app, rg=""):
 
 
 @task(help={"replica_set": "Show the replica sets for an app"})
-def pods(c, app, replica_set=False):
+def pods(c: Context, app: str, replica_set: bool = False) -> None:
     """Show the pods and replica sets for an app."""
     kubectl = Kubectl(c)
     chosen_apps = kubectl.choose_apps(app, multi=True)

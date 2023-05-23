@@ -1,10 +1,11 @@
-from invoke import task
+"""Query tags and entries with the jrnl note-taking tool https://github.com/jrnl-org/jrnl."""
+from invoke import Context, task
 
 SHOULD_PREFIX = True
 
 
 @task
-def tags(c, sort=False, rg="", journal=""):
+def tags(c: Context, sort: bool = False, rg: str = "", journal: str = "") -> None:
     """Query jrnl tags."""
     cmd = ["jrnl"]
     if journal:
@@ -18,20 +19,28 @@ def tags(c, sort=False, rg="", journal=""):
 
 
 @task
-def query(c, n=0, contains="", edit=False, fancy=False, short=False, journal=""):
+def query(  # noqa: PLR0913
+    c: Context,
+    n: int = 0,
+    contains: str = "",
+    edit: bool = False,
+    fancy: bool = False,
+    short: bool = False,
+    journal: str = "",
+) -> None:
     """Query jrnl entries."""
-    format = "pretty"
+    format_ = "pretty"
     if fancy:
-        format = "fancy"
+        format_ = "fancy"
     elif short:
-        format = "short"
+        format_ = "short"
 
     cmd = ["jrnl"]
     if journal:
         cmd.append(journal)
     if n:
         cmd.append(f"-n {n}")
-    cmd.append(f"--format {format}")
+    cmd.append(f"--format {format_}")
     if contains:
         cmd.append(f"-contains {contains}")
     if edit:
@@ -40,7 +49,7 @@ def query(c, n=0, contains="", edit=False, fancy=False, short=False, journal="")
 
 
 @task
-def edit_last(c, journal=""):
+def edit_last(c: Context, journal: str = "") -> None:
     """Edit the last jrnl entry."""
     cmd = ["jrnl"]
     if journal:

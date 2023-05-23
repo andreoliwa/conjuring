@@ -1,9 +1,12 @@
+"""Media files: remove empty dirs, clean up picture dirs, download YouTube videos, transcribe audio, ..."""
+from __future__ import annotations
+
 import os
-from datetime import date
+from datetime import datetime, timezone
 from itertools import chain
 from pathlib import Path
 
-from invoke import task
+from invoke import Context, task
 
 from conjuring.constants import (
     DESKTOP_DIR,
@@ -28,7 +31,7 @@ AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma"}
     },
     iterable=["dir_"],
 )
-def rm_empty_dirs(c, dir_, force=False, fd=True):
+def rm_empty_dirs(c: Context, dir_: list[str | Path], force: bool = False, fd: bool = True) -> None:
     """Remove some hidden files first, then remove empty dirs.
 
     The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
@@ -53,7 +56,7 @@ def rm_empty_dirs(c, dir_, force=False, fd=True):
 
 
 @task
-def cleanup(c, browse=False):
+def cleanup(c: Context, browse: bool = False) -> None:
     """Cleanup pictures."""
     c.run(f"fd -H -0 -tf -i {DOT_DS_STORE} | xargs -0 rm -v")
     c.run(f"fd -H -0 -tf -i {DOT_NOMEDIA} | xargs -0 rm -v")
@@ -103,7 +106,7 @@ def cleanup(c, browse=False):
         "empty": "Check dirs that are not empty but should be",
     },
 )
-def categorize(c, organize=True, browse=True, empty=True):
+def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bool = True) -> None:
     """Open directories with files/photos that have to be categorized/moved/renamed."""
     if organize:
         c.run("invoke organize")
@@ -126,7 +129,7 @@ def categorize(c, organize=True, browse=True, empty=True):
         else []
     )
 
-    current_year = date.today().year
+    current_year = datetime.now(tz=timezone.utc).date().year
     picture_dirs = [
         Path(ONEDRIVE_PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
     ]
@@ -152,12 +155,12 @@ def categorize(c, organize=True, browse=True, empty=True):
             )
             run_command(c, f"open -R {last_file!r}")
             break
-        else:
-            print(str(path))
+
+        print(str(path))
 
 
 @task
-def youtube_dl(c, url, min_height=240, download_archive_path=""):
+def youtube_dl(c: Context, url: str, min_height: int = 240, download_archive_path: str = "") -> None:
     """Download video URLs, try different low-res formats until it finds one."""
     download_archive_path = download_archive_path or os.environ.get("YOUTUBE_DL_DOWNLOAD_ARCHIVE_PATH", "")
     archive_option = f"--download-archive {download_archive_path!r}" if download_archive_path else ""
@@ -184,14 +187,14 @@ def youtube_dl(c, url, min_height=240, download_archive_path=""):
 
 
 @task
-def slideshow(c, start_at=""):
+def slideshow(c: Context, start_at: str = "") -> None:
     """Show pictures in the current dir with feh."""
     start_at_option = f"--start-at {start_at}" if start_at else ""
     run_command(c, "feh -r -. -g 1790x1070 -B black --caption-path .", start_at_option)
 
 
 @task(help={"dir_": "Directory with audios to transcribe"})
-def whisper(c, dir_):
+def whisper(c: Context, dir_: str | Path) -> None:
     """Transcribe multiple audio file that haven't been transcribed yet, using whisper."""
     dir_ = Path(dir_).expanduser()
     audios: list[Path] = []

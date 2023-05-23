@@ -1,8 +1,9 @@
+"""Backup and restore with Duplicity https://duplicity.us/."""
 from pathlib import Path
 from string import Template
 from tempfile import NamedTemporaryFile
 
-from invoke import task
+from invoke import Context, task
 
 from conjuring.grimoire import run_command, run_with_fzf
 
@@ -10,14 +11,15 @@ SHOULD_PREFIX = True
 BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
 
 
-def print_hostname(c):
+def print_hostname(c: Context) -> str:
+    """Print the hostname of the current machine."""
     host = c.run("hostname | sed 's/.local//'").stdout.strip()
     print(f"Host: {host}")
     return host
 
 
 @task
-def backup(c):
+def backup(c: Context) -> None:
     """Backup files with Duplicity."""
     host = print_hostname(c)
     backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
@@ -46,7 +48,7 @@ def backup(c):
 
 
 @task
-def restore(c):
+def restore(c: Context) -> None:
     """Restore files with Duplicity. You will be prompted to choose the source dir. Restore dir is ~/Downloads."""
     print_hostname(c)
     chosen_dir = run_with_fzf(c, f"fd -d 2 -t d duplicity {BACKUP_DIR}")

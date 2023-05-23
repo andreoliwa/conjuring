@@ -1,4 +1,5 @@
-from invoke import task
+"""Docker: remove containers, volumes and more.."""
+from invoke import Context, task
 
 from conjuring.grimoire import print_error, run_command
 
@@ -12,7 +13,7 @@ SHOULD_PREFIX = True
         "exited": "Exited containers",
     },
 )
-def rm_containers(c, container="", all_=False, exited=False):
+def rm_containers(c: Context, container: str = "", all_: bool = False, exited: bool = False) -> None:
     """Remove Docker containers."""
     cmd = []
     if all_:
@@ -31,7 +32,7 @@ def rm_containers(c, container="", all_=False, exited=False):
 
 
 @task(help=({"dangling": "Dangling volumes"}))
-def rm_volumes(c, dangling=False):
+def rm_volumes(c: Context, dangling: bool = False) -> None:
     """Remove Docker volumes."""
     cmd = ""
     if dangling:

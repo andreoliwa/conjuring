@@ -70,12 +70,14 @@ src = ["src"]
 # https://beta.ruff.rs/docs/settings/#ignore
 ignore = [
     "ANN101", # Missing type annotation for ? in method
+    "D105", # Missing docstring in magic method
     "D107", # Missing docstring in ? https://beta.ruff.rs/docs/rules/?q=D107
     "D203", # 1 blank line required before class docstring
     "D213", # Multi-line docstring summary should start at the second line
     "ERA", # https://beta.ruff.rs/docs/rules/#eradicate-era
     "FBT001", # Boolean positional arg in function definition
     "FBT002", # Boolean default value in function definition
+    "T201", # print found # TODO: replace print() with typer.echo()
     "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
     "TD003", # Missing issue link on the line following this
 ]
@@ -106,7 +108,6 @@ ignore = [
 # D102 Missing docstring in public method https://beta.ruff.rs/docs/rules/?q=D102
 # D103 Missing docstring in public function https://beta.ruff.rs/docs/rules/?q=D103
 # D104 Missing docstring in public package https://beta.ruff.rs/docs/rules/?q=D104
-# D105 Missing docstring in magic method https://beta.ruff.rs/docs/rules/?q=D105
 # D401 First line of docstring should be in imperative mood: "Setup Conjuring on your home dir." https://beta.ruff.rs/docs/rules/?q=D401
 # DTZ011 The use of ? is not allowed, use ? instead https://beta.ruff.rs/docs/rules/?q=DTZ011
 # E402 Module level import not at top of file https://beta.ruff.rs/docs/rules/?q=E402
@@ -119,25 +120,14 @@ ignore = [
 # PLR5501 Consider using ? instead of ? then ? to remove one indentation level https://beta.ruff.rs/docs/rules/?q=PLR5501
 # RET504 Unnecessary variable assignment before ? statement https://beta.ruff.rs/docs/rules/?q=RET504
 # RET508 Unnecessary ? after ? statement https://beta.ruff.rs/docs/rules/?q=RET508
-# T201 ? found https://beta.ruff.rs/docs/rules/?q=T201
 # TCH003 Move standard library import ? into a type-checking block https://beta.ruff.rs/docs/rules/?q=TCH003
 # TRY300 Consider moving this statement to an ? block https://beta.ruff.rs/docs/rules/?q=TRY300
-"src/conjuring/spells/aws.py" = ["ANN001", "ANN002", "ANN201", "D100", "D103", "T201"]
-"src/conjuring/spells/blanket.py" = ["ANN001", "ANN201", "ANN204", "D101", "D105", "ISC003", "PGH003", "PLR0913", "T201"]
-"src/conjuring/spells/conjuring.py" = ["ANN001", "ANN201", "D100", "D401", "PLR5501", "T201"]
-"src/conjuring/spells/docker.py" = ["ANN001", "ANN201", "D100", "FBT002"]
-"src/conjuring/spells/duplicity.py" = ["ANN001", "ANN201", "D100", "D103", "T201"]
-"src/conjuring/spells/fork.py" = ["ANN001", "ANN201", "D100"]
-"src/conjuring/spells/git.py" = ["ANN001", "ANN201", "D100", "D101", "D102", "E501", "T201", "TRY300"]
-"src/conjuring/spells/jrnl.py" = ["A001", "ANN001", "ANN201", "D100", "PLR0913"]
-"src/conjuring/spells/k8s.py" = ["ANN001", "ANN201", "FBT002"]
-"src/conjuring/spells/media.py" = ["ANN001", "ANN201", "D100", "DTZ011", "RET508", "T201"]
 "src/conjuring/spells/mkdocs.py" = ["ANN001", "ANN201"]
-"src/conjuring/spells/mr.py" = ["ANN001", "ANN201", "D101", "T201"]
-"src/conjuring/spells/onedrive.py" = ["ANN001", "ANN201", "D100", "T201"]
-"src/conjuring/spells/paperless.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "D101", "D103", "D105", "FBT003", "PLR0913", "PLR2004", "T201", "TCH003"]
+"src/conjuring/spells/mr.py" = ["ANN001", "ANN201", "D101"]
+"src/conjuring/spells/onedrive.py" = ["ANN001", "ANN201", "D100"]
+"src/conjuring/spells/paperless.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "D101", "D103", "FBT003", "PLR0913", "PLR2004", "TCH003"]
 "src/conjuring/spells/pre_commit.py" = ["ANN001", "ANN201", "ANN202", "D100", "FBT002"]
-"src/conjuring/spells/py.py" = ["ANN001", "ANN201", "ANN202", "D100", "D101", "D102", "FBT003", "PLR0913", "RET504", "T201"]
+"src/conjuring/spells/py.py" = ["ANN001", "ANN201", "ANN202", "D100", "D101", "D102", "FBT003", "PLR0913", "RET504"]
 "tests/__init__.py" = ["D104"]
 "tests/fixtures/__init__.py" = ["D104"]
 "tests/fixtures/conditional.py" = ["ANN001", "ANN201", "ARG001"]

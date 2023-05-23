@@ -9,6 +9,7 @@ ONEDRIVE_DIR = Path("~/OneDrive").expanduser()
 ONEDRIVE_PICTURES_DIR = ONEDRIVE_DIR / "Pictures"
 
 # Filenames
+AWS_CONFIG = Path("~/.aws/config").expanduser()
 CONJURING_INIT = "conjuring_init"
 DOT_DS_STORE = ".DS_Store"
 DOT_NOMEDIA = ".nomedia"
