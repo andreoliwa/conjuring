@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Conjuring
+              Home
             
           </span>
         </div>
@@ -222,12 +222,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Conjuring
+          Home
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
-        Conjuring
+        Home
       </a>
       
         
@@ -384,6 +384,8 @@
   
 
 
+<!-- markdownlint-disable-file MD031 -->
+
 <h1 id="conjuring">Conjuring</h1>
 <p>Reusable global <a href="https://github.com/pyinvoke/invoke">Invoke</a> tasks that can be
 merged with local project tasks.</p>
@@ -405,21 +407,17 @@ merged with local project tasks.</p>
 is a collection of Invoke tasks.</p>
 <h2 id="quick-setup">Quick setup</h2>
 <ol>
-<li>Install Conjuring in an isolated virtualenv with <a href="https://github.com/pypa/pipx">pipx</a>:</li>
-</ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipx<span class="w"> </span>install<span class="w"> </span>--include-deps<span class="w"> </span>conjuring
+<li>Install Conjuring in an isolated virtualenv with <a href="https://github.com/pypa/pipx">pipx</a>:
+   <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pipx<span class="w"> </span>install<span class="w"> </span>--include-deps<span class="w"> </span>conjuring
 </span></code></pre></div>
-<p>The <code>--include-deps</code> flag is needed to install Invoke's apps (<code>invoke</code> and <code>inv</code>).</p>
-<ol>
-<li>Create a <code>tasks.py</code> file on your home dir:</li>
+   The <code>--include-deps</code> flag is needed to install Invoke's apps (<code>invoke</code> and <code>inv</code>).</li>
+<li>Create a <code>tasks.py</code> file on your home dir:
+   <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;from conjuring import *\n\nnamespace = cast_all_spells()&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>~/tasks.py
+</span></code></pre></div></li>
+<li>You should see the list of Conjuring tasks from any directory where you type this:
+   <div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>invoke<span class="w"> </span>--list
+</span></code></pre></div></li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;from conjuring import *\n\nnamespace = cast_all_spells()&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>~/tasks.py
-</span></code></pre></div>
-<ol>
-<li>You should see the list of Conjuring tasks from any directory where you type this:</li>
-</ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>invoke<span class="w"> </span>--list
-</span></code></pre></div>
 
 
 
