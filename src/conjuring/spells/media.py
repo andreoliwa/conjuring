@@ -5,7 +5,14 @@ from pathlib import Path
 
 from invoke import task
 
-from conjuring.constants import DESKTOP_DIR, DOT_DS_STORE, DOT_NO_MEDIA, DOWNLOADS_DIR, ONE_DRIVE_DIR, PICTURES_DIR
+from conjuring.constants import (
+    DESKTOP_DIR,
+    DOT_DS_STORE,
+    DOT_NOMEDIA,
+    DOWNLOADS_DIR,
+    ONEDRIVE_DIR,
+    ONEDRIVE_PICTURES_DIR,
+)
 from conjuring.grimoire import print_warning, run_command, run_stdout
 
 SHOULD_PREFIX = True
@@ -31,7 +38,7 @@ def rm_empty_dirs(c, dir_, force=False, fd=True):
 
     dirs = list({str(Path(d).expanduser().absolute()) for d in dir_})
     xargs = "xargs -0 -n 1 rm -v"
-    for hidden_file in [DOT_DS_STORE, DOT_NO_MEDIA]:
+    for hidden_file in [DOT_DS_STORE, DOT_NOMEDIA]:
         if fd:
             c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | {xargs}")
         else:
@@ -49,7 +56,7 @@ def rm_empty_dirs(c, dir_, force=False, fd=True):
 def cleanup(c, browse=False):
     """Cleanup pictures."""
     c.run(f"fd -H -0 -tf -i {DOT_DS_STORE} | xargs -0 rm -v")
-    c.run(f"fd -H -0 -tf -i {DOT_NO_MEDIA} | xargs -0 rm -v")
+    c.run(f"fd -H -0 -tf -i {DOT_NOMEDIA} | xargs -0 rm -v")
     c.run("find . -mindepth 1 -type d -empty -print -delete")
 
     # Unhide Picasa originals dir
@@ -65,7 +72,7 @@ def cleanup(c, browse=False):
         c.run(f"mv {original_dir.parent}_Temp {original_dir.parent}")
 
     # Merge the copy dir with the main one
-    for line in run_command(c, "fd -a -uu -t d --color never _copy", str(PICTURES_DIR)).stdout.splitlines():
+    for line in run_command(c, "fd -a -uu -t d --color never _copy", str(ONEDRIVE_PICTURES_DIR)).stdout.splitlines():
         copy_dir = Path(line)
         original_dir = Path(line.replace("_Copy", ""))
         if original_dir.exists():
@@ -77,7 +84,12 @@ def cleanup(c, browse=False):
 
     # List dirs with _Copy files
     copy_dirs = set()
-    for line in run_command(c, "fd -H -t f --color never _copy", str(PICTURES_DIR), hide=True).stdout.splitlines():
+    for line in run_command(
+        c,
+        "fd -H -t f --color never _copy",
+        str(ONEDRIVE_PICTURES_DIR),
+        hide=True,
+    ).stdout.splitlines():
         copy_dirs.add(Path(line).parent)
 
     for dir_ in sorted(copy_dirs):
@@ -103,11 +115,11 @@ def categorize(c, organize=True, browse=True, empty=True):
                 DOWNLOADS_DIR,
                 DESKTOP_DIR,
                 "~/Documents/Shared_Downloads",
-                PICTURES_DIR / "Telegram",
-                PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
-                ONE_DRIVE_DIR / "Documents/Mayan_Staging/Portugues",
-                ONE_DRIVE_DIR / "Documents/Mayan_Staging/English",
-                ONE_DRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
+                ONEDRIVE_PICTURES_DIR / "Telegram",
+                ONEDRIVE_PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
+                ONEDRIVE_DIR / "Documents/Mayan_Staging/Portugues",
+                ONEDRIVE_DIR / "Documents/Mayan_Staging/English",
+                ONEDRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
             ]
         ]
         if empty
@@ -116,7 +128,7 @@ def categorize(c, organize=True, browse=True, empty=True):
 
     current_year = date.today().year
     picture_dirs = [
-        Path(PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
+        Path(ONEDRIVE_PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
     ]
 
     for path in chain(empty_dirs, picture_dirs):  # type: Path

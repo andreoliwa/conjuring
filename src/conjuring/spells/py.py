@@ -6,13 +6,13 @@ from typing import Optional
 
 from invoke import Context, task
 
+from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_poetry_project
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_poetry_project
 
-PYPROJECT_TOML = "pyproject.toml"
 REGEX_RUFF_LINE = re.compile(r"^(?P<filename>.*?):\d+:\d+: (?P<code>.*?)(?P<message> .*)$")
 REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
 

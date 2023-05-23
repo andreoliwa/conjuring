@@ -1,13 +1,17 @@
+"""Paths, filenames and other constants."""
 from pathlib import Path
 
+# Paths
 DESKTOP_DIR = Path("~/Desktop").expanduser()
 DOCUMENTS_DIR = Path("~/Documents").expanduser()
 DOWNLOADS_DIR = Path("~/Downloads").expanduser()
-ONE_DRIVE_DIR = Path("~/OneDrive").expanduser()
-PICTURES_DIR = ONE_DRIVE_DIR / "Pictures"
+ONEDRIVE_DIR = Path("~/OneDrive").expanduser()
+ONEDRIVE_PICTURES_DIR = ONEDRIVE_DIR / "Pictures"
 
-DOT_DS_STORE = ".DS_Store"
-DOT_NO_MEDIA = ".nomedia"
-INVOKE_YAML = Path("~/.invoke.yaml").expanduser()
-
+# Filenames
 CONJURING_INIT = "conjuring_init"
+DOT_DS_STORE = ".DS_Store"
+DOT_NOMEDIA = ".nomedia"
+PRE_COMMIT_CONFIG_YAML = ".pre-commit-config.yaml"
+PYPROJECT_TOML = "pyproject.toml"
+ROOT_INVOKE_YAML = Path("~/.invoke.yaml").expanduser()

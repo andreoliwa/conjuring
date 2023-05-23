@@ -1,5 +1,5 @@
 """Shell tasks."""
-from invoke import task
+from invoke import Context, task
 
 SHOULD_PREFIX = True
 
@@ -9,14 +9,14 @@ COMPLETION_DIRS = (COMPAT_DIR, USER_DIR)
 
 
 @task
-def completion_list(c):
+def completion_list(c: Context) -> None:
     """List existing shell completions."""
     for var in COMPLETION_DIRS:
         c.run(f"exa -l {var}")
 
 
 @task
-def completion_install(c, app):
+def completion_install(c: Context, app: str) -> None:
     """Install shell completion. For now, only for the Bash shell, and only for Click projects.
 
     See:
@@ -30,7 +30,7 @@ def completion_install(c, app):
 
 
 @task
-def completion_uninstall(c, app):
+def completion_uninstall(c: Context, app: str) -> None:
     """Uninstall shell completion from both completion dirs."""
     for completion_dir in COMPLETION_DIRS:
         with c.cd(completion_dir):

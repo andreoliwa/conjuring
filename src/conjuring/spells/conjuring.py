@@ -2,7 +2,7 @@ from pathlib import Path
 
 from invoke import task
 
-from conjuring.constants import CONJURING_INIT, INVOKE_YAML
+from conjuring.constants import CONJURING_INIT, ROOT_INVOKE_YAML
 from conjuring.grimoire import print_success, print_warning, run_command, run_stdout
 
 SHOULD_PREFIX = True
@@ -16,7 +16,7 @@ SHOULD_PREFIX = True
 )
 def init(c, edit=False, revert=False):
     """Init Conjuring on your home dir to merge any local `tasks.py` file with global Conjuring tasks."""
-    config_file = INVOKE_YAML
+    config_file = ROOT_INVOKE_YAML
 
     json_config = f"""'{{"tasks":{{"collection_name":"{CONJURING_INIT}"}}'"""
     if config_file.exists():

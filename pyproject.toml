@@ -122,10 +122,6 @@ ignore = [
 # T201 ? found https://beta.ruff.rs/docs/rules/?q=T201
 # TCH003 Move standard library import ? into a type-checking block https://beta.ruff.rs/docs/rules/?q=TCH003
 # TRY300 Consider moving this statement to an ? block https://beta.ruff.rs/docs/rules/?q=TRY300
-"src/conjuring/colors.py" = ["D100"]
-"src/conjuring/constants.py" = ["D100"]
-"src/conjuring/grimoire.py" = ["ANN001", "ANN003", "ANN201", "B904", "D100", "D101", "D103", "PLR0913", "T201", "TCH003"]
-"src/conjuring/spells/__init__.py" = ["D104"]
 "src/conjuring/spells/aws.py" = ["ANN001", "ANN002", "ANN201", "D100", "D103", "T201"]
 "src/conjuring/spells/blanket.py" = ["ANN001", "ANN201", "ANN204", "D101", "D105", "ISC003", "PGH003", "PLR0913", "T201"]
 "src/conjuring/spells/conjuring.py" = ["ANN001", "ANN201", "D100", "D401", "PLR5501", "T201"]
@@ -142,8 +138,6 @@ ignore = [
 "src/conjuring/spells/paperless.py" = ["ANN001", "ANN201", "ANN202", "ANN204", "D101", "D103", "D105", "FBT003", "PLR0913", "PLR2004", "T201", "TCH003"]
 "src/conjuring/spells/pre_commit.py" = ["ANN001", "ANN201", "ANN202", "D100", "FBT002"]
 "src/conjuring/spells/py.py" = ["ANN001", "ANN201", "ANN202", "D100", "D101", "D102", "FBT003", "PLR0913", "RET504", "T201"]
-"src/conjuring/spells/shell.py" = ["ANN001", "ANN201"]
-"src/conjuring/visibility.py" = ["A002", "ANN001", "ANN201", "D100", "D101", "D103", "PLR0913"]
 "tests/__init__.py" = ["D104"]
 "tests/fixtures/__init__.py" = ["D104"]
 "tests/fixtures/conditional.py" = ["ANN001", "ANN201", "ARG001"]
@@ -153,7 +147,6 @@ ignore = [
 "tests/fixtures/root.py" = ["ANN001", "ANN201", "ARG001"]
 "tests/fixtures/same.py" = ["ANN001", "ANN201", "ARG001"]
 "tests/glob_this.py" = ["ANN001", "ANN201", "ARG001"]
-"tests/test_conjuring.py" = ["ANN001", "ANN201", "ARG001", "E402"]
 
 # https://beta.ruff.rs/docs/rules/#flake8-quotes-q
 [tool.ruff.flake8-quotes]

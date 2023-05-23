@@ -1,3 +1,4 @@
+"""Color constants."""
 COLOR_NONE = "\033[0m"
 COLOR_BLACK = "\033[30m"
 COLOR_RED = "\033[31m"

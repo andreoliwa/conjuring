@@ -1,23 +1,26 @@
+"""Helper functions used in other modules."""
 from __future__ import annotations
 
 import fnmatch
 import os
 import sys
 import time
-import types
 from collections import defaultdict
-from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from shutil import which
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from invoke import Collection, Context, Result, Task
 
 from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE, COLOR_YELLOW
 from conjuring.visibility import display_task
+
+if TYPE_CHECKING:
+    import types
+    from collections.abc import Sequence
 
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
@@ -27,7 +30,7 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs) -> Result:
+def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool) -> Result:
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
@@ -36,7 +39,7 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs) -> 
     return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, **kwargs) -> str:
+def run_stdout(c: Context, *pieces: str, **kwargs: str | bool) -> str:
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("warn", False)
     kwargs.setdefault("hide", True)
@@ -44,34 +47,34 @@ def run_stdout(c: Context, *pieces: str, **kwargs) -> str:
     return c.run(join_pieces(*pieces), **kwargs).stdout.strip()
 
 
-def run_lines(c: Context, *pieces: str, **kwargs) -> list[str]:
+def run_lines(c: Context, *pieces: str, **kwargs: str | bool) -> list[str]:
     """Run a (hidden) command and return the result as lines."""
     return run_stdout(c, *pieces, **kwargs).splitlines()
 
 
-def run_multiple(c: Context, *commands: str, **kwargs) -> None:
+def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
     """Run multiple commands from a list, ignoring empty ones."""
     for cmd in [c for c in commands if str(c).strip()]:
         c.run(cmd, **kwargs)
 
 
-def print_color(*message: str, color=COLOR_NONE, nl=False):
+def print_color(*message: str, color: str = COLOR_NONE, nl: bool = False) -> None:
     """Print a colored message."""
     all_messages = ("\n" if nl else " ").join(message)
-    print(f"{color}{all_messages}{COLOR_NONE}")
+    print(f"{color}{all_messages}{COLOR_NONE}")  # noqa: T201
 
 
-def print_success(*message: str, nl=False):
+def print_success(*message: str, nl: bool = False) -> None:
     """Print a success message."""
     print_color(*message, color=COLOR_LIGHT_GREEN, nl=nl)
 
 
-def print_error(*message: str, nl=False):
+def print_error(*message: str, nl: bool = False) -> None:
     """Print an error message."""
     print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
 
 
-def print_warning(*message: str, nl=False):
+def print_warning(*message: str, nl: bool = False) -> None:
     """Print a warning message."""
     print_color(*message, color=COLOR_YELLOW, nl=nl)
 
@@ -83,7 +86,7 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
     prefix = f"Type {options} +" if allowed_keys else "Press"
 
     while True:
-        print()
+        print()  # noqa: T201
         print_color(*message, color=color)
         time.sleep(0.2)
 
@@ -96,7 +99,17 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
             return lowercase_key
 
 
-def run_with_fzf(c: Context, *pieces: str, query="", header="", multi=False, options="", preview="", **kwargs) -> str:
+# TODO: Use iterfzf or create Fzf class with multi() and single() methods (with different return types
+def run_with_fzf(  # noqa: PLR0913
+    c: Context,
+    *pieces: str,
+    query: str = "",
+    header: str = "",
+    multi: bool = False,
+    options: str = "",
+    preview: str = "",
+    **kwargs: str | bool,
+) -> str:
     """Run a command with fzf and return the chosen entry."""
     fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
     if query:
@@ -123,6 +136,7 @@ def ignore_module(module_name: str) -> bool:
 
 
 def resolve_module_str(module_or_str: types.ModuleType | str) -> types.ModuleType | None:
+    """Resolve a module from a string or return it if it's already a module."""
     if isinstance(module_or_str, str):
         module = import_module(module_or_str)
         if ignore_module(module_or_str):
@@ -135,6 +149,7 @@ def resolve_module_str(module_or_str: types.ModuleType | str) -> types.ModuleTyp
 
 
 def slugify(name: str) -> str:
+    """Slugify a name."""
     return name.replace(".", "_")
 
 
@@ -149,6 +164,8 @@ def guess_full_task_name(prefix: str | None, name: str) -> str:
 
 @dataclass
 class SpellBook:
+    """A collection of Invoke tasks from a module, with a prefix."""
+
     prefix: str
     module: types.ModuleType
     display_all_tasks: bool
@@ -160,7 +177,7 @@ def _is_task_present(name: str, list_: Sequence[str] | None) -> bool:
     return any(fnmatch.fnmatch(name, element) for element in list_)
 
 
-def add_single_task_to(
+def add_single_task_to(  # noqa: PLR0913
     collection: Collection,
     task: Task,
     include: Sequence[str] | None,
@@ -169,6 +186,7 @@ def add_single_task_to(
     prefix: str | None,
     task_name: str | None,
 ) -> bool:
+    """Add a single task to the collection if it matches the include/exclude filters."""
     guessed_name = guess_full_task_name(prefix, task.name)
     should_include = not include or _is_task_present(guessed_name, include)
     should_exclude = exclude and _is_task_present(guessed_name, exclude)
@@ -242,11 +260,11 @@ def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is 
 
 
 def collection_from_python_files(
-    current_module,
+    current_module: types.ModuleType | str,
     *py_glob_patterns: str,
     include: Sequence[str] | None = None,
     exclude: Sequence[str] | None = None,
-):
+) -> Collection:
     """Create a custom collection by adding tasks from multiple files.
 
     Search directories for glob patterns:
@@ -282,9 +300,9 @@ def lazy_env_variable(variable: str, description: str) -> str:
     """Fetch environment variable. On error, display a message with its description."""
     try:
         return os.environ[variable]
-    except KeyError:
+    except KeyError as err:
         print_error(f"Set the {variable!r} environment variable with the {description}.")
-        raise SystemExit
+        raise SystemExit from err
 
 
 def bat(c: Context, *pieces: str) -> Result:
