@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
+from shutil import which
 from typing import Callable
 
 from invoke import Collection, Context, Result, Task
@@ -284,3 +285,9 @@ def lazy_env_variable(variable: str, description: str) -> str:
     except KeyError:
         print_error(f"Set the {variable!r} environment variable with the {description}.")
         raise SystemExit
+
+
+def bat(c: Context, *pieces: str) -> Result:
+    """Display files with "bat" if it's installed. Otherwise, fallback to "cat"."""
+    tool = "bat" if which("bat") else "cat"
+    return run_command(c, tool, *pieces)
