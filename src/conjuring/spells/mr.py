@@ -1,4 +1,4 @@
-"""Tasks to interact with https://myrepos.branchable.com/."""
+"""Spells to interact with myrepos repository management tool https://myrepos.branchable.com/."""
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
@@ -15,9 +15,11 @@ SHOULD_PREFIX = True
 
 @dataclass
 class MyRepos:
+    """Find and interact with myrepos config files."""
+
     context: Context
 
-    def find_configs(self, partial_name: str, echo=False) -> list[Path]:
+    def find_configs(self, partial_name: str, echo: bool = False) -> list[Path]:
         """Find config files in the current dir or dirs above."""
         lower_partial_name = partial_name.lower()
         glob_pattern = MRCONFIG_FILE if not lower_partial_name else f"{MRCONFIG_FILE}*{lower_partial_name}*"
@@ -42,7 +44,7 @@ class MyRepos:
         return sorted({config_dir / c for c in chosen})
 
     @staticmethod
-    def _find_dir_with_mrconfigs(glob_pattern) -> Optional[Path]:
+    def _find_dir_with_mrconfigs(glob_pattern: str) -> Optional[Path]:
         for dir_ in chain([Path.cwd()], Path.cwd().parents):
             for _ in dir_.glob(glob_pattern):
                 # Exit loop on the first file found; fzf will handle the rest
@@ -56,7 +58,7 @@ class MyRepos:
         "echo": "Echo the commands being executed, for debugging purposes. Default: False",
     },
 )
-def grep(c, search_text, config="", echo=False):
+def grep(c: Context, search_text: str, config: str = "", echo: bool = False) -> None:
     """Grep mr repositories with a search text and print the directories in which the text was found.
 
     Needs mr to be preconfigured with files starting with the ".mrconfig" prefix.

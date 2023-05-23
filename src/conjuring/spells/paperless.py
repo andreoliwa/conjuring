@@ -1,18 +1,28 @@
-"""Wrapper tasks for papaerless commands https://github.com/paperless-ngx/paperless-ngx."""
+"""Paperless: maintenance, renamer, sanity check, delete failed duplicates https://github.com/paperless-ngx/paperless-ngx."""
 from __future__ import annotations
 
 import re
 import shutil
 from collections import defaultdict
-from collections.abc import Sequence
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import requests
-from invoke import task
+from invoke import Context, task
 
 from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
 from conjuring.grimoire import lazy_env_variable, print_error, print_success, print_warning, run_lines
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+COUNT_PARTS = 4
+
+STARTING_YEAR = 1900
+
+COUNT_PAIR = 2
 
 SHOULD_PREFIX = True
 
@@ -26,25 +36,29 @@ REGEX_TITLE_WITH_ID = re.compile(r"(?P<name>.*) ?\(#(?P<id>\d+)\)")
 
 
 def paperless_cmd() -> str:
+    """Command to run Paperless with Docker."""
     yaml_file = lazy_env_variable("PAPERLESS_COMPOSE_YAML", "path to the Paperless Docker compose YAML file")
     return f"docker compose -f {yaml_file} exec webserver"
 
 
 def paperless_documents_dir() -> Path:
+    """Directory where Paperless stores documents."""
     documents_dir = lazy_env_variable("PAPERLESS_MEDIA_DOCUMENTS_DIR", "directory where Paperless stores documents")
     return Path(documents_dir).expanduser()
 
 
 def paperless_url() -> str:
+    """URL where Paperless is running."""
     return lazy_env_variable("PAPERLESS_URL", "URL where Paperless is running")
 
 
 def paperless_token() -> str:
+    """Auth token to access Paperless API."""
     return lazy_env_variable("PAPERLESS_TOKEN", "auth token to access Paperless API")
 
 
 @task
-def maintenance(c, reindex=True, optimize=True, thumbnails=True):
+def maintenance(c: Context, reindex: bool = True, optimize: bool = True, thumbnails: bool = True) -> None:
     """Reindex all docs and optionally optimize them.
 
     https://docs.paperless-ngx.com/administration/#index
@@ -59,7 +73,7 @@ def maintenance(c, reindex=True, optimize=True, thumbnails=True):
 
 
 @task
-def rename(c):
+def rename(c: Context) -> None:
     """Rename files.
 
     https://docs.paperless-ngx.com/administration/#renamer
@@ -69,6 +83,8 @@ def rename(c):
 
 @dataclass
 class Document:
+    """A paperless document."""
+
     document_id: int
     title: str
     errors: list = field(default_factory=list, init=False)
@@ -76,10 +92,12 @@ class Document:
 
 @dataclass
 class OrphanFile:
+    """A paperless orphan file."""
+
     source: Path
     destination: Path
 
-    def __lt__(self, other: OrphanFile):
+    def __lt__(self, other: OrphanFile) -> bool:
         return self.source < other.source
 
 
@@ -95,17 +113,17 @@ class OrphanFile:
         "move": "Move files instead of copying",
     },
 )
-def sanity(
-    c,
-    hide=True,
-    orphans=False,
-    thumbnails=False,
-    documents=False,
-    unknown=True,
-    together=False,
-    fix=False,
-    move=False,
-):
+def sanity(  # noqa: PLR0913
+    c: Context,
+    hide: bool = True,
+    orphans: bool = False,
+    thumbnails: bool = False,
+    documents: bool = False,
+    unknown: bool = True,
+    together: bool = False,
+    fix: bool = False,
+    move: bool = False,
+) -> None:
     """Sanity checker. Optionally fix orphan files (copies or movies them to the download dir).
 
     https://docs.paperless-ngx.com/administration/#sanity-checker
@@ -165,7 +183,13 @@ def sanity(
     _handle_items(False, move, unknown, "Unknown lines", unknown_lines)
 
 
-def _process_orphans(partial_path, documents_dir, original_or_archive_files, orphan_files, thumbnail_files):
+def _process_orphans(
+    partial_path: Path,
+    documents_dir: Path | None,
+    original_or_archive_files: dict[str, list[OrphanFile]],
+    orphan_files: list[str],
+    thumbnail_files: list[str],
+) -> None:
     if partial_path.name == DOT_DS_STORE:
         return
 
@@ -185,7 +209,7 @@ def _split_original_archive(
     original_or_archive_files: dict[str, list[OrphanFile]],
     partial_path: Path,
     documents_dir: Path | None = None,
-):
+) -> None:
     file_key = str(Path("/".join(partial_path.parts[1:])).with_suffix(""))
     expanded_parts = []
     for part in partial_path.parts[:-1]:
@@ -198,7 +222,12 @@ def _split_original_archive(
     filtered_parts = [
         part
         for part in expanded_parts
-        if not (part.isnumeric() and len(part) == 4 and int(part) > 1900 and partial_path.stem.startswith(part))
+        if not (
+            part.isnumeric()
+            and len(part) == COUNT_PARTS
+            and int(part) > STARTING_YEAR
+            and partial_path.stem.startswith(part)
+        )
     ]
 
     file_name = partial_path.parts[-1]
@@ -214,9 +243,9 @@ def _split_matched_unmatched(
     matched_files: list[OrphanFile],
     unmatched_files: list[OrphanFile],
     together: bool,
-):
+) -> None:
     for single_or_pair in original_or_archive_files.values():
-        if len(single_or_pair) == 2:
+        if len(single_or_pair) == COUNT_PAIR:
             originals_first = sorted(single_or_pair, reverse=True)
             if together:
                 for orphan_file in originals_first:
@@ -242,7 +271,7 @@ def _handle_items(
     show_details: bool,
     title: str,
     collection: Sequence[str | OrphanFile | Document],
-):
+) -> None:
     length = len(collection)
     which_function = print_error if length else print_success
     which_function(f"{title} (count: {length})")
@@ -277,7 +306,7 @@ def _handle_items(
 
 
 @task
-def delete_failed_duplicates(c, max_delete=100):
+def delete_failed_duplicates(c: Context, max_delete: int = 100) -> None:
     """Delete records marked as duplicate but that cannot be downloaded. So the PDF files can be reimported."""
     session = requests.Session()
     session.headers.update({"authorization": f"token {paperless_token()}"})
@@ -309,17 +338,17 @@ def delete_failed_duplicates(c, max_delete=100):
         document_url = f"{paperless_url()}/documents/{document_id}"
         url = f"{api_document_url}download/"
         req_download = session.head(url)
-        if req_download.status_code != 404:
+        if req_download.status_code != HTTPStatus.NOT_FOUND:
             print_success(document_url, f"Document exists {req_download.status_code=}", clean_line)
             continue
 
         req_document = session.head(api_document_url)
-        if req_document.status_code == 404:
+        if req_document.status_code == HTTPStatus.NOT_FOUND:
             print_warning(document_url, "Document already deleted before", clean_line)
             continue
 
         req_delete = session.delete(api_document_url)
-        if req_delete.status_code == 204:
+        if req_delete.status_code == HTTPStatus.NO_CONTENT:
             print_success(document_url, f"Document deleted #{delete_count}", clean_line)
             delete_count += 1
             if delete_count >= max_delete:

@@ -1,6 +1,7 @@
+"""pre-commit: install, uninstall, run/autoupdate selected hooks."""
 from typing import Optional
 
-from invoke import task
+from invoke import Context, task
 
 from conjuring.grimoire import run_command, run_stdout, run_with_fzf
 from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
@@ -9,11 +10,11 @@ SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = has_pre_commit_config_yaml
 
 
-def _run_garbage_collector(c):
+def _run_garbage_collector(c: Context) -> None:
     c.run("pre-commit gc")
 
 
-def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None):
+def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None) -> str:
     """Prepare a list of hook types to install/uninstall."""
     hooks = ["pre-commit"]
     if desired_hooks:
@@ -25,7 +26,7 @@ def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None):
 
 
 @task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install commit message hooks"})
-def install(c, gc=False, commit_msg=True):
+def install(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
     """Pre-commit install hooks."""
     if gc:
         _run_garbage_collector(c)
@@ -33,7 +34,7 @@ def install(c, gc=False, commit_msg=True):
 
 
 @task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Uninstall commit message hooks"})
-def uninstall(c, gc=False, commit_msg=True):
+def uninstall(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
     """Pre-commit uninstall ALL hooks."""
     if gc:
         _run_garbage_collector(c)
@@ -48,7 +49,7 @@ def uninstall(c, gc=False, commit_msg=True):
         " Use 'all', '.' or '-' to run all hooks.",
     },
 )
-def run(c, hooks):
+def run(c: Context, hooks: str) -> None:
     """Pre-commit run all hooks or a specific one. Don't stop on failures. Needs fzf and yq."""
     split_hooks = hooks.split(",")
     chosen_hooks = []
@@ -67,7 +68,7 @@ def run(c, hooks):
 
 
 @task()
-def auto(c, repo="", bleed=False):
+def auto(c: Context, repo: str = "", bleed: bool = False) -> None:
     """Autoupdate a Git hook or all hooks with the latest tag. Needs fzf and yq."""
     command = ""
     if repo:

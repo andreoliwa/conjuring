@@ -1,6 +1,9 @@
+"""OneDrive: list files with conflicts, ..."""
+from __future__ import annotations
+
 from pathlib import Path
 
-from invoke import task
+from invoke import Context, task
 
 from conjuring.grimoire import run_lines, run_stdout
 
@@ -11,8 +14,8 @@ SHOULD_PREFIX = True
     help={"dir": "Directory; can be used multiple times. Default: current dir"},
     iterable=["dir_"],
 )
-def conflicts(c, dir_):
-    """Display files with conflicts."""
+def conflicts(c: Context, dir_: list[str | Path]) -> None:
+    """List files with conflicts."""
     if not dir_:
         dir_ = [Path.cwd()]
 
