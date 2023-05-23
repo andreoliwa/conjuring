@@ -34,7 +34,7 @@ def is_git_repo() -> bool:
 def is_poetry_project() -> bool:
     """Return True if the current dir is a Poetry project."""
     pyproject_toml = Path(PYPROJECT_TOML)
-    return pyproject_toml.exists() and TOOL_POETRY_SECTION in pyproject_toml.read_text()
+    return pyproject_toml.exists() and TOOL_POETRY_SECTION in pyproject_toml.read_text(encoding="utf-8")
 
 
 def display_task(task: Task, module_flag: bool) -> bool:  # TODO: refactor: rename to should_display_task
