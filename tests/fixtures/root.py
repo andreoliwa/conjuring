@@ -1,13 +1,13 @@
-from invoke import task
+from invoke import Context, task
 
 SHOULD_PREFIX = True
 
 
 @task
-def a(c):
-    pass
+def a(c: Context) -> None:
+    assert c
 
 
 @task
-def b(c):
-    pass
+def b(c: Context) -> None:
+    assert c

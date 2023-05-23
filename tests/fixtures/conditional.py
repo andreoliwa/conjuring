@@ -1,6 +1,6 @@
 import os
 
-from invoke import task
+from invoke import Context, task
 
 
 def should_display_tasks() -> bool:
@@ -8,10 +8,10 @@ def should_display_tasks() -> bool:
 
 
 @task
-def task_e(c):
-    pass
+def task_e(c: Context) -> None:
+    assert c
 
 
 @task
-def task_f(c):
-    pass
+def task_f(c: Context) -> None:
+    assert c

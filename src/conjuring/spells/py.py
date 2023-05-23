@@ -1,10 +1,11 @@
+"""Python and Poetry: install venvs, run tests and coverage, install debug tools, generate Ruff config."""
 import re
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 
-from invoke import Context, task
+from invoke import Context, Result, task
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
@@ -18,6 +19,8 @@ REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
 
 
 class PyEnv:
+    """pyenv-related tasks."""
+
     def __init__(self, context: Context) -> None:
         self.context = context
 
@@ -26,26 +29,27 @@ class PyEnv:
         output = self.context.run("pyenv local", warn=True).stdout.strip()
         return output and "no local version" not in output
 
-    def set_local(self, python_version: str):
+    def set_local(self, python_version: str) -> Result:
         """Set the local pyenv version."""
         latest = self.list_versions(python_version)[-1]
-        self.context.run(f"pyenv local {latest}")
+        return self.context.run(f"pyenv local {latest}")
 
-    def list_versions(self, python_version: Optional[str] = None):
+    def list_versions(self, python_version: Optional[str] = None) -> list[str]:
         """List all installed Python versions, or only the ones matching the desired version."""
         all_versions = run_lines(self.context, "pyenv versions --bare")
         if not python_version:
             return all_versions
 
-        selected_versions = [version for version in all_versions if version.startswith(python_version)]
-        return selected_versions
+        return [version for version in all_versions if version.startswith(python_version)]
 
 
 class Poetry:
+    """Poetry-related tasks."""
+
     def __init__(self, context: Context) -> None:
         self.context = context
 
-    def used_in_project(self, display_error=True) -> bool:
+    def used_in_project(self, display_error: bool = True) -> bool:
         """Check if Poetry is being used."""
         used = int(
             run_command(
@@ -59,14 +63,16 @@ class Poetry:
             print_error("This task only works with Poetry projects (so far).")
         return bool(used)
 
-    def parse_python_version(self, venv: str):
+    @staticmethod
+    def parse_python_version(venv: str) -> str:
         """For now, assuming we only have Poetry venvs."""
         return venv.split(" ")[0].split("-py")[1]
 
-    def remove_venv(self, python_version: str):
-        self.context.run(f"poetry env remove python{python_version}")
+    def remove_venv(self, python_version: str) -> Result:
+        """Remove a Poetry venv."""
+        return self.context.run(f"poetry env remove python{python_version}")
 
-    def guess_python_version(self):
+    def guess_python_version(self) -> str:
         """Guess Python version from pyproject.toml."""
         # TODO: rewrite this hack and use a TOML package to read the values directly
         pyproject_lines = run_lines(
@@ -84,12 +90,13 @@ class Poetry:
             raise SystemExit
         return list(versions)[0]
 
-    def use_venv(self, python_version: str):
-        self.context.run(f"poetry env use python{python_version}")
+    def use_venv(self, python_version: str) -> Result:
+        """Use a Poetry venv."""
+        return self.context.run(f"poetry env use python{python_version}")
 
 
 @task(help={"inject": "Pipx repo to inject this project into"})
-def editable(c, inject=""):
+def editable(c: Context, inject: str = "") -> None:
     """Hack to install a Poetry package as editable until Poetry supports PEP660 hooks.
 
     It won't be needed anymore when https://github.com/python-poetry/poetry-core/pull/182 is merged.
@@ -120,7 +127,7 @@ def editable(c, inject=""):
 
 
 @task(help={"version": "Python version", "force": "Recreate the environment", "delete_all": "Delete all environments"})
-def install(c, version="", force=False, delete_all=False):
+def install(c: Context, version: str = "", force: bool = False, delete_all: bool = False) -> None:
     """Install a Python virtual environment. For now, only works with Poetry."""
     venv_list = run_lines(c, "poetry env list", hide=False)
     poetry = Poetry(c)
@@ -145,7 +152,7 @@ def install(c, version="", force=False, delete_all=False):
 
 
 @task(help={"watch": "Watch for changes and re-run affected tests. Install pytest-watch and pytest-testmon first."})
-def test(c, watch=False):
+def test(c: Context, watch: bool = False) -> None:
     """Run tests with pytest."""
     if not Poetry(c).used_in_project():
         return
@@ -155,7 +162,7 @@ def test(c, watch=False):
 
 
 @task(help={"show_all": "Show all lines, even if they are covered"})
-def coverage(c, show_all=False):
+def coverage(c: Context, show_all: bool = False) -> None:
     """Run tests with pytest and coverage."""
     if not Poetry(c).used_in_project():
         return
@@ -178,7 +185,15 @@ def coverage(c, show_all=False):
         "devtools": "Install https://pypi.org/project/devtools/",
     },
 )
-def debug_tools(c, all_=False, ipython=False, ipdb=False, pudb=False, icecream=False, devtools=False):
+def debug_tools(  # noqa: PLR0913
+    c: Context,
+    all_: bool = False,
+    ipython: bool = False,
+    ipdb: bool = False,
+    pudb: bool = False,
+    icecream: bool = False,
+    devtools: bool = False,
+) -> None:
     """Install debug tools."""
     if not Poetry(c).used_in_project():
         return
@@ -195,7 +210,7 @@ def debug_tools(c, all_=False, ipython=False, ipdb=False, pudb=False, icecream=F
 
 
 @task(klass=MagicTask)
-def ruff_config(c):
+def ruff_config(c: Context) -> None:
     """Generate ruff configuration from existing warnings."""
     # TODO: feat: check if the global ruff is installed and use it if it is
     ignore: dict[str, set[str]] = defaultdict(set)
@@ -217,7 +232,7 @@ def ruff_config(c):
         ignore[code].add(clean_message.strip())
         per_file_ignores[filename].add(code)
 
-    def _print_ruff_codes(ignore_section: bool):
+    def _print_ruff_codes(ignore_section: bool) -> None:
         for _code, messages in sorted(ignore.items()):
             joined_messages = ",".join(sorted(messages))
             if ignore_section:
