@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.6.0 (2023-05-24)
+
+### Feat
+
+- **direnv**: command to init .envrc
+
+### Refactor
+
+- replace print() by typer.echo()
+- add typing to py and remaining tests
+- add typing to mkdocs, mr, onedrive, paperless, pre-commit
+- add typing and docs to some modules
+
 ## v0.5.0 (2023-05-22)
 
 ### Feat
