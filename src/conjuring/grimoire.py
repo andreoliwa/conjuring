@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fnmatch
 import os
+import re
 import sys
 import time
 from collections import defaultdict
@@ -23,7 +24,10 @@ if TYPE_CHECKING:
     import types
     from collections.abc import Sequence
 
+# TODO: document or remove this variable
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
+
+REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
 
 
 def join_pieces(*pieces: str) -> str:

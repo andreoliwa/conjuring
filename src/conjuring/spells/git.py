@@ -1,5 +1,4 @@
 """Git: update all, extract subtree, rewrite history, ..."""
-import re
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache
@@ -10,6 +9,7 @@ from invoke import Context, Exit, UnexpectedExit, task
 
 from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
 from conjuring.grimoire import (
+    REGEX_JIRA,
     print_error,
     print_success,
     run_command,
@@ -382,26 +382,32 @@ def watch(c: Context) -> None:
 @task(
     help={
         "prefix": "Keep the Conventional Commits prefix",
-        "sort": "Sort bullets",
+        "original_order": "Don't sort bullets, keep them in original order",
     },
 )
-def body(c: Context, prefix: bool = True, sort: bool = True) -> None:
+def body(c: Context, prefix: bool = False, original_order: bool = False) -> None:
     """Prepare a commit body to be used on pull requests and squashed commits."""
     default_branch = set_default_branch(c)
     bullets = []
     for line in run_lines(c, f"git log {default_branch}..", "--format=%s%n%b"):
         clean = line.strip(" -")
-        if "Merge branch" in clean or "Revert " in clean or "This reverts" in clean or not clean:
+        if (
+            "Merge branch" in clean
+            or "Merge remote-tracking branch" in clean
+            or "Revert " in clean
+            or "This reverts" in clean
+            or not clean
+        ):
             continue
+
+        # Remove Jira ticket with regex
+        clean = REGEX_JIRA.sub("", clean).replace("()", "").replace("[]", "").strip(" -")
 
         # Split on the Conventional Commit prefix
         if not prefix and ":" in clean:
-            clean = clean.split(":", 1)[1]
-
-        # Remove Jira ticket with regex
-        clean = re.sub(r"\[?\D+-\d+[\]:]", "", clean).strip(" -")
+            clean = clean.split(":", 1)[1].strip()
 
         bullets.append(f"- {clean}")
 
-    results = sorted(set(bullets)) if sort else bullets
+    results = bullets if original_order else sorted(set(bullets))
     typer.echo("\n".join(results))
