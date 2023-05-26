@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from conjuring.constants import CONJURING_SPELLS_DIR
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class Spellbook:
         self.sys_path_dirs: dict[Path, str] = {}
 
     def import_dirs(self, *spell_dir: str | Path) -> Spellbook:  # TODO: test
-        """Import all spells from the given glob pattern."""
+        """Import all Invoke tasks from the modules or packages that match the glob pattern."""
         for str_or_path in spell_dir:
             dir_ = Path(str_or_path).expanduser()
             if not dir_.is_dir():
@@ -85,11 +86,10 @@ class Spellbook:
             exclude=config.exclude,
         )
 
-        conjuring_spell_dir = (Path(__file__).parent / "spells").absolute()
         self._add_tasks(
             namespace,
-            sorted(conjuring_spell_dir.glob("*.py")),
-            ".".join(conjuring_spell_dir.parts[-2:]),
+            sorted(CONJURING_SPELLS_DIR.glob("*.py")),
+            ".".join(CONJURING_SPELLS_DIR.parts[-2:]),
             config,
         )
 

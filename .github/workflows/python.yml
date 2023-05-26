@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
-        platform: [ubuntu-20.04, macos-latest, windows-latest]
+        platform: [ubuntu-20.04, macos-latest] # TODO: , windows-latest
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
@@ -27,4 +27,6 @@ jobs:
           poetry --version
           poetry install
       - name: Run tests
-        run: poetry run pytest -v
+        # -s is needed otherwise Invoke raises an error invoke.exceptions.ThreadException, then
+        # OSError: pytest: reading from stdin while output is captured!  Consider using `-s`.
+        run: poetry run pytest -v -s

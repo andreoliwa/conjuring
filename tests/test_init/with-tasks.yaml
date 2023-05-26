@@ -1,0 +1,5 @@
+# File exists with some other content
+some:
+  other: content # existing content preserved
+tasks:
+  collection_name: conjuring_init

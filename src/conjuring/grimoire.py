@@ -168,7 +168,7 @@ def guess_full_task_name(prefix: str | None, name: str) -> str:
 
 
 @dataclass
-class SpellBook:
+class PrefixedSpellbook:
     """A collection of Invoke tasks from a module, with a prefix."""
 
     prefix: str
@@ -222,7 +222,7 @@ def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is 
         then the tasks will be added to the collection with a prefix.
     """
     resolved_module = resolve_module_str(from_module_or_str)
-    prefixed_spell_books: dict[str, list[SpellBook]] = defaultdict(list)
+    prefixed_spell_books: dict[str, list[PrefixedSpellbook]] = defaultdict(list)
 
     sub_collection = Collection.from_module(resolved_module)
     for t in sub_collection.tasks.values():
@@ -234,7 +234,7 @@ def magically_add_tasks(  # noqa: C901 # TODO: refactor: magically_add_tasks is 
         if use_prefix:
             # The module should have a prefix: add it later as a sub-collection of the main collection
             prefix = task_module.__name__.split(".")[-1]
-            prefixed_spell_books[prefix].append(SpellBook(prefix, task_module, display_all_tasks))
+            prefixed_spell_books[prefix].append(PrefixedSpellbook(prefix, task_module, display_all_tasks))
             continue
         if not display_task(t, display_all_tasks):
             continue
