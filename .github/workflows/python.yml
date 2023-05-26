@@ -27,4 +27,6 @@ jobs:
           poetry --version
           poetry install
       - name: Run tests
-        run: poetry run pytest -v
+        # -s is needed otherwise Invoke raises an error invoke.exceptions.ThreadException, then
+        # OSError: pytest: reading from stdin while output is captured!  Consider using `-s`.
+        run: poetry run pytest -v -s
