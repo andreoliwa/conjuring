@@ -39,7 +39,7 @@ class Spellbook:
         self.sys_path_dirs: dict[Path, str] = {}
 
     def import_dirs(self, *spell_dir: str | Path) -> Spellbook:  # TODO: test
-        """Import all spells from the given glob pattern."""
+        """Import all Invoke tasks from the modules or packages that match the glob pattern."""
         for str_or_path in spell_dir:
             dir_ = Path(str_or_path).expanduser()
             if not dir_.is_dir():

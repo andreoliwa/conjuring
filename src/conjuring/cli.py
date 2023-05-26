@@ -51,16 +51,25 @@ class Mode(str, Enum):
 @app.command()
 def init(
     mode: Mode = Mode.all_,
+    dir_: list[Path] = typer.Option(
+        None,
+        "--dir",
+        "-d",
+        help="Path to a directory with Python packages or modules containing Invoke tasks to import as global tasks",
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
+        readable=True,
+    ),
     force: bool = typer.Option(False, help=f"Overwrite {CONJURING_INIT_PY_PATH} if it exists"),
 ) -> None:
     """Init Invoke to work with Conjuring, merging local `tasks.py` files with global Conjuring tasks."""
-    # FIXME[AA]: --import
     # FIXME[AA]: iterfzf? it's old, 2020
     if patch_invoke_yaml(ROOT_INVOKE_YAML):
         print_warning(f"File {ROOT_INVOKE_YAML} was configured for Conjuring")
     else:
         print_success(f"File {ROOT_INVOKE_YAML} is already configured for Conjuring")
-    generate_conjuring_init(mode, force)
+    generate_conjuring_init(CONJURING_INIT_PY_PATH, mode, dir_, force)
 
 
 def patch_invoke_yaml(config_file: Path) -> bool:
@@ -87,41 +96,56 @@ def patch_invoke_yaml(config_file: Path) -> bool:
     return True
 
 
-def generate_conjuring_init(mode: Mode, force: bool) -> None:
+def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], force: bool) -> bool:
     """Generate the Conjuring init file."""
     python_code = '''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
         from conjuring import Spellbook
 
-        namespace = Spellbook().$function($args)
+        namespace = Spellbook()${import_dirs}.${function}(${args})
     '''
     template = Template(dedent(python_code).lstrip())
-    if mode == Mode.opt_in:
-        contents = template.substitute(function="cast_only", args='"aws*", "k8s*", "pre-commit*", "py*", "*install"')
-    elif mode == Mode.opt_out:
-        contents = template.substitute(function="cast_all_except", args='"media*", "onedrive*"')
-    else:
-        contents = template.substitute(function="cast_all", args="")
 
-    if CONJURING_INIT_PY_PATH.exists() and not force:
+    import_dirs_call = ""
+    if import_dirs:
+        flat_list = "\n".join([f'    "{dir_}",' for dir_ in import_dirs])
+        import_dirs_call = f".import_dirs(\n{flat_list}\n)"
+
+    if mode == Mode.opt_in:
+        contents = template.substitute(
+            import_dirs=import_dirs_call,
+            function="cast_only",
+            args='"aws*", "k8s*", "pre-commit*", "py*", "*install"',
+        )
+    elif mode == Mode.opt_out:
+        contents = template.substitute(
+            import_dirs=import_dirs_call,
+            function="cast_all_except",
+            args='"media*", "onedrive*"',
+        )
+    else:
+        contents = template.substitute(import_dirs=import_dirs_call, function="cast_all", args="")
+
+    if path.exists() and not force:
         fancy_option = "| diff-so-fancy" if which("diff-so-fancy") else ""
         context = Context()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True, dir=Path().home()) as temp_file:
             temp_file.write(contents)
             temp_file.flush()
             result = context.run(
-                f"diff -u {CONJURING_INIT_PY_PATH} {temp_file.name}{fancy_option}",
+                f"diff -u {path} {temp_file.name}{fancy_option}",
                 hide=True,
                 warn=True,
             )
             if result.stdout:
-                print_error(f"File {CONJURING_INIT_PY_PATH} already exists. Use --force to override")
+                print_error(f"File {path} already exists. Use --force to override")
                 typer.echo(result.stdout)
             else:
-                print_success(f"File {CONJURING_INIT_PY_PATH} is already updated")
-            return
+                print_success(f"File {path} is already updated")
+            return False
 
-    CONJURING_INIT_PY_PATH.write_text(contents)
+    path.write_text(contents)
 
-    print_success(f"File {CONJURING_INIT_PY_PATH} was updated")
+    print_success(f"File {path} was updated")
     typer.echo(contents)
+    return True

@@ -1,6 +1,9 @@
 from pathlib import Path
+from textwrap import dedent
 
-from conjuring.cli import patch_invoke_yaml
+import pytest
+
+from conjuring.cli import Mode, generate_conjuring_init, patch_invoke_yaml
 
 
 def test_file_doesnt_exist(datadir: Path) -> None:
@@ -30,3 +33,25 @@ def test_file_without_tasks(datadir: Path) -> None:
     with_tasks: Path = datadir / "with-tasks.yaml"
     assert patch_invoke_yaml(file)
     assert file.read_text() == with_tasks.read_text()
+
+
+@pytest.mark.parametrize(
+    ("mode", "function_call"),
+    [
+        (Mode.all_, "cast_all()"),
+        (Mode.opt_in, 'cast_only("aws*", "k8s*", "pre-commit*", "py*", "*install")'),
+        (Mode.opt_out, 'cast_all_except("media*", "onedrive*")'),
+    ],
+)
+def test_modes(datadir: Path, mode: Mode, function_call: str) -> None:
+    file: Path = datadir / "root.py"
+    assert not file.exists()
+    assert generate_conjuring_init(file, mode, [], False)
+
+    expected = f'''
+        """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
+        from conjuring import Spellbook
+
+        namespace = Spellbook().{function_call}
+    '''
+    assert file.read_text() == dedent(expected).lstrip()
