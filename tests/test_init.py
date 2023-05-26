@@ -55,3 +55,21 @@ def test_modes(datadir: Path, mode: Mode, function_call: str) -> None:
         namespace = Spellbook().{function_call}
     '''
     assert file.read_text() == dedent(expected).lstrip()
+
+
+def test_import_dirs(datadir: Path) -> None:
+    file: Path = datadir / "root.py"
+    assert not file.exists()
+    package: Path = datadir / "my_package"
+    assert generate_conjuring_init(file, Mode.all_, [datadir, package], False)
+
+    expected = f'''
+        """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
+        from conjuring import Spellbook
+
+        namespace = Spellbook().import_dirs(
+            "{datadir}",
+            "{package}",
+        ).cast_all()
+    '''
+    assert file.read_text() == dedent(expected).lstrip()

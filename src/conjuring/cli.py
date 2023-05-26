@@ -69,7 +69,10 @@ def init(
         print_warning(f"File {ROOT_INVOKE_YAML} was configured for Conjuring")
     else:
         print_success(f"File {ROOT_INVOKE_YAML} is already configured for Conjuring")
-    generate_conjuring_init(CONJURING_INIT_PY_PATH, mode, dir_, force)
+
+    output = generate_conjuring_init(CONJURING_INIT_PY_PATH, mode, dir_, force)
+    if output:
+        typer.echo(output)
 
 
 def patch_invoke_yaml(config_file: Path) -> bool:
@@ -96,8 +99,8 @@ def patch_invoke_yaml(config_file: Path) -> bool:
     return True
 
 
-def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], force: bool) -> bool:
-    """Generate the Conjuring init file."""
+def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], force: bool) -> str:
+    """Generate the Conjuring init file. Return True if the file is correct, False otherwise."""
     python_code = '''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
         from conjuring import Spellbook
@@ -128,6 +131,8 @@ def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], for
 
     if path.exists() and not force:
         fancy_option = "| diff-so-fancy" if which("diff-so-fancy") else ""
+
+        # For some reason, calling Context().run(...) doesn't work; maybe because it's inside the "with" block?
         context = Context()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True, dir=Path().home()) as temp_file:
             temp_file.write(contents)
@@ -139,13 +144,12 @@ def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], for
             )
             if result.stdout:
                 print_error(f"File {path} already exists. Use --force to override")
-                typer.echo(result.stdout)
-            else:
-                print_success(f"File {path} is already updated")
-            return False
+                return result.stdout
+
+            print_success(f"File {path} is already updated")
+            return ""
 
     path.write_text(contents)
 
     print_success(f"File {path} was updated")
-    typer.echo(contents)
-    return True
+    return contents
