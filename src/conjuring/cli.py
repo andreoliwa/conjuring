@@ -13,12 +13,15 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+import tempfile
 from enum import Enum
 from pathlib import Path
+from shutil import which
 from string import Template
 from textwrap import dedent
 
 import typer
+from invoke import Context
 from ruamel.yaml import YAML
 
 from conjuring.constants import CONJURING_INIT, ROOT_INVOKE_YAML
@@ -26,6 +29,7 @@ from conjuring.grimoire import print_error, print_success, print_warning
 
 KEY_TASKS = "tasks"
 KEY_COLLECTION_NAME = "collection_name"
+CONJURING_INIT_PY_PATH = Path(f"~/{CONJURING_INIT}.py").expanduser()
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -44,16 +48,18 @@ class Mode(str, Enum):
 
 
 @app.command()
-def init(mode: Mode = Mode.all_) -> None:
+def init(
+    mode: Mode = Mode.all_,
+    force: bool = typer.Option(False, help=f"Overwrite {CONJURING_INIT_PY_PATH} if it exists"),
+) -> None:
     """Init Invoke to work with Conjuring, merging local `tasks.py` files with global Conjuring tasks."""
     # FIXME[AA]: --import
-    # FIXME[AA]: --force
     # FIXME[AA]: iterfzf? it's old, 2020
     if patch_invoke_yaml(ROOT_INVOKE_YAML):
         print_warning(f"File {ROOT_INVOKE_YAML} was configured for Conjuring")
     else:
         print_success(f"File {ROOT_INVOKE_YAML} is already configured for Conjuring")
-    generate_conjuring_init(mode)
+    generate_conjuring_init(mode, force)
 
 
 def patch_invoke_yaml(config_file: Path) -> bool:
@@ -80,11 +86,10 @@ def patch_invoke_yaml(config_file: Path) -> bool:
     return True
 
 
-def generate_conjuring_init(mode: Mode) -> None:
+def generate_conjuring_init(mode: Mode, force: bool) -> None:
     """Generate the Conjuring init file."""
-    conjuring_init = Path(f"~/{CONJURING_INIT}.py").expanduser()
     python_code = '''
-        """Bootstrap file for Conjuring, created by `conjuring init. See https://github.com/andreoliwa/conjuring."""
+        """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
         from conjuring import Spellbook
 
         namespace = Spellbook().$function($args)
@@ -97,16 +102,25 @@ def generate_conjuring_init(mode: Mode) -> None:
     else:
         contents = template.substitute(function="cast_all", args="")
 
-    if conjuring_init.exists():
-        print_error(f"File {conjuring_init} already exists. Use --force to override")
-        current = conjuring_init.read_text()
-        print_success("Current contents:")
-        typer.echo(current)
-        print_warning("New contents:")
-        typer.echo(contents)
-        return
+    if CONJURING_INIT_PY_PATH.exists() and not force:
+        fancy_option = "| diff-so-fancy" if which("diff-so-fancy") else ""
+        context = Context()
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True, dir=Path().home()) as temp_file:
+            temp_file.write(contents)
+            temp_file.flush()
+            result = context.run(
+                f"diff -u {CONJURING_INIT_PY_PATH} {temp_file.name}{fancy_option}",
+                hide=True,
+                warn=True,
+            )
+            if result.stdout:
+                print_error(f"File {CONJURING_INIT_PY_PATH} already exists. Use --force to override")
+                typer.echo(result.stdout)
+            else:
+                print_success(f"File {CONJURING_INIT_PY_PATH} is already updated")
+            return
 
-    conjuring_init.write_text(contents)
+    CONJURING_INIT_PY_PATH.write_text(contents)
 
-    print_success(f"File {conjuring_init} was updated")
+    print_success(f"File {CONJURING_INIT_PY_PATH} was updated")
     typer.echo(contents)
