@@ -73,3 +73,15 @@ def test_import_dirs(datadir: Path) -> None:
         ).cast_all()
     '''
     assert file.read_text() == dedent(expected).lstrip()
+
+
+def test_file_exists(datadir: Path) -> None:
+    file: Path = datadir / "root.py"
+    assert not file.exists()
+    output = generate_conjuring_init(file, Mode.all_, [], False)
+    assert output == file.read_text()
+
+    assert not generate_conjuring_init(file, Mode.all_, [], False)
+
+    output = generate_conjuring_init(file, Mode.opt_in, [], False)
+    assert 'only("aws*"' in output
