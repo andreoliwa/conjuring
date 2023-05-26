@@ -13,6 +13,7 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+import os
 import tempfile
 from enum import Enum
 from pathlib import Path
@@ -67,7 +68,7 @@ def patch_invoke_yaml(config_file: Path) -> bool:
     yaml = YAML()
 
     if not config_file.exists():
-        data = yaml.load(f"{KEY_TASKS}:\n  {KEY_COLLECTION_NAME}: {CONJURING_INIT}")
+        data = yaml.load(f"{KEY_TASKS}:{os.linesep}  {KEY_COLLECTION_NAME}: {CONJURING_INIT}")
         yaml.dump(data, config_file)
         return True
 
