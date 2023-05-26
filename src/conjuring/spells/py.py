@@ -1,6 +1,7 @@
 """Python and Poetry: install venvs, run tests and coverage, install debug tools, generate Ruff config."""
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
 from typing import Optional
@@ -19,11 +20,11 @@ REGEX_RUFF_LINE = re.compile(r"^(?P<filename>.*?):\d+:\d+: (?P<code>.*?)(?P<mess
 REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
 
 
+@dataclass
 class PyEnv:
     """pyenv-related tasks."""
 
-    def __init__(self, context: Context) -> None:
-        self.context = context
+    context: Context
 
     def has_local(self) -> bool:
         """Check if a local Python version is set."""
@@ -44,11 +45,11 @@ class PyEnv:
         return [version for version in all_versions if version.startswith(python_version)]
 
 
+@dataclass()
 class Poetry:
     """Poetry-related tasks."""
 
-    def __init__(self, context: Context) -> None:
-        self.context = context
+    context: Context
 
     def used_in_project(self, display_error: bool = True) -> bool:
         """Check if Poetry is being used."""
@@ -94,6 +95,18 @@ class Poetry:
     def use_venv(self, python_version: str) -> Result:
         """Use a Poetry venv."""
         return self.context.run(f"poetry env use python{python_version}")
+
+
+class Pytest:
+    """Pytest-related tasks."""
+
+    @staticmethod
+    def command(s: bool) -> str:
+        """Build pytest command."""
+        command = "pytest -v"
+        if s:
+            command += " -s"
+        return command
 
 
 @task(help={"inject": "Pipx repo to inject this project into"})
@@ -152,18 +165,28 @@ def install(c: Context, version: str = "", force: bool = False, delete_all: bool
     c.run("poetry lock --check && poetry install")
 
 
-@task(help={"watch": "Watch for changes and re-run affected tests. Install pytest-watch and pytest-testmon first."})
-def test(c: Context, watch: bool = False) -> None:
+@task(
+    help={
+        "watch": "Watch for changes and re-run affected tests. Install pytest-watch and pytest-testmon first.",
+        "s": "Don't capture output (same shortcut as pytest)",
+    },
+)
+def test(c: Context, watch: bool = False, s: bool = False) -> None:
     """Run tests with pytest."""
     if not Poetry(c).used_in_project():
         return
 
-    command = 'ptw --runner "pytest --testmon"' if watch else "pytest -v"
+    command = 'ptw --runner "pytest --testmon"' if watch else Pytest.command(s)
     run_command(c, "poetry run", command)
 
 
-@task(help={"show_all": "Show all lines, even if they are covered"})
-def coverage(c: Context, show_all: bool = False) -> None:
+@task(
+    help={
+        "show_all": "Show all lines, even if they are covered",
+        "s": "Don't capture output (same shortcut as pytest)",
+    },
+)
+def coverage(c: Context, show_all: bool = False, s: bool = False) -> None:
     """Run tests with pytest and coverage."""
     if not Poetry(c).used_in_project():
         return
@@ -173,7 +196,7 @@ def coverage(c: Context, show_all: bool = False) -> None:
     skip_option = "" if show_all else ":skip-covered"
     options.append(f"--cov-report=term-missing{skip_option}")
 
-    run_command(c, "poetry run pytest -v", *options)
+    run_command(c, "poetry run", Pytest.command(s), *options)
 
 
 @task(
