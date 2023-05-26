@@ -2,6 +2,7 @@
 from pathlib import Path
 
 # Paths
+CONJURING_SPELLS_DIR = Path(__file__).parent / "spells"
 DESKTOP_DIR = Path("~/Desktop").expanduser()
 DOCUMENTS_DIR = Path("~/Documents").expanduser()
 DOWNLOADS_DIR = Path("~/Downloads").expanduser()

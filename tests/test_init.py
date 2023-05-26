@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 from textwrap import dedent
+from unittest.mock import Mock
 
 import pytest
 
@@ -35,26 +37,52 @@ def test_file_without_tasks(datadir: Path) -> None:
     assert file.read_text() == with_tasks.read_text()
 
 
+@pytest.fixture()
+def mock_fzf(mocker: Mock) -> Mock:
+    mocked_method = mocker.patch("conjuring.cli.iterfzf")
+    mocked_method.return_value = ["abc", "def", "ghi"]
+    return mocked_method
+
+
 @pytest.mark.parametrize(
     ("mode", "function_call"),
     [
-        (Mode.all_, "cast_all()"),
-        (Mode.opt_in, 'cast_only("aws*", "k8s*", "pre-commit*", "py*", "*install")'),
-        (Mode.opt_out, 'cast_all_except("media*", "onedrive*")'),
+        (Mode.all_, "cast_all()" + os.linesep),
+        (
+            Mode.opt_in,
+            """
+            cast_only(
+                "abc*",
+                "def*",
+                "ghi*",
+            )
+            """,
+        ),
+        (
+            Mode.opt_out,
+            """
+            cast_all_except(
+                "abc*",
+                "def*",
+                "ghi*",
+            )
+            """,
+        ),
     ],
 )
-def test_modes(datadir: Path, mode: Mode, function_call: str) -> None:
+def test_modes(datadir: Path, mode: Mode, function_call: str, mock_fzf: Mock) -> None:
+    assert mock_fzf
     file: Path = datadir / "root.py"
     assert not file.exists()
     assert generate_conjuring_init(file, mode, [], False)
 
-    expected = f'''
+    expected = '''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
         from conjuring import Spellbook
 
-        namespace = Spellbook().{function_call}
+        namespace = Spellbook().
     '''
-    assert file.read_text() == dedent(expected).lstrip()
+    assert file.read_text() == dedent(expected).strip() + dedent(function_call).lstrip()
 
 
 def test_import_dirs(datadir: Path) -> None:
@@ -75,7 +103,8 @@ def test_import_dirs(datadir: Path) -> None:
     assert file.read_text() == dedent(expected).lstrip()
 
 
-def test_file_exists(datadir: Path) -> None:
+def test_file_exists(datadir: Path, mock_fzf: Mock) -> None:
+    assert mock_fzf
     file: Path = datadir / "root.py"
     assert not file.exists()
     output = generate_conjuring_init(file, Mode.all_, [], False)
@@ -84,4 +113,4 @@ def test_file_exists(datadir: Path) -> None:
     assert not generate_conjuring_init(file, Mode.all_, [], False)
 
     output = generate_conjuring_init(file, Mode.opt_in, [], False)
-    assert 'only("aws*"' in output
+    assert "cast_only(" in output

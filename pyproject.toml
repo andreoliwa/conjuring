@@ -24,11 +24,13 @@ invoke = "*"
 requests = "*"
 typer = "*"
 ruamel-yaml = "*"
+iterfzf = "*"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-cov = "*"
 pytest-datadir = "*"
+pytest-mock = "*"
 
 [tool.poetry.scripts]
 conjuring = "conjuring.cli:app"
