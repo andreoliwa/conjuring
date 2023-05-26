@@ -23,9 +23,15 @@ python = "^3.9"
 invoke = "*"
 requests = "*"
 typer = "*"
+ruamel-yaml = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
+pytest-cov = "*"
+pytest-datadir = "*"
+
+[tool.poetry.scripts]
+conjuring = "conjuring.cli:app"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -77,6 +83,7 @@ ignore = [
     "FBT001", # Boolean positional arg in function definition
     "FBT002", # Boolean default value in function definition
     "FBT003", # Boolean positional value in function call
+    "TD001", # Invalid TO DO tag
     "TD002", # Missing author https://beta.ruff.rs/docs/rules/#flake8-todos-td
     "TD003", # Missing issue link on the line following this
 ]
