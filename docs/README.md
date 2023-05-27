@@ -20,7 +20,7 @@ merged with local project tasks.
 - Merge your project tasks with the global reusable tasks
 - Prefix task names of your custom module
 
-More details on the [features documentation](https://andreoliwa.github.io/conjuring/features/).
+More details on the [features documentation](features.md).
 
 ## Tasks
 
@@ -34,11 +34,18 @@ is a collection of Invoke tasks.
    pipx install --include-deps conjuring
    ```
    The `--include-deps` flag is needed to install Invoke's apps (`invoke` and `inv`).
-2. Create a `tasks.py` file on your home dir:
+2. Run the command to configure files on your home directory:
+
    ```shell
-   echo -e "from conjuring import *\n\nnamespace = cast_all_spells()" > ~/tasks.py
+   conjuring init
+
+   # For more options:
+   # conjuring init --help
    ```
+
 3. You should see the list of Conjuring tasks from any directory where you type this:
    ```shell
    invoke --list
    ```
+
+For more configuration options, [read the detailed documentation](features.md#modes).

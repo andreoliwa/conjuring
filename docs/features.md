@@ -1,40 +1,39 @@
 # Features
 
-## Merge any local `tasks.py` file with global Conjuring tasks
+## Modes
 
-If you create a `tasks.py` in a project, it will override the Conjuring
-`tasks.py` on your home dir.
-You will only see your local project tasks.
+Conjuring has 3 available modes (all tasks, opt-in and opt-out), detailed below.
 
-To avoid that, go to your home dir and run:
+When you run `conjuring init`, it creates an `~/.invoke.yaml` file and a
+`~/conjuring_init.py` on your home directory.
 
-```shell
-invoke conjuring.init
-```
-
-This will create an `~/.invoke.yaml` file and rename your main tasks file to `~/conjuring_init.py`.
+This will merge any existing local `tasks.py` file with the global
+Conjuring tasks.
 
 For more details, read about [default configuration values on Configuration —
 Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#default-configuration-values).
 
-## Use all global Conjuring tasks provided by this package
+### All tasks
 
-If you want to use all tasks included in this package, you can import them all.
+To use all global Conjuring tasks provided by this package, run:
 
-```python
-# ~/conjuring_init.py
-from conjuring import Spellbook
-
-namespace = Spellbook().cast_all()
+```shell
+conjuring init --mode all
 ```
 
 Run `invoke --list` from any directory, and you will see all Conjuring tasks.
 
-## Only include the global Conjuring tasks you want (opt-in mode)
+### Opt-in
 
-You may want to choose which Conjuring modules and tasks you want to use.
+If you want to only include the global Conjuring tasks you want, run this
+command and select the files with [fzf](https://github.com/junegunn/fzf):
 
-Suppose you only want:
+```shell
+conjuring init --mode opt-in
+```
+
+Or you can edit the Python bootstrap file manually. Suppose you only want
+these global tasks:
 
 - AWS;
 - Kubernetes;
@@ -51,9 +50,16 @@ from conjuring import Spellbook
 namespace = Spellbook().cast_only("aws*", "k8s*", "pre-commit*", "py*", "*install")
 ```
 
-## Use all Conjuring tasks excluding some (opt-out mode)
+### Opt-out
 
-You may want to use all Conjuring modules and tasks, except for a few.
+To use all Conjuring modules and tasks, except for a few, run this
+command and select the files with [fzf](https://github.com/junegunn/fzf):
+
+```shell
+conjuring init --mode opt-out
+```
+
+Or you can edit the Python bootstrap file manually.
 
 Suppose you want all Conjuring tasks except media and OneDrive tasks.
 This is the way:
@@ -65,7 +71,93 @@ from conjuring import Spellbook
 namespace = Spellbook().cast_all_except("media*", "onedrive*")
 ```
 
-## Add your own custom tasks from Python modules or packages to global tasks
+## Shell enhancements
+
+Invoke can also be configured with environment variables for an even smoother
+experience.
+
+Note: this is not a Conjuring feature, it's built-in in Invoke.
+
+### Echo all commands
+
+Echo all commands in all tasks by default, like 'make' does
+([documentation](http://docs.pyinvoke.org/en/stable/concepts/configuration.html#basic-rules)):
+
+```shell
+# ~/.bashrc, ~/.zshrc or your favourite shell
+export INVOKE_RUN_ECHO=1
+```
+
+### Coloured output
+
+Use a pseudo-terminal by default (display colored output)
+([documentation](http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run)):
+
+```shell
+# ~/.bashrc, ~/.zshrc or your favourite shell
+export INVOKE_RUN_PTY=1
+```
+
+### Short aliases
+
+Add short aliases for the `invoke` command:
+
+```shell
+# ~/.bashrc, ~/.zshrc or your favourite shell
+alias i='invoke'
+alias il='invoke --list'
+alias ih='invoke --help'
+alias ir='invoke --dry'
+```
+
+### Auto-completion
+
+Follow this quick copy/paste setup to configure auto-completion for Conjuring.
+Or read the links below for more details.
+
+To enable completion on terminals, add this to your `~/.bash_profile`:
+
+```shell
+# ~/.bash_profile
+export BASH_COMPLETION_USER_DIR="$HOME/.local/share/bash-completion"
+if [[ -d "$BASH_COMPLETION_USER_DIR/completions" ]]; then
+    for COMPLETION in "$BASH_COMPLETION_USER_DIR/completions/"*; do
+        source "$COMPLETION"
+    done
+fi
+# https://github.com/tiangolo/typer installs completion files in this directory
+if [[ -d "$HOME/.bash_completions/" ]]; then
+    for COMPLETION in "$HOME/.bash_completions/"*; do
+        [[ -r "$COMPLETION" ]] && source "$COMPLETION"
+    done
+fi
+```
+
+Then run these commands to install auto-completion for Invoke and Conjuring:
+
+```shell
+# To get help, run `invoke` or `invoke --help`
+invoke --print-completion-script=bash > $BASH_COMPLETION_USER_DIR/completions/invoke.bash-completion
+
+# To get help, run `conjuring` or `conjuring --help`
+conjuring --install-completion bash
+```
+
+Then open a new terminal, type `invoke <TAB>` or `conjuring <TAB>`,
+and you will have auto-completion.
+
+You can even set up auto-completion for aliases (like `i <TAB>` for `invoke`)
+with the [complete-alias](https://github.com/cykerway/complete-alias) project.
+
+Some links for more details:
+
+- [Shell tab completion — Invoke documentation](https://docs.pyinvoke.org/en/stable/invoke.html#shell-tab-completion)
+- [scop/bash-completion: Programmable completion functions for bash](https://github.com/scop/bash-completion)
+- [cykerway/complete-alias: automagical shell alias completion;](https://github.com/cykerway/complete-alias)
+
+## Creating your own reusable tasks
+
+### Add your own custom tasks from Python modules or packages to global tasks
 
 You can create your own Python modules or packages with Invoke tasks, and they
 can be added to the global scope and be available from any directory.
@@ -74,8 +166,8 @@ can be added to the global scope and be available from any directory.
 - The import method detects if the directory is a Python package or not,
   and imports it accordingly;
 - The example uses `cast_all()`, but you can use any of the other `cast_*`
-  methods described above ([opt-in](#only-include-the-global-conjuring-tasks-you-want-opt-in-mode)
-  or [opt-out](#use-all-conjuring-tasks-excluding-some-opt-out-mode)).
+  methods described above ([opt-in](#opt-in)
+  or [opt-out](#opt-out)).
 
 ```python
 # ~/conjuring_init.py
@@ -91,7 +183,7 @@ namespace = (
 )
 ```
 
-## Display your custom task modules conditionally
+### Display your custom task modules conditionally
 
 Some modules under the `spells` directory have a `should_display_tasks` boolean
 function to control whether the tasks are displayed or not.
@@ -115,7 +207,7 @@ Other use cases:
 - [pre-commit](https://github.com/pre-commit/pre-commit) tasks: display only
   when there is a `.pre-commit-config.yaml` file in the current dir.
 
-## Display your custom individual tasks conditionally
+### Display your custom individual tasks conditionally
 
 A task can have its own visibility settings, even if the owner module is
 configured to not display tasks.
@@ -149,7 +241,7 @@ Use case:
 - you still want some individual tasks to always be displayed;
 - or you want different conditions to display certain tasks.
 
-## Merge your project tasks with the global reusable tasks
+### Merge your project tasks with the global reusable tasks
 
 Create local `conjuring*.py` files, and they will be merged with the `tasks.py`
 in your home dir.
@@ -191,7 +283,7 @@ Available tasks:
  <... the global Conjuring tasks will show up here...>
 ```
 
-## Prefix task names of your custom module
+### Prefix task names of your custom module
 
 If the module defines this boolean constant with a value of `True`, then the
 name of the module will be added as a prefix to tasks.
