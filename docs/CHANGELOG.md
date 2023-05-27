@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.7.0 (2023-05-27)
+
+### Feat
+
+- "conjuring init" command to set up files (#11)
+- **py**: -s option in py.test and py.coverage
+
+### Fix
+
+- **git**: improve commit body clean-up
+
 ## v0.6.0 (2023-05-24)
 
 ### Feat
