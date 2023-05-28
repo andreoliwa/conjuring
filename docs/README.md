@@ -1,8 +1,3 @@
-<!-- markdownlint-disable-file MD031 -->
-
-[//]: # "It breaks numbered lists on Mkdocs"
-[//]: # "MD031/blanks-around-fences Fenced code blocks should be surrounded by blank lines"
-
 # Conjuring
 
 Reusable global [Invoke](https://github.com/pyinvoke/invoke) tasks that can be
@@ -31,23 +26,26 @@ Read more in [Spells (API reference)](https://andreoliwa.github.io/conjuring/spe
 
 ## Quick setup
 
-1. Install Conjuring in an isolated virtualenv with [pipx](https://github.com/pypa/pipx):
-   ```shell
-   pipx install --include-deps conjuring
-   ```
-   The `--include-deps` flag is needed to install Invoke's apps (`invoke` and `inv`).
-2. Run the command to configure files on your home directory:
+Install Conjuring in an isolated virtualenv with [pipx](https://github.com/pypa/pipx):
 
-   ```shell
-   conjuring init
+```shell
+pipx install --include-deps conjuring
+```
 
-   # For more options:
-   # conjuring init --help
-   ```
+The `--include-deps` flag is needed to install Invoke's apps (`invoke` and `inv`).
 
-3. You should see the list of Conjuring tasks from any directory where you type this:
-   ```shell
-   invoke --list
-   ```
+Run the command to configure files on your home directory:
+
+```shell
+# For more options:
+# conjuring init --help
+conjuring init
+```
+
+You should see the list of Conjuring tasks from any directory where you type this:
+
+```shell
+invoke --list
+```
 
 For more configuration options, [read the detailed documentation](https://andreoliwa.github.io/conjuring/features/#modes).
