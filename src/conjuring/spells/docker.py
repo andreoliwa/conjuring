@@ -1,4 +1,4 @@
-"""Docker: remove containers, volumes and more.."""
+"""[Docker](https://www.docker.com/): remove containers and volumes."""
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, run_command

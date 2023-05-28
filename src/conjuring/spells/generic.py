@@ -1,4 +1,4 @@
-"""Generic spells: list to-do items in files, ..."""
+"""Generic spells: list to-do items in files."""
 from __future__ import annotations
 
 from collections import defaultdict

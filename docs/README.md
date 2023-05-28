@@ -20,12 +20,14 @@ merged with local project tasks.
 - Merge your project tasks with the global reusable tasks
 - Prefix task names of your custom module
 
-More details on the [features documentation](features.md).
+More details on the [features documentation](https://andreoliwa.github.io/conjuring/features/).
 
 ## Tasks
 
 Each module under [the `conjuring/spells` directory](https://github.com/andreoliwa/conjuring/tree/master/src/conjuring/spells)
 is a collection of Invoke tasks.
+
+Read more in [Spells (API reference)](https://andreoliwa.github.io/conjuring/spells/).
 
 ## Quick setup
 
@@ -48,4 +50,4 @@ is a collection of Invoke tasks.
    invoke --list
    ```
 
-For more configuration options, [read the detailed documentation](features.md#modes).
+For more configuration options, [read the detailed documentation](https://andreoliwa.github.io/conjuring/features/#modes).

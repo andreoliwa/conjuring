@@ -1,4 +1,4 @@
-"""Paperless: maintenance, renamer, sanity check, delete failed duplicates https://github.com/paperless-ngx/paperless-ngx."""
+"""[Paperless](https://github.com/paperless-ngx/paperless-ngx): maintenance, renamer, sanity, delete duplicates."""
 from __future__ import annotations
 
 import re

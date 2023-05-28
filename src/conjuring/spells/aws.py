@@ -1,4 +1,4 @@
-"""AWS: ECR login, ..."""
+"""AWS: ECR login."""
 import os
 from typing import Optional
 from urllib.parse import urlparse
@@ -56,8 +56,7 @@ def clean_ecr_url(c: Context, url: Optional[str] = None) -> str:
 def ecr_login(c: Context, url: str = "") -> None:
     """Log in to AWS ECR.
 
-    Using Amazon ECR with the AWS CLI - Amazon ECR:
-    https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html#cli-authenticate-registry
+    [Using Amazon ECR with the AWS CLI - Amazon ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html#cli-authenticate-registry)
     """
     profile = fzf_aws_profile(c)
     url = clean_ecr_url(c, url)

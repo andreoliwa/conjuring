@@ -1,4 +1,4 @@
-"""pre-commit: install, uninstall, run/autoupdate selected hooks."""
+"""[pre-commit](https://pre-commit.com/): install, uninstall, run/autoupdate selected hooks."""
 from typing import Optional
 
 from invoke import Context, task

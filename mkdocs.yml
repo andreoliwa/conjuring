@@ -10,17 +10,32 @@ theme:
   # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/
   palette:
     primary: deep orange
+  features:
+    # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#code-copy-button
+    - content.code.copy
 
 # TODO: fail build if some page is missing from nav
 nav:
   - README.md
   - features.md
+  - spells.md
   - related.md
   - CHANGELOG.md
 
   # https://www.mkdocs.org/user-guide/configuration/#plugins
 plugins:
   - search
+  # https://github.com/mkdocstrings/mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          # https://mkdocstrings.github.io/python/usage/#paths
+          paths: [src]
+          options:
+            # https://mkdocstrings.github.io/python/usage/configuration/general/#show_source
+            show_source: true
+            # https://mkdocstrings.github.io/python/usage/configuration/headings/#show_root_heading
+            show_root_heading: true
 
 # https://www.mkdocs.org/user-guide/configuration/#markdown_extensions
 markdown_extensions:
@@ -28,6 +43,11 @@ markdown_extensions:
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
+
+  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
 
   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
   - pymdownx.highlight:

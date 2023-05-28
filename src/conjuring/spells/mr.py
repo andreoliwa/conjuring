@@ -1,4 +1,4 @@
-"""Spells to interact with myrepos repository management tool https://myrepos.branchable.com/."""
+"""[myrepos repository management tool](https://myrepos.branchable.com/): grep text in repos."""
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path

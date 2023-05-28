@@ -1,4 +1,4 @@
-"""Kubernetes: get pods, show variables from config maps, validate score and more."""
+"""[Kubernetes](https://kubernetes.io/): get pods, show variables from config maps, validate score and more."""
 from dataclasses import dataclass
 from typing import Optional, cast
 

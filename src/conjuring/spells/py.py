@@ -1,4 +1,8 @@
-"""Python and Poetry: install venvs, run tests and coverage, install debug tools, generate Ruff config."""
+"""[Python](https://www.python.org/) and [Poetry](https://github.com/python-poetry/poetry).
+
+Install venvs, run tests and coverage, install debug tools,
+generate [Ruff](https://github.com/charliermarsh/ruff) config.
+"""
 import re
 from collections import defaultdict
 from dataclasses import dataclass

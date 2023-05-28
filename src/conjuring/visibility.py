@@ -31,6 +31,11 @@ def is_git_repo() -> bool:
     return Path(".git").exists()
 
 
+def has_pyproject_toml() -> bool:
+    """Return True if the current dir has a pyproject.toml file."""
+    return Path(PYPROJECT_TOML).exists()
+
+
 def is_poetry_project() -> bool:
     """Return True if the current dir is a Poetry project."""
     pyproject_toml = Path(PYPROJECT_TOML)

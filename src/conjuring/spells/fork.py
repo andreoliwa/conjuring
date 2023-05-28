@@ -1,4 +1,4 @@
-"""GitHub forks: configure remote, sync..."""
+"""[GitHub](https://github.com/) forks: configure remote and sync."""
 from invoke import Context, Exit, task
 
 from conjuring.spells.git import Git
@@ -8,10 +8,7 @@ SHOULD_PREFIX = True
 
 @task
 def remote(c: Context, username: str, remote: str = "") -> None:
-    """Configure a remote for a fork.
-
-    https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork
-    """
+    """[Configure a remote for a fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork)."""
     if username.startswith("-"):
         msg = "Arguments should be: username [--remote]"
         raise Exit(msg)
@@ -25,10 +22,7 @@ def remote(c: Context, username: str, remote: str = "") -> None:
 
 @task
 def sync(c: Context, remote: str = "upstream") -> None:
-    """Sync a fork.
-
-    https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork
-    """
+    """[Sync a fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)."""
     c.run(f"git fetch {remote}")
     existing_branch = Git(c).checkout("master", "main")
     c.run(f"git merge {remote}/{existing_branch}")

@@ -1,4 +1,4 @@
-"""Git: update all, extract subtree, rewrite history, ..."""
+"""[Git](https://git-scm.com/): update all, extract subtree, rewrite history, ..."""
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache

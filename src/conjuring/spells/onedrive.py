@@ -1,4 +1,4 @@
-"""OneDrive: list files with conflicts, ..."""
+"""[OneDrive](https://onedrive.com/): list files with conflicts."""
 from __future__ import annotations
 
 from pathlib import Path

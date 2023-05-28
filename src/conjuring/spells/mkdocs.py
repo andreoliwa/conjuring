@@ -1,14 +1,35 @@
-"""MkDocs: install, build, deploy to GitHub, serve locally. https://github.com/mkdocs/mkdocs/."""
+"""[MkDocs](https://github.com/mkdocs/mkdocs/) spells: install, build, deploy to GitHub, serve locally."""
 from invoke import Context, task
+
+from conjuring.visibility import has_pyproject_toml
 
 SHOULD_PREFIX = True
 
 
-@task
-def install(c: Context) -> None:
+EXTENSIONS: list[str] = [
+    "mkdocs-material",  # https://github.com/squidfunk/mkdocs-material
+    "mkdocs-render-swagger-plugin",  # https://github.com/bharel/mkdocs-render-swagger-plugin
+    "mkdocstrings[python]",  # https://github.com/mkdocstrings/mkdocstrings
+]
+
+
+@task(help={"force": "Force re-installation of MkDocs."})
+def install(c: Context, force: bool = False) -> None:
     """Install MkDocs globally with the Material plugin. Upgrade if it already exists."""
-    c.run("pipx install mkdocs || pipx upgrade mkdocs")
-    c.run("pipx inject mkdocs mkdocs-material mkdocs-render-swagger-plugin")
+    upgrade = " || pipx upgrade mkdocs" if force else ""
+    c.run(f"pipx install mkdocs{upgrade}", warn=True)
+    for extension in EXTENSIONS:
+        c.run(f"pipx inject mkdocs {extension}")
+
+    # Inject the local project into the global MkDocs installation.
+    if has_pyproject_toml():
+        c.run("pipx inject mkdocs -e .")
+
+
+@task
+def uninstall(c: Context) -> None:
+    """Uninstall MkDocs globally."""
+    c.run("pipx uninstall mkdocs")
 
 
 @task

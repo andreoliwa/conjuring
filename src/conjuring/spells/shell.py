@@ -1,4 +1,4 @@
-"""Shell tasks."""
+"""Shell: install/uninstall completion."""
 from invoke import Context, task
 
 SHOULD_PREFIX = True
@@ -19,9 +19,8 @@ def completion_list(c: Context) -> None:
 def completion_install(c: Context, app: str) -> None:
     """Install shell completion. For now, only for the Bash shell, and only for Click projects.
 
-    See:
-    - https://click.palletsprojects.com/en/8.0.x/shell-completion/
-    - https://github.com/click-contrib/click-completion
+    - [Shell Completion — Click Documentation (8.0.x)](https://click.palletsprojects.com/en/8.0.x/shell-completion/)
+    - [click-contrib/click-completion: Add or enhance bash, fish, zsh and powershell completion in Click](https://github.com/click-contrib/click-completion)
     """
     completion_file = f"{COMPAT_DIR}{app}.bash-completion"
     c.run(f"_{app.upper()}_COMPLETE=bash_source {app} > {completion_file}")

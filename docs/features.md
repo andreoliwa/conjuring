@@ -80,23 +80,32 @@ Note: this is not a Conjuring feature, it's built-in in Invoke.
 
 ### Echo all commands
 
-Echo all commands in all tasks by default, like 'make' does
-([documentation](http://docs.pyinvoke.org/en/stable/concepts/configuration.html#basic-rules)):
+Echo all commands in all tasks by default, like
+[Make](https://www.gnu.org/software/make/) does.
 
 ```shell
 # ~/.bashrc, ~/.zshrc or your favourite shell
 export INVOKE_RUN_ECHO=1
 ```
 
+!!! Docs
+
+    <!-- markdownlint-disable-line MD046 -->
+    [Environment variables: Basic rules — Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration.html#basic-rules).
+
 ### Coloured output
 
-Use a pseudo-terminal by default (display colored output)
-([documentation](http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run)):
+Use a pseudo-terminal by default (display colored output):
 
 ```shell
 # ~/.bashrc, ~/.zshrc or your favourite shell
 export INVOKE_RUN_PTY=1
 ```
+
+!!! Docs
+
+    <!-- markdownlint-disable-line MD046 -->
+    [runners — Invoke documentation](https://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run).
 
 ### Short aliases
 

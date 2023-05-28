@@ -1,4 +1,4 @@
-"""Media files: remove empty dirs, clean up picture dirs, download YouTube videos, transcribe audio, ..."""
+"""Media files: remove empty dirs, clean up picture dirs, download YouTube videos, transcribe audio."""
 from __future__ import annotations
 
 import os
