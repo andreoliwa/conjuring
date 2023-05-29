@@ -144,8 +144,23 @@ def editable(c: Context, inject: str = "") -> None:
     c.run("rm setup.py")
 
 
-@task(help={"version": "Python version", "force": "Recreate the environment", "delete_all": "Delete all environments"})
-def install(c: Context, version: str = "", force: bool = False, delete_all: bool = False) -> None:
+@task(
+    help={
+        "version": "Python version",
+        "force": "Recreate the environment",
+        "delete_all": "Delete all environments",
+        "pipx": "Install with pipx",
+        "editable": "Install as editable",
+    },
+)
+def install(  # noqa: PLR0913
+    c: Context,
+    version: str = "",
+    force: bool = False,
+    delete_all: bool = False,
+    pipx: bool = False,
+    editable: bool = False,
+) -> None:
     """Install a Python virtual environment. For now, only works with Poetry."""
     venv_list = run_lines(c, "poetry env list", hide=False)
     poetry = Poetry(c)
@@ -167,6 +182,8 @@ def install(c: Context, version: str = "", force: bool = False, delete_all: bool
     poetry.use_venv(version)
 
     c.run("poetry lock --check && poetry install")
+    if pipx:
+        run_command(c, "pipx install", "--python", f"python{version}", " --editable" if editable else "", ".")
 
 
 @task(

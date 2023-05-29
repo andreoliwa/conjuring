@@ -96,7 +96,7 @@ ignore = [
 # D100 Missing docstring in public module
 # D103 Missing docstring in public function
 # D104 Missing docstring in public package
-# S101 Use of ? detected https://beta.ruff.rs/docs/rules/?q=S101
+# S101 Use of ? detected https://beta.ruff.rs/docs/rules/#flake8-bandit-s
 "src/conjuring/cli.py" = ["B008"]
 "tests/**" = ["D100", "D103", "D104", "S101"]
 
