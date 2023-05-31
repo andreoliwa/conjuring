@@ -168,8 +168,11 @@ def install(  # noqa: PLR0913
         return
 
     if delete_all:
-        for venv in venv_list:
-            poetry.remove_venv(poetry.parse_python_version(venv))
+        for venv_name in venv_list:
+            if ".venv" in venv_name:
+                c.run("rm -rf .venv")
+            else:
+                poetry.remove_venv(poetry.parse_python_version(venv_name))
 
     if not version:
         version = poetry.guess_python_version()
@@ -184,6 +187,7 @@ def install(  # noqa: PLR0913
     c.run("poetry lock --check && poetry install")
     if pipx:
         run_command(c, "pipx install", "--python", f"python{version}", " --editable" if editable else "", ".")
+    c.run("poetry env list")
 
 
 @task(
