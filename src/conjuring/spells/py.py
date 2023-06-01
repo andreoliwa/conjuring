@@ -192,17 +192,24 @@ def install(  # noqa: PLR0913
 
 @task(
     help={
-        "watch": "Watch for changes and re-run affected tests. Install pytest-watch and pytest-testmon first.",
         "s": "Don't capture output (same shortcut as pytest)",
     },
 )
-def test(c: Context, watch: bool = False, s: bool = False) -> None:
+def test(c: Context, s: bool = False) -> None:
     """Run tests with pytest."""
     if not Poetry(c).used_in_project():
         return
 
-    command = 'ptw --runner "pytest --testmon"' if watch else Pytest.command(s)
-    run_command(c, "poetry run", command)
+    run_command(c, "poetry run", Pytest.command(s))
+
+
+@task
+def watch(c: Context) -> None:
+    """Watch changed files and run tests with pytest."""
+    if not Poetry(c).used_in_project():
+        return
+
+    run_command(c, "poetry run", 'ptw --runner "pytest --testmon"')
 
 
 @task(
@@ -232,6 +239,8 @@ def coverage(c: Context, show_all: bool = False, s: bool = False) -> None:
         "pudb": "Install https://pypi.org/project/pudb/",
         "icecream": "Install https://pypi.org/project/icecream/",
         "devtools": "Install https://pypi.org/project/devtools/",
+        "watch": "Install https://github.com/joeyespo/pytest-watch",
+        "watcher": "Install https://github.com/olzhasar/pytest-watcher",
     },
 )
 def debug_tools(  # noqa: PLR0913
@@ -242,11 +251,20 @@ def debug_tools(  # noqa: PLR0913
     pudb: bool = False,
     icecream: bool = False,
     devtools: bool = False,
+    watch: bool = False,
+    watcher: bool = False,
 ) -> None:
     """Install debug tools."""
     if not Poetry(c).used_in_project():
         return
 
+    if watch and watcher:
+        print_error("Use only one of --watch and --watcher.")
+        return
+    if watch:
+        c.run("poetry run python -m pip uninstall -y pytest-watcher")
+    elif watcher:
+        c.run("poetry run python -m pip uninstall -y pytest-watch")
     tools = [
         "pip",
         "ipython" if ipython or all_ else "",
@@ -254,6 +272,8 @@ def debug_tools(  # noqa: PLR0913
         "pudb" if pudb or all_ else "",
         "icecream" if icecream or all_ else "",
         "devtools[pygments]" if devtools or all_ else "",
+        "pytest-watch" if watch or all_ else "",
+        "pytest-watcher" if watcher or all_ else "",
     ]
     run_command(c, "poetry run pip install --upgrade", *tools)
 
