@@ -59,7 +59,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 3.2.2
+    rev: v3.3.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
