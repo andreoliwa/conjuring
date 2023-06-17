@@ -24,7 +24,7 @@ repos:
       - id: prettier
         stages: [commit]
   - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
-    rev: v0.34.0
+    rev: v0.35.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/psf/black
@@ -59,7 +59,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.3.0
+    rev: 3.2.2
     hooks:
       - id: commitizen
         stages: [commit-msg]
