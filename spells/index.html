@@ -15,7 +15,7 @@
         <link rel="next" href="../related/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -8277,7 +8277,7 @@ generate <a href="https://github.com/charliermarsh/ruff">Ruff</a> config.</p>
 
 
 <h3 id="conjuring.spells.py.ruff_config" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">ruff_config</span><span class="p">(</span><span class="n">c</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">ruff_config</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 </h3>
 
@@ -8335,17 +8335,8 @@ generate <a href="https://github.com/charliermarsh/ruff">Ruff</a> config.</p>
 <span class="normal"><a href="#__codelineno-0-325">325</a></span>
 <span class="normal"><a href="#__codelineno-0-326">326</a></span>
 <span class="normal"><a href="#__codelineno-0-327">327</a></span>
-<span class="normal"><a href="#__codelineno-0-328">328</a></span>
-<span class="normal"><a href="#__codelineno-0-329">329</a></span>
-<span class="normal"><a href="#__codelineno-0-330">330</a></span>
-<span class="normal"><a href="#__codelineno-0-331">331</a></span>
-<span class="normal"><a href="#__codelineno-0-332">332</a></span>
-<span class="normal"><a href="#__codelineno-0-333">333</a></span>
-<span class="normal"><a href="#__codelineno-0-334">334</a></span>
-<span class="normal"><a href="#__codelineno-0-335">335</a></span>
-<span class="normal"><a href="#__codelineno-0-336">336</a></span>
-<span class="normal"><a href="#__codelineno-0-337">337</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">)</span>
-</span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="k">def</span> <span class="nf">ruff_config</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;Show the URL of the documentation&quot;</span><span class="p">})</span>
+</span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="k">def</span> <span class="nf">ruff_config</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate ruff configuration from existing warnings.&quot;&quot;&quot;</span>
 </span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a>    <span class="c1"># TODO: feat: check if the global ruff is installed and use it if it is</span>
 </span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="n">ignore</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
@@ -8367,40 +8358,31 @@ generate <a href="https://github.com/charliermarsh/ruff">Ruff</a> config.</p>
 </span><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="n">ignore</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">clean_message</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 </span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="n">per_file_ignores</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
 </span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a>
-</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="k">def</span> <span class="nf">_print_ruff_codes</span><span class="p">(</span><span class="n">ignore_section</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="k">for</span> <span class="n">_code</span><span class="p">,</span> <span class="n">messages</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ignore</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>            <span class="n">joined_messages</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">messages</span><span class="p">))</span>
-</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a>            <span class="k">if</span> <span class="n">ignore_section</span><span class="p">:</span>
-</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a>                <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;    &quot;</span><span class="si">{</span><span class="n">_code</span><span class="si">}</span><span class="s1">&quot;, # </span><span class="si">{</span><span class="n">joined_messages</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">nl</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>                <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# </span><span class="si">{</span><span class="n">_code</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">joined_messages</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">nl</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a>            <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; https://beta.ruff.rs/docs/rules/?q=</span><span class="si">{</span><span class="n">_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a>
-</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="c1"># TODO: edit pyproject.toml existing config for both sections,</span>
-</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>    <span class="c1">#  skipping existing lines and adding new codes at the bottom</span>
-</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="s2">            # https://beta.ruff.rs/docs/settings/#ignore</span>
-</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="s2">            ignore = [</span>
-</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="s2">                # Ignores to keep</span>
-</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="s2">                # TODO: Ignores to fix</span>
-</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="s2">        &quot;&quot;&quot;</span>
-</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="n">header</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="n">_print_ruff_codes</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="k">if</span> <span class="n">per_file_ignores</span><span class="p">:</span>
-</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="s2">            # https://beta.ruff.rs/docs/settings/#per-file-ignores</span>
-</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="s2">            [tool.ruff.per-file-ignores]</span>
-</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="s2">            # Ignores to keep</span>
-</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="s2">            # TODO: Ignores to fix</span>
-</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="s2">        &quot;&quot;&quot;</span>
-</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="n">header</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="n">_print_ruff_codes</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>        <span class="k">for</span> <span class="n">file</span><span class="p">,</span> <span class="n">codes</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">per_file_ignores</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>            <span class="n">sorted_codes</span> <span class="o">=</span> <span class="s1">&#39;&quot;, &quot;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">codes</span><span class="p">))</span>
-</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>            <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s1">&quot; = [&quot;</span><span class="si">{</span><span class="n">sorted_codes</span><span class="si">}</span><span class="s1">&quot;]&#39;</span><span class="p">)</span>
+</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="c1"># TODO: edit pyproject.toml existing config for both sections,</span>
+</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="c1">#  skipping existing lines and adding new codes at the bottom</span>
+</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
+</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="s2">            # https://beta.ruff.rs/docs/settings/#ignore</span>
+</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="s2">            ignore = [</span>
+</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="s2">                # Ignores to keep</span>
+</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="s2">                # TODO: Ignores to fix</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="s2">        &quot;&quot;&quot;</span>
+</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="n">header</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>        <span class="n">_print_ruff_codes</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a>    <span class="k">if</span> <span class="n">per_file_ignores</span><span class="p">:</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="s2">            # https://beta.ruff.rs/docs/settings/#per-file-ignores</span>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="s2">            [tool.ruff.per-file-ignores]</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="s2">            # Ignores to keep</span>
+</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="s2">            # TODO: Ignores to fix</span>
+</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="s2">        &quot;&quot;&quot;</span>
+</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="n">header</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="n">_print_ruff_codes</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">ignore</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="k">for</span> <span class="n">file</span><span class="p">,</span> <span class="n">codes</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">per_file_ignores</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>            <span class="n">sorted_codes</span> <span class="o">=</span> <span class="s1">&#39;&quot;, &quot;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">codes</span><span class="p">))</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>            <span class="n">typer</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s1">&quot; = [&quot;</span><span class="si">{</span><span class="n">sorted_codes</span><span class="si">}</span><span class="s1">&quot;]&#39;</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -8676,10 +8658,10 @@ generate <a href="https://github.com/charliermarsh/ruff">Ruff</a> config.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>
