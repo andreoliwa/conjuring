@@ -278,8 +278,8 @@ def debug_tools(  # noqa: PLR0913
     run_command(c, "poetry run pip install --upgrade", *tools)
 
 
-@task(klass=MagicTask)
-def ruff_config(c: Context) -> None:
+@task(klass=MagicTask, help={"url": "Show the URL of the documentation"})
+def ruff_config(c: Context, url: bool = False) -> None:
     """Generate ruff configuration from existing warnings."""
     # TODO: feat: check if the global ruff is installed and use it if it is
     ignore: dict[str, set[str]] = defaultdict(set)
@@ -301,15 +301,6 @@ def ruff_config(c: Context) -> None:
         ignore[code].add(clean_message.strip())
         per_file_ignores[filename].add(code)
 
-    def _print_ruff_codes(ignore_section: bool) -> None:
-        for _code, messages in sorted(ignore.items()):
-            joined_messages = ",".join(sorted(messages))
-            if ignore_section:
-                typer.echo(f'    "{_code}", # {joined_messages}', nl=False)
-            else:
-                typer.echo(f"# {_code} {joined_messages}", nl=False)
-            typer.echo(f" https://beta.ruff.rs/docs/rules/?q={_code}")
-
     # TODO: edit pyproject.toml existing config for both sections,
     #  skipping existing lines and adding new codes at the bottom
     if ignore:
@@ -320,7 +311,7 @@ def ruff_config(c: Context) -> None:
                 # TODO: Ignores to fix
         """
         typer.echo(dedent(header).strip())
-        _print_ruff_codes(True)
+        _print_ruff_codes(True, ignore, url)
         typer.echo("]\n")
 
     if per_file_ignores:
@@ -331,7 +322,20 @@ def ruff_config(c: Context) -> None:
             # TODO: Ignores to fix
         """
         typer.echo(dedent(header).strip())
-        _print_ruff_codes(False)
+        _print_ruff_codes(False, ignore, url)
         for file, codes in sorted(per_file_ignores.items()):
             sorted_codes = '", "'.join(sorted(codes))
             typer.echo(f'"{file}" = ["{sorted_codes}"]')
+
+
+def _print_ruff_codes(ignore_section: bool, ignore: dict, url: bool) -> None:
+    for _code, messages in sorted(ignore.items()):
+        joined_messages = ",".join(sorted(messages))
+        if ignore_section:
+            typer.echo(f'    "{_code}", # {joined_messages}', nl=False)
+        else:
+            typer.echo(f"# {_code} {joined_messages}", nl=False)
+        if url:
+            typer.echo(f" https://beta.ruff.rs/docs/rules/?q={_code}")
+        else:
+            typer.echo()
