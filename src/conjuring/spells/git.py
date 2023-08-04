@@ -1,4 +1,5 @@
 """[Git](https://git-scm.com/): update all, extract subtree, rewrite history, ..."""
+from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache
@@ -353,18 +354,37 @@ def set_default_branch(c: Context, remote: bool = False) -> str:
         "files": "Display files instead of commits (default: false)",
         "verbose": "Files: display changes/insertions/deletion."
         " Commits: display the full commit message, author... (default: False)",
+        "by_author": "Group commits by author. Doesn't work with --files or --verbose. (default: False)",
     },
 )
-def changes_since_tag(c: Context, tag: str = "", files: bool = False, verbose: bool = False) -> None:
+def changes_since_tag(
+    c: Context,
+    tag: str = "",
+    files: bool = False,
+    verbose: bool = False,
+    by_author: bool = False,
+) -> None:
     """Display changes (commits or files) since the last tag (or a chosen tag)."""
-    which_tag = tag or run_stdout(c, "git tag --list --sort -creatordate | head -1", hide=False, dry=False)
-    default_branch = set_default_branch(c)
     if files:
+        which_tag = tag or run_stdout(c, "git tag --list --sort -creatordate | head -1", hide=False, dry=False)
+        default_branch = set_default_branch(c)
         option = "" if verbose else " --name-only"
         c.run(f"git diff --stat {which_tag} origin/{default_branch}{option}")
     else:
-        option = "" if verbose else " --oneline"
-        c.run(f"git log {which_tag}..origin/{default_branch}{option}")
+        which_tag = tag or "$(git describe --tags --abbrev=0)"
+        option = " --format='%aN|%s' | sort -u" if by_author else "" if verbose else " --oneline"
+        cmd = f"git log {which_tag}..HEAD{option}"
+        if by_author:
+            commits_by_author = defaultdict(list)
+            for line in run_lines(c, cmd):
+                author, commit = line.split("|")
+                commits_by_author[author].append(commit)
+            for author, commits in commits_by_author.items():
+                print(f"\n{author}:")  # noqa: T201
+                for commit in commits:
+                    print(f"  {commit}")  # noqa: T201
+        else:
+            c.run(cmd)
 
 
 @task()
