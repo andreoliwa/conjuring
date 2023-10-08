@@ -154,8 +154,9 @@ def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bo
                 "| sort -ru",
                 "| head -1",
             )
-            run_command(c, f"open -R {last_file!r}")
-            break
+            if last_file:
+                run_command(c, f"open -R {last_file!r}")
+                break
 
         typer.echo(str(path))
 
