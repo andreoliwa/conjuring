@@ -161,7 +161,7 @@ def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bo
 
 
 @task
-def youtube_dl(c: Context, url: str, min_height: int = 240, download_archive_path: str = "") -> None:
+def youtube_dl(c: Context, url: str, min_height: int = 360, download_archive_path: str = "") -> None:
     """Download video URLs, try different low-res formats until it finds one."""
     download_archive_path = download_archive_path or os.environ.get("YOUTUBE_DL_DOWNLOAD_ARCHIVE_PATH", "")
     archive_option = f"--download-archive {download_archive_path!r}" if download_archive_path else ""
