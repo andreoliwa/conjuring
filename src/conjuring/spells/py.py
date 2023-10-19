@@ -12,6 +12,7 @@ from typing import Optional
 
 import typer
 from invoke import Context, Result, task
+from packaging.version import parse
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
@@ -98,7 +99,8 @@ class Poetry:
 
     def use_venv(self, python_version: str) -> Result:
         """Use a Poetry venv."""
-        return self.context.run(f"poetry env use python{python_version}")
+        version_obj = parse(python_version)
+        return self.context.run(f"poetry env use python{version_obj.major}.{version_obj.minor}")
 
 
 class Pytest:
@@ -209,7 +211,7 @@ def watch(c: Context) -> None:
     if not Poetry(c).used_in_project():
         return
 
-    run_command(c, "poetry run", 'ptw --runner "pytest --testmon"')
+    run_command(c, "poetry run", "ptw . --testmon")
 
 
 @task(
@@ -272,8 +274,8 @@ def debug_tools(  # noqa: PLR0913
         "pudb" if pudb or all_ else "",
         "icecream" if icecream or all_ else "",
         "devtools[pygments]" if devtools or all_ else "",
-        "pytest-watch" if watch or all_ else "",
-        "pytest-watcher" if watcher or all_ else "",
+        "pytest-watch pytest-testmon" if watch or all_ else "",
+        "pytest-watcher pytest-testmon" if watcher or all_ else "",
     ]
     run_command(c, "poetry run pip install --upgrade", *tools)
 
