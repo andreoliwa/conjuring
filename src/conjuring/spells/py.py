@@ -12,6 +12,7 @@ from typing import Optional
 
 import typer
 from invoke import Context, Result, task
+from packaging.version import parse
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
@@ -98,7 +99,8 @@ class Poetry:
 
     def use_venv(self, python_version: str) -> Result:
         """Use a Poetry venv."""
-        return self.context.run(f"poetry env use python{python_version}")
+        version_obj = parse(python_version)
+        return self.context.run(f"poetry env use python{version_obj.major}.{version_obj.minor}")
 
 
 class Pytest:
