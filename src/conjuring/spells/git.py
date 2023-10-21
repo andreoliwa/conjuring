@@ -8,7 +8,7 @@ from pathlib import Path
 import typer
 from invoke import Context, Exit, UnexpectedExit, task
 
-from conjuring.colors import COLOR_LIGHT_RED, COLOR_NONE
+from conjuring.colors import Color
 from conjuring.grimoire import (
     REGEX_JIRA,
     print_error,
@@ -102,7 +102,7 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
     result = c.run(f"git remote -v | rg {remote} | head -1 | rg -o {regex} -r {replace}", warn=True, pty=False)
     match = result.stdout.strip()
     if not match:
-        typer.echo(f"{COLOR_LIGHT_RED}Match not found{COLOR_NONE}")
+        typer.echo(f"{Color.BOLD_RED.value}Match not found{Color.NONE.value}")
     else:
         repo = f"https://{match}" if https else f"git@{match}"
         if not repo.endswith(".git"):
@@ -202,7 +202,7 @@ def extract_subtree(c: Context, new_project_dir: str, reset: bool = False, keep:
                 "git remote remove upstream",
             )
         history(c, full=True)
-    print_error("Don't forget to switch to the new repo:", f"  cd {new_project_dir}", nl=True)
+    print_error("Don't forget to switch to the new repo:", f"  cd {new_project_dir}", join_nl=True)
     print_success(
         "Next steps:",
         "- Run 'git obliterate' manually for files in Git history (listed above) you still want to remove",
@@ -211,7 +211,7 @@ def extract_subtree(c: Context, new_project_dir: str, reset: bool = False, keep:
         "- Follow the instructions to add a remote (from 'push an existing repository from the command line')",
         "- Push files to the new repo with:",
         "  git push -u origin master",
-        nl=True,
+        join_nl=True,
     )
 
 

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Callable
 import typer
 from invoke import Collection, Context, Result, Task
 
-from conjuring.colors import COLOR_BOLD_WHITE, COLOR_LIGHT_GREEN, COLOR_LIGHT_RED, COLOR_NONE, COLOR_YELLOW
+from conjuring.colors import Color
 from conjuring.visibility import display_task
 
 if TYPE_CHECKING:
@@ -63,28 +63,37 @@ def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
         c.run(cmd, **kwargs)
 
 
-def print_color(*message: str, color: str = COLOR_NONE, nl: bool = False) -> None:
+def print_color(color: Color, *message: str, join_nl: bool = False, nl: bool = True) -> None:
     """Print a colored message."""
-    all_messages = ("\n" if nl else " ").join(message)
-    typer.echo(f"{color}{all_messages}{COLOR_NONE}")
+    all_messages = ("\n" if join_nl else " ").join(message)
+    typer.echo(f"{color.value}{all_messages}{Color.NONE.value}", nl=nl)
 
 
-def print_success(*message: str, nl: bool = False) -> None:
+def print_success(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print a success message."""
-    print_color(*message, color=COLOR_LIGHT_GREEN, nl=nl)
+    _print_dry_header(dry)
+    print_color(Color.BOLD_GREEN, *message, join_nl=join_nl)
 
 
-def print_error(*message: str, nl: bool = False) -> None:
+def print_error(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print an error message."""
-    print_color(*message, color=COLOR_LIGHT_RED, nl=nl)
+    _print_dry_header(dry)
+    print_color(Color.BOLD_RED, *message, join_nl=join_nl)
 
 
-def print_warning(*message: str, nl: bool = False) -> None:
+def print_warning(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print a warning message."""
-    print_color(*message, color=COLOR_YELLOW, nl=nl)
+    _print_dry_header(dry)
+    print_color(Color.YELLOW, *message, join_nl=join_nl)
 
 
-def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: str = "") -> str:
+def _print_dry_header(dry: bool) -> None:
+    if not dry:
+        return
+    print_color(Color.PURPLE, "[DRY-RUN] ", nl=False)
+
+
+def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys: str = "") -> str:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
     lowercase_key_list = [char.lower() for char in allowed_keys] if allowed_keys else []
     options = "/".join(allowed_keys) if allowed_keys else None
@@ -92,7 +101,7 @@ def ask_user_prompt(*message: str, color: str = COLOR_BOLD_WHITE, allowed_keys: 
 
     while True:
         typer.echo()
-        print_color(*message, color=color)
+        print_color(color, *message)
         time.sleep(0.2)
 
         typed_input = input(f"{prefix} ENTER to continue or Ctrl-C to abort: ")
