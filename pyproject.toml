@@ -25,6 +25,8 @@ requests = "*"
 typer = "*"
 ruamel-yaml = "*"
 iterfzf = "*"
+humanize = "*"
+packaging = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
