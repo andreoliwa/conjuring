@@ -244,16 +244,19 @@ class CompareDirsAction(Enum):
         "max_size": f"Max size of files to compare. Default: {MAX_SIZE}",
         "delete": "Delete identical files from the first dir",
         "move": "Move identical files from the first dir to the output dir",
+        "search_by_filename": "If not found with the exact name,"
+        " search the second dir using the file name with wildcards",
     },
 )
 def compare_dirs(  # noqa: PLR0913
     c: Context,
-    from_dir: str | Path,
-    to_dir: str | Path,
+    from_dir: str,
+    to_dir: str,
     max_count: int = MAX_COUNT,
     max_size: int = MAX_SIZE,
     delete: bool = False,
     move: bool = False,
+    search_by_filename: bool = False,
 ) -> None:
     """Compare files in two directories. Stops when it reaches max count or size."""
     if delete and move:
@@ -270,7 +273,7 @@ def compare_dirs(  # noqa: PLR0913
 
     abs_dir1 = Path(from_dir).expanduser().absolute()
     max_results = f"--max-results {max_count}" if max_count else ""
-    lines = run_lines(c, "fd --type f -u", max_results, ".", str(abs_dir1), "| sort", dry=False)
+    lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_dir1), "| sort", dry=False)
     for line in lines:
         if stop_file_or_dir.exists():
             if stop_file_or_dir.is_dir():
@@ -288,10 +291,18 @@ def compare_dirs(  # noqa: PLR0913
         file_size = source_file.stat().st_size
         total_size += file_size
 
-        partial_path = source_file.relative_to(abs_dir1)
-        destination_file: Path = to_dir / partial_path
+        partial_source_path = source_file.relative_to(abs_dir1)
+        destination_file: Path = to_dir / partial_source_path
 
-        action, file_description = _compare_file(c, source_file, destination_file, delete, move)
+        action, file_description = _determine_action(
+            c,
+            source_file,
+            to_dir,
+            destination_file,
+            delete,
+            move,
+            search_by_filename,
+        )
 
         print_color(
             Color.CYAN,
@@ -312,10 +323,37 @@ def compare_dirs(  # noqa: PLR0913
             print_normal(file_description, dry=dry)
             continue
 
-        _execute(action, source_file, file_description, output=output_dir / action.value / partial_path, dry=dry)
+        _execute(action, source_file, file_description, output=output_dir / action.value / partial_source_path, dry=dry)
 
 
-def _compare_file(
+def _determine_action(  # noqa: PLR0913
+    c: Context,
+    source_file: Path,
+    to_dir: str,
+    destination_file: Path,
+    delete: bool,
+    move: bool,
+    search_by_filename: bool,
+) -> tuple[CompareDirsAction, str]:
+    action = CompareDirsAction.DO_NOTHING
+    if not destination_file.exists():
+        if search_by_filename:
+            quoted_regex_name = f'".*{source_file.stem}.*{source_file.suffix}"'
+            found_lines = run_lines(c, f"fd -t f -u {quoted_regex_name}", str(to_dir), dry=False)
+            if len(found_lines) > 1:
+                return action, f"Found more than one file for {quoted_regex_name}: {found_lines}"
+
+            destination_file = Path(found_lines[0]).absolute()
+            return _compare_files(c, source_file, destination_file, delete, move)
+
+        if delete or move:
+            action = CompareDirsAction.MOVE_NOT_FOUND
+        return action, f"Missing file {destination_file}"
+
+    return _compare_files(c, source_file, destination_file, delete, move)
+
+
+def _compare_files(
     c: Context,
     source_file: Path,
     destination_file: Path,
@@ -323,24 +361,19 @@ def _compare_file(
     move: bool,
 ) -> tuple[CompareDirsAction, str]:
     action = CompareDirsAction.DO_NOTHING
-    if not destination_file.exists():
-        file_description = f"Missing file {destination_file}"
-        if delete or move:
-            action = CompareDirsAction.MOVE_NOT_FOUND
+    result = c.run(f'diff "{source_file}" "{destination_file}"', dry=c.config.run.dry, warn=True)
+    if c.config.run.dry:
+        file_description = "diff command was not actually executed"
+    elif result.ok:
+        file_description = "Identical file"
+        if delete:
+            action = CompareDirsAction.DELETE_IDENTICAL
+        elif move:
+            action = CompareDirsAction.MOVE_IDENTICAL
     else:
-        result = c.run(f'diff "{source_file}" "{destination_file}"', dry=c.config.run.dry, warn=True)
-        if c.config.run.dry:
-            file_description = "diff command was not actually executed"
-        elif result.ok:
-            file_description = "Identical file"
-            if delete:
-                action = CompareDirsAction.DELETE_IDENTICAL
-            elif move:
-                action = CompareDirsAction.MOVE_IDENTICAL
-        else:
-            file_description = "File with failed diff"
-            if delete or move:
-                action = CompareDirsAction.DIFF_FAILED
+        file_description = "File with failed diff"
+        if delete or move:
+            action = CompareDirsAction.DIFF_FAILED
     return action, file_description
 
 
