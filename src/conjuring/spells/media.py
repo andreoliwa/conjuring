@@ -264,16 +264,18 @@ def compare_dirs(  # noqa: PLR0913
         return
     dry = not (delete or move) or c.config.run.dry
 
-    output_dir = DOWNLOADS_DIR / "comparison_output"
+    # Use a slug to compare multiple dirs at the same time
+    abs_from_dir = Path(from_dir).expanduser().absolute()
+    slug = str(abs_from_dir.relative_to(Path.home())).replace(os.sep, "-")
+    output_dir = DOWNLOADS_DIR / "compare-dirs-output" / slug
     stop_file_or_dir = DOWNLOADS_DIR / "stop"
     print_success("Output dir:", str(output_dir), "/ Stop file or dir:", str(stop_file_or_dir))
 
     count = 0
     total_size = 0
 
-    abs_dir1 = Path(from_dir).expanduser().absolute()
     max_results = f"--max-results {max_count}" if max_count else ""
-    lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_dir1), "| sort", dry=False)
+    lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_from_dir), "| sort", dry=False)
     for line in lines:
         if stop_file_or_dir.exists():
             if stop_file_or_dir.is_dir():
@@ -291,7 +293,7 @@ def compare_dirs(  # noqa: PLR0913
         file_size = source_file.stat().st_size
         total_size += file_size
 
-        partial_source_path = source_file.relative_to(abs_dir1)
+        partial_source_path = source_file.relative_to(abs_from_dir)
         destination_file: Path = to_dir / partial_source_path
 
         action, file_description = _determine_action(
@@ -338,13 +340,18 @@ def _determine_action(  # noqa: PLR0913
     action = CompareDirsAction.DO_NOTHING
     if not destination_file.exists():
         if search_by_filename:
-            quoted_regex_name = f'".*{source_file.stem}.*{source_file.suffix}"'
-            found_lines = run_lines(c, f"fd -t f -u {quoted_regex_name}", str(to_dir), dry=False)
-            if len(found_lines) > 1:
-                return action, f"Found more than one file for {quoted_regex_name}: {found_lines}"
+            # Clean common chars to try to find a file that was renamed in a simple way
+            clean_stem = source_file.stem
+            for char in "_-() ":
+                clean_stem = clean_stem.replace(char, "?")
+            quoted_regex_name = f'".*{clean_stem}.*{source_file.suffix}"'
+            found_lines = run_lines(c, f"fd -t f -u {quoted_regex_name}", str(to_dir), dry=False, hide=False)
+            if found_lines:
+                if len(found_lines) > 1:
+                    return action, f"Found more than one file for {quoted_regex_name}: {found_lines}"
 
-            destination_file = Path(found_lines[0]).absolute()
-            return _compare_files(c, source_file, destination_file, delete, move)
+                destination_file = Path(found_lines[0]).absolute()
+                return _compare_files(c, source_file, destination_file, delete, move)
 
         if delete or move:
             action = CompareDirsAction.MOVE_NOT_FOUND
