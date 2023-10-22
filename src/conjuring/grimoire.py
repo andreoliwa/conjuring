@@ -63,34 +63,33 @@ def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
         c.run(cmd, **kwargs)
 
 
-def print_color(color: Color, *message: str, join_nl: bool = False, nl: bool = True) -> None:
+def print_color(color: Color, *message: str, join_nl: bool = False, dry: bool = False, nl: bool = True) -> None:
     """Print a colored message."""
-    all_messages = ("\n" if join_nl else " ").join(message)
-    typer.echo(f"{color.value}{all_messages}{Color.NONE.value}", nl=nl)
+    if dry:
+        typer.echo(f"{Color.PURPLE.value}[DRY-RUN]{Color.NONE.value} ", nl=False)
+
+    joined_messages = ("\n" if join_nl else " ").join(message)
+    typer.echo(f"{color.value}{joined_messages}{Color.NONE.value}", nl=nl)
+
+
+def print_normal(*message: str, join_nl: bool = False, dry: bool = False) -> None:
+    """Print a success message."""
+    print_color(Color.NONE, *message, join_nl=join_nl, dry=dry)
 
 
 def print_success(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print a success message."""
-    _print_dry_header(dry)
-    print_color(Color.BOLD_GREEN, *message, join_nl=join_nl)
+    print_color(Color.BOLD_GREEN, *message, join_nl=join_nl, dry=dry)
 
 
 def print_error(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print an error message."""
-    _print_dry_header(dry)
-    print_color(Color.BOLD_RED, *message, join_nl=join_nl)
+    print_color(Color.BOLD_RED, *message, join_nl=join_nl, dry=dry)
 
 
 def print_warning(*message: str, join_nl: bool = False, dry: bool = False) -> None:
     """Print a warning message."""
-    _print_dry_header(dry)
-    print_color(Color.YELLOW, *message, join_nl=join_nl)
-
-
-def _print_dry_header(dry: bool) -> None:
-    if not dry:
-        return
-    print_color(Color.PURPLE, "[DRY-RUN] ", nl=False)
+    print_color(Color.YELLOW, *message, join_nl=join_nl, dry=dry)
 
 
 def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys: str = "") -> str:
