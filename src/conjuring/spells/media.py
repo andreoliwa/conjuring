@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
+from enum import Enum
 from itertools import chain
 from pathlib import Path
 
 import typer
+from humanize import naturalsize
 from invoke import Context, task
 
+from conjuring.colors import Color
 from conjuring.constants import (
     DESKTOP_DIR,
     DOT_DS_STORE,
@@ -17,11 +20,22 @@ from conjuring.constants import (
     ONEDRIVE_DIR,
     ONEDRIVE_PICTURES_DIR,
 )
-from conjuring.grimoire import print_warning, run_command, run_stdout
+from conjuring.grimoire import (
+    print_color,
+    print_error,
+    print_normal,
+    print_success,
+    print_warning,
+    run_command,
+    run_lines,
+    run_stdout,
+)
 
 SHOULD_PREFIX = True
 
 AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma"}
+MAX_COUNT = 1000
+MAX_SIZE = 1_000_000_000  # 1 GB
 
 
 @task(
@@ -53,7 +67,7 @@ def rm_empty_dirs(c: Context, dir_: list[str | Path], force: bool = False, fd: b
     delete_flag = "-delete" if force else ""
     run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print", delete_flag)
     if not force:
-        print_warning("[DRY RUN] Run with --force to actually delete the files")
+        print_warning("Run with --force to actually delete the files", dry=True)
 
 
 @task
@@ -208,3 +222,143 @@ def whisper(c: Context, dir_: str | Path) -> None:
             c.run(f"whisper --language pt -f txt '{file}' --output_dir '{file.parent}'")
             continue
         c.run(f"open '{transcript_file}'")
+
+
+class CompareDirsAction(Enum):
+    """Actions to take when comparing two directories."""
+
+    # keep-sorted start
+    DELETE_IDENTICAL = "identical_deleted"
+    DIFF_FAILED = "diff_failed"
+    DO_NOTHING = None
+    MOVE_IDENTICAL = "identical"
+    MOVE_NOT_FOUND = "not_found"
+    # keep-sorted end
+
+
+@task(
+    help={
+        "from_dir": "Root directory to compare from",
+        "to_dir": "Root directory to compare to",
+        "max_count": f"Max number of files to compare. Default: {MAX_COUNT}",
+        "max_size": f"Max size of files to compare. Default: {MAX_SIZE}",
+        "delete": "Delete identical files from the first dir",
+        "move": "Move identical files from the first dir to the output dir",
+    },
+)
+def compare_dirs(  # noqa: PLR0913
+    c: Context,
+    from_dir: str | Path,
+    to_dir: str | Path,
+    max_count: int = MAX_COUNT,
+    max_size: int = MAX_SIZE,
+    delete: bool = False,
+    move: bool = False,
+) -> None:
+    """Compare files in two directories. Stops when it reaches max count or size."""
+    if delete and move:
+        print_error("Choose either --delete or --move, not both")
+        return
+    dry = not (delete or move) or c.config.run.dry
+
+    output_dir = DOWNLOADS_DIR / "comparison_output"
+    stop_file_or_dir = DOWNLOADS_DIR / "stop"
+    print_success("Output dir:", str(output_dir), "/ Stop file or dir:", str(stop_file_or_dir))
+
+    count = 0
+    total_size = 0
+
+    abs_dir1 = Path(from_dir).expanduser().absolute()
+    max_results = f"--max-results {max_count}" if max_count else ""
+    lines = run_lines(c, "fd --type f -u", max_results, ".", str(abs_dir1), "| sort", dry=False)
+    for line in lines:
+        if stop_file_or_dir.exists():
+            if stop_file_or_dir.is_dir():
+                stop_file_or_dir.rmdir()
+            else:
+                stop_file_or_dir.unlink()
+            print_error("Found stop file, stopping")
+            break
+
+        source_file: Path = Path(line).absolute()
+        if source_file.name == DOT_DS_STORE:
+            continue
+
+        count += 1
+        file_size = source_file.stat().st_size
+        total_size += file_size
+
+        partial_path = source_file.relative_to(abs_dir1)
+        destination_file: Path = to_dir / partial_path
+
+        action, file_description = _compare_file(c, source_file, destination_file, delete, move)
+
+        print_color(
+            Color.CYAN,
+            f"[#{count}, file {naturalsize(file_size)}, total {naturalsize(total_size)}] ",
+            nl=False,
+        )
+
+        # Check the file size after running the diff, so remote on-demand files are downloaded locally
+        if max_size and total_size > max_size:
+            print_error(
+                f"Current size ({naturalsize(total_size)})",
+                f"exceeded --size ({naturalsize(max_size)}), stopping",
+                dry=dry,
+            )
+            break
+
+        if action == CompareDirsAction.DO_NOTHING:
+            print_normal(file_description, dry=dry)
+            continue
+
+        _execute(action, source_file, file_description, output=output_dir / action.value / partial_path, dry=dry)
+
+
+def _compare_file(
+    c: Context,
+    source_file: Path,
+    destination_file: Path,
+    delete: bool,
+    move: bool,
+) -> tuple[CompareDirsAction, str]:
+    action = CompareDirsAction.DO_NOTHING
+    if not destination_file.exists():
+        file_description = f"Missing file {destination_file}"
+        if delete or move:
+            action = CompareDirsAction.MOVE_NOT_FOUND
+    else:
+        result = c.run(f'diff "{source_file}" "{destination_file}"', dry=c.config.run.dry, warn=True)
+        if c.config.run.dry:
+            file_description = "diff command was not actually executed"
+        elif result.ok:
+            file_description = "Identical file"
+            if delete:
+                action = CompareDirsAction.DELETE_IDENTICAL
+            elif move:
+                action = CompareDirsAction.MOVE_IDENTICAL
+        else:
+            file_description = "File with failed diff"
+            if delete or move:
+                action = CompareDirsAction.DIFF_FAILED
+    return action, file_description
+
+
+def _execute(action: CompareDirsAction, source_file: Path, file_description: str, *, output: Path, dry: bool) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if action == CompareDirsAction.DELETE_IDENTICAL:
+        if not dry:
+            source_file.unlink()
+            output.touch()
+        print_warning(f"{file_description} deleted from {source_file}", dry=dry)
+    elif action in (
+        CompareDirsAction.MOVE_IDENTICAL,
+        CompareDirsAction.MOVE_NOT_FOUND,
+        CompareDirsAction.DIFF_FAILED,
+    ):
+        if not dry:
+            source_file.rename(output)
+        print_success(f"{file_description} moved to {output}", dry=dry)
+    else:
+        msg = f"Unexpected {action}, adjust the code"
+        raise RuntimeError(msg)
