@@ -1,9 +1,12 @@
 """[pre-commit](https://pre-commit.com/): install, uninstall, run/autoupdate selected hooks."""
+import itertools
+from pathlib import Path
 from typing import Optional
 
 from invoke import Context, task
 
-from conjuring.grimoire import run_command, run_stdout, run_with_fzf
+from conjuring.constants import PRE_COMMIT_CONFIG_YAML
+from conjuring.grimoire import print_success, run_command, run_stdout, run_with_fzf
 from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
 
 SHOULD_PREFIX = True
@@ -12,6 +15,31 @@ should_display_tasks: ShouldDisplayTasks = has_pre_commit_config_yaml
 
 def _run_garbage_collector(c: Context) -> None:
     c.run("pre-commit gc")
+
+
+def _patch_pre_commit_configs(before: list[str]) -> None:
+    """Patch the pre-commit config to include other files before the current one."""
+    expanded_before: list[Path] = list(itertools.chain.from_iterable(list(Path().glob(b)) for b in before))
+    print_success("Patching files with ", str(expanded_before))
+
+    for installed_hook in sorted(
+        hook_file for hook_file in Path(".git/hooks").glob("*") if hook_file.suffix != ".sample"
+    ):
+        new_lines = []
+        for old_line in installed_hook.read_text().splitlines():
+            if "ARGS" not in old_line:
+                new_lines.append(old_line)
+                continue
+
+            for index, before_file in enumerate(expanded_before):
+                new_line = old_line.replace("ARGS", f"CONJURING_BEFORE_{index}").replace("exec ", "")
+                if "ARGS=" in old_line:
+                    new_line = new_line.replace(PRE_COMMIT_CONFIG_YAML, str(before_file))
+                new_lines.append(new_line)
+
+            new_lines.append(old_line)
+        print_success(f"  {installed_hook} patched")
+        installed_hook.write_text("\n".join(new_lines))
 
 
 def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None) -> str:
@@ -25,12 +53,21 @@ def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None) 
     return " ".join([f"--hook-type {h}" for h in hooks])
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Install commit message hooks"})
-def install(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
+@task(
+    help={
+        "gc": "Run the garbage collector to remove unused venvs",
+        "commit_msg": "Install commit message hooks",
+        "before": "Config files to run before the current one.",
+    },
+    iterable=["before"],
+)
+def install(c: Context, before: list[str], gc: bool = False, commit_msg: bool = True) -> None:
     """Pre-commit install hooks."""
     if gc:
         _run_garbage_collector(c)
     c.run(f"pre-commit install {get_hook_types(commit_msg)} --install-hooks")
+    if before:
+        _patch_pre_commit_configs(before)
 
 
 @task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Uninstall commit message hooks"})
