@@ -18,6 +18,7 @@ import typer
 from invoke import Collection, Context, Result, Task
 
 from conjuring.colors import Color
+from conjuring.constants import STOP_FILE_OR_DIR
 from conjuring.visibility import display_task
 
 if TYPE_CHECKING:
@@ -322,3 +323,16 @@ def bat(c: Context, *pieces: str) -> Result:
     """Display files with "bat" if it's installed. Otherwise, fallback to "cat"."""
     tool = "bat" if which("bat") else "cat"
     return run_command(c, tool, *pieces)
+
+
+def check_stop_file() -> bool:
+    """Check if the stop file exists and stop the script if it does."""
+    if not STOP_FILE_OR_DIR.exists():
+        return False
+
+    if STOP_FILE_OR_DIR.is_dir():
+        STOP_FILE_OR_DIR.rmdir()
+    else:
+        STOP_FILE_OR_DIR.unlink()
+    print_error("Found stop file, stopping")
+    return True

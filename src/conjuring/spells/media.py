@@ -19,8 +19,10 @@ from conjuring.constants import (
     DOWNLOADS_DIR,
     ONEDRIVE_DIR,
     ONEDRIVE_PICTURES_DIR,
+    STOP_FILE_OR_DIR,
 )
 from conjuring.grimoire import (
+    check_stop_file,
     print_color,
     print_error,
     print_normal,
@@ -268,8 +270,8 @@ def compare_dirs(  # noqa: PLR0913
     abs_from_dir = Path(from_dir).expanduser().absolute()
     slug = str(abs_from_dir.relative_to(Path.home())).replace(os.sep, "-")
     output_dir = DOWNLOADS_DIR / "compare-dirs-output" / slug
-    stop_file_or_dir = DOWNLOADS_DIR / "stop"
-    print_success("Output dir:", str(output_dir), "/ Stop file or dir:", str(stop_file_or_dir))
+
+    print_success("Output dir:", str(output_dir), "/ Stop file or dir:", str(STOP_FILE_OR_DIR))
 
     count = 0
     total_size = 0
@@ -277,12 +279,7 @@ def compare_dirs(  # noqa: PLR0913
     max_results = f"--max-results {max_count}" if max_count else ""
     lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_from_dir), "| sort", dry=False)
     for line in lines:
-        if stop_file_or_dir.exists():
-            if stop_file_or_dir.is_dir():
-                stop_file_or_dir.rmdir()
-            else:
-                stop_file_or_dir.unlink()
-            print_error("Found stop file, stopping")
+        if check_stop_file():
             break
 
         source_file: Path = Path(line).absolute()

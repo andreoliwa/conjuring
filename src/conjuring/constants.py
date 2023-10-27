@@ -17,3 +17,4 @@ DOT_NOMEDIA = ".nomedia"
 PRE_COMMIT_CONFIG_YAML = ".pre-commit-config.yaml"
 PYPROJECT_TOML = "pyproject.toml"
 ROOT_INVOKE_YAML = Path("~/.invoke.yaml").expanduser()
+STOP_FILE_OR_DIR = Path.home() / "stop"
