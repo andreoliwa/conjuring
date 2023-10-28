@@ -28,3 +28,18 @@ def conflicts(c: Context, dir_: list[str | Path]) -> None:
             original_name = duplicated.stem[: -len(suffix)]
             original = duplicated.with_stem(original_name)
             typer.echo(run_stdout(c, f"diff {duplicated} {original}", warn=True).strip())
+
+
+@task(
+    help={"dir": "Directory; can be used multiple times. Default: current dir"},
+    iterable=["dir_"],
+)
+def force_downloads(c: Context, dir_: list[str | Path]) -> None:
+    """Force downloads of remote OneDrive files by reading them with a dummy "diff"."""
+    if not dir_:
+        dir_ = [Path.cwd()]
+    temp_file = Path().home() / "delete-me"
+    temp_file.touch(exist_ok=True)
+    for one_dir in dir_:
+        c.run(f"fd -t f -0 . {one_dir} | sort -z | xargs -0 -n 1 diff {temp_file}")
+    temp_file.unlink()
