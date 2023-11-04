@@ -10,8 +10,8 @@ from pathlib import Path
 import typer
 from humanize import naturalsize
 from invoke import Context, task
+from tqdm import tqdm
 
-from conjuring.colors import Color
 from conjuring.constants import (
     DESKTOP_DIR,
     DOT_DS_STORE,
@@ -23,7 +23,6 @@ from conjuring.constants import (
 )
 from conjuring.grimoire import (
     check_stop_file,
-    print_color,
     print_error,
     print_normal,
     print_success,
@@ -278,51 +277,55 @@ def compare_dirs(  # noqa: PLR0913
 
     max_results = f"--max-results {max_count}" if max_count else ""
     lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_from_dir), "| sort", dry=False)
-    for line in lines:
-        if check_stop_file():
-            break
 
-        source_file: Path = Path(line).absolute()
-        if source_file.name == DOT_DS_STORE:
-            continue
+    with tqdm(lines) as pbar:
+        for line in pbar:
+            if check_stop_file():
+                break
 
-        count += 1
-        file_size = source_file.stat().st_size
-        total_size += file_size
+            source_file: Path = Path(line).absolute()
+            if source_file.name == DOT_DS_STORE:
+                continue
 
-        partial_source_path = source_file.relative_to(abs_from_dir)
-        destination_file: Path = to_dir / partial_source_path
+            count += 1
+            file_size = source_file.stat().st_size
+            total_size += file_size
 
-        action, file_description = _determine_action(
-            c,
-            source_file,
-            to_dir,
-            destination_file,
-            delete,
-            move,
-            search_by_filename,
-        )
+            partial_source_path = source_file.relative_to(abs_from_dir)
+            destination_file: Path = to_dir / partial_source_path
 
-        print_color(
-            Color.CYAN,
-            f"[#{count}, file {naturalsize(file_size)}, total {naturalsize(total_size)}] ",
-            nl=False,
-        )
+            action, file_description = _determine_action(
+                c,
+                source_file,
+                to_dir,
+                destination_file,
+                delete,
+                move,
+                search_by_filename,
+            )
 
-        # Check the file size after running the diff, so remote on-demand files are downloaded locally
-        if max_size and total_size > max_size:
-            print_error(
-                f"Current size ({naturalsize(total_size)})",
-                f"exceeded --size ({naturalsize(max_size)}), stopping",
+            pbar.set_postfix(count=count, size=naturalsize(file_size), total_size=naturalsize(total_size))
+
+            # Check the file size after running the diff, so remote on-demand files are downloaded locally
+            if max_size and total_size > max_size:
+                print_error(
+                    f"Current size ({naturalsize(total_size)})",
+                    f"exceeded --size ({naturalsize(max_size)}), stopping",
+                    dry=dry,
+                )
+                break
+
+            if action == CompareDirsAction.DO_NOTHING:
+                print_normal(file_description, dry=dry)
+                continue
+
+            _execute(
+                action,
+                source_file,
+                file_description,
+                output=output_dir / action.value / partial_source_path,
                 dry=dry,
             )
-            break
-
-        if action == CompareDirsAction.DO_NOTHING:
-            print_normal(file_description, dry=dry)
-            continue
-
-        _execute(action, source_file, file_description, output=output_dir / action.value / partial_source_path, dry=dry)
 
 
 def _determine_action(  # noqa: PLR0913

@@ -27,6 +27,7 @@ ruamel-yaml = "*"
 iterfzf = "*"
 humanize = "*"
 packaging = "*"
+tqdm = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
