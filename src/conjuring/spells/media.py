@@ -44,11 +44,11 @@ MAX_SIZE = 1_000_000_000  # 1 GB
     help={
         "dir": "Directory to clean up. Default: current dir",
         "fd": "Use https://github.com/sharkdp/fd instead of 'find'",
-        "force": "Delete the actual files (dotfiles are always deleted). Default: False",
+        "delete": "Delete the actual files (dotfiles are always deleted). Default: False",
     },
     iterable=["dir_"],
 )
-def rm_empty_dirs(c: Context, dir_: list[str | Path], force: bool = False, fd: bool = True) -> None:
+def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: bool = True) -> None:
     """Remove some hidden files first, then remove empty dirs.
 
     The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
@@ -66,10 +66,10 @@ def rm_empty_dirs(c: Context, dir_: list[str | Path], force: bool = False, fd: b
                 c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | {xargs}")
 
     f_option = " ".join([f"-f {d}/" for d in dirs[:-1]])
-    delete_flag = "-delete" if force else ""
+    delete_flag = "-delete" if delete else ""
     run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print", delete_flag)
-    if not force:
-        print_warning("Run with --force to actually delete the files", dry=True)
+    if not delete:
+        print_warning("Run with --delete to actually delete the files", dry=True)
 
 
 @task
