@@ -97,7 +97,12 @@ def run(c: Context, hooks: str) -> None:
     if not chosen_hooks:
         for partial_hook in split_hooks:
             chosen_hooks.append(
-                run_with_fzf(c, "yq e '.repos[].hooks[].id' .pre-commit-config.yaml", query=partial_hook, dry=False),
+                run_with_fzf(
+                    c,
+                    "yq e '.repos[].hooks[].id' .pre-commit-config.yaml | sort -u",
+                    query=partial_hook,
+                    dry=False,
+                ),
             )
 
     for chosen_hook in chosen_hooks:
