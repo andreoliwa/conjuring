@@ -28,7 +28,7 @@ def backup(c: Context) -> None:
     # backup_dir = f"onedrive://Backup/{host}/duplicity/"
     typer.echo(f"Backup dir: {backup_dir}")
 
-    template_file = Path("~/dotfiles/duplicity-template.cfg").expanduser()
+    template_file = Path("~/dotfiles/backup-duplicity-template.cfg").expanduser()
     typer.echo(f"Template file: {template_file}")
 
     template_contents = template_file.read_text()
