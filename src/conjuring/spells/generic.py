@@ -13,10 +13,10 @@ from conjuring.grimoire import print_error, print_normal, print_success, run_com
 
 # keep-sorted start
 # Split the strings to prevent this method from detecting them as tasks when running on this project
-FIX_ME = "FIX" + "ME"  # noqa: ISC003
+FIX_ME = "FIX" + "ME"
 REGEX_ASSIGNEE_DESCRIPTION = re.compile(r"\s*(?P<assignee>\(.+\))?\s*:\s*(?P<description>.+)", re.IGNORECASE)
 REGEX_PATH_LINE_COMMENT = re.compile(r"(?P<path>[^:]+):(?P<line>\d+)[^/#]+([/#])(?P<comment>.+)")
-TO_DO = "TO" + "DO"  # noqa: ISC003
+TO_DO = "TO" + "DO"
 # keep-sorted end
 
 
