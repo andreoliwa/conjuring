@@ -1,11 +1,16 @@
 """Visibility predicates and a custom Invoke task that can be hidden."""
-from collections.abc import Iterable
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 from invoke import Task
 
 from conjuring.constants import PRE_COMMIT_CONFIG_YAML, PYPROJECT_TOML
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 TOOL_POETRY_SECTION = "[tool.poetry]"
 ShouldDisplayTasks = Callable[[], bool]
@@ -58,18 +63,18 @@ class MagicTask(Task):
     def __init__(  # noqa: PLR0913
         self,
         body: Callable,
-        name: Optional[str] = None,
+        name: str | None = None,
         aliases: Iterable[str] = (),
-        positional: Optional[Iterable[str]] = None,
+        positional: Iterable[str] | None = None,
         optional: Iterable[str] = (),
         default: bool = False,
         auto_shortflags: bool = True,
-        help: Optional[dict[str, Any]] = None,  # noqa: A002
-        pre: Optional[Union[list[str], str]] = None,
-        post: Optional[Union[list[str], str]] = None,
+        help: dict[str, Any] | None = None,  # noqa: A002
+        pre: list[str] | str | None = None,
+        post: list[str] | str | None = None,
         autoprint: bool = False,
-        iterable: Optional[Iterable[str]] = None,
-        incrementable: Optional[Iterable[str]] = None,
+        iterable: Iterable[str] | None = None,
+        incrementable: Iterable[str] | None = None,
         should_display: ShouldDisplayTasks = always_visible,
     ) -> None:
         self.should_display: ShouldDisplayTasks = should_display

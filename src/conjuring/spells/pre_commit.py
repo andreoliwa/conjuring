@@ -1,7 +1,8 @@
 """[pre-commit](https://pre-commit.com/): install, uninstall, run/autoupdate selected hooks."""
+from __future__ import annotations
+
 import itertools
 from pathlib import Path
-from typing import Optional
 
 from invoke import Context, task
 
@@ -42,7 +43,7 @@ def _patch_pre_commit_configs(before: list[str]) -> None:
         installed_hook.write_text("\n".join(new_lines))
 
 
-def get_hook_types(commit_msg: bool, desired_hooks: Optional[list[str]] = None) -> str:
+def get_hook_types(commit_msg: bool, desired_hooks: list[str] | None = None) -> str:
     """Prepare a list of hook types to install/uninstall."""
     hooks = ["pre-commit"]
     if desired_hooks:
@@ -95,15 +96,15 @@ def run(c: Context, hooks: str) -> None:
             chosen_hooks.append("")
             break
     if not chosen_hooks:
-        for partial_hook in split_hooks:
-            chosen_hooks.append(
-                run_with_fzf(
-                    c,
-                    "yq e '.repos[].hooks[].id' .pre-commit-config.yaml | sort -u",
-                    query=partial_hook,
-                    dry=False,
-                ),
+        chosen_hooks = [
+            run_with_fzf(
+                c,
+                "yq e '.repos[].hooks[].id' .pre-commit-config.yaml | sort -u",
+                query=partial_hook,
+                dry=False,
             )
+            for partial_hook in split_hooks
+        ]
 
     for chosen_hook in chosen_hooks:
         run_command(c, "pre-commit run --all-files", chosen_hook, warn=True)

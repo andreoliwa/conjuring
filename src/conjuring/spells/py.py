@@ -3,12 +3,13 @@
 Install venvs, run tests and coverage, install debug tools,
 generate [Ruff](https://github.com/charliermarsh/ruff) config.
 """
+from __future__ import annotations
+
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
 
 import typer
 from invoke import Context, Result, task
@@ -41,7 +42,7 @@ class PyEnv:
         latest = self.list_versions(python_version)[-1]
         return self.context.run(f"pyenv local {latest}")
 
-    def list_versions(self, python_version: Optional[str] = None) -> list[str]:
+    def list_versions(self, python_version: str | None = None) -> list[str]:
         """List all installed Python versions, or only the ones matching the desired version."""
         all_versions = run_lines(self.context, "pyenv versions --bare")
         if not python_version:
@@ -95,7 +96,7 @@ class Poetry:
         if len(versions) > 1:
             print_error(f"Multiple Python versions found in {PYPROJECT_TOML}: {versions=}")
             raise SystemExit
-        return list(versions)[0]
+        return next(iter(versions))
 
     def use_venv(self, python_version: str) -> Result:
         """Use a Poetry venv."""

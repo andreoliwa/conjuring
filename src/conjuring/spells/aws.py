@@ -1,6 +1,7 @@
 """AWS: ECR login."""
+from __future__ import annotations
+
 import os
-from typing import Optional
 from urllib.parse import urlparse
 
 import typer
@@ -19,7 +20,7 @@ def list_aws_profiles(c: Context) -> list[str]:
     return run_lines(c, LIST_AWS_PROFILES_COMMAND)
 
 
-def fzf_aws_profile(c: Context, partial_name: Optional[str] = None) -> str:
+def fzf_aws_profile(c: Context, partial_name: str | None = None) -> str:
     """Select an AWS profile from a partial profile name using fzf."""
     if not partial_name and (aws_profile := os.environ.get("AWS_PROFILE")) and aws_profile:
         typer.echo(f"Using env variable AWS_PROFILE (set to '{aws_profile}')")
@@ -38,12 +39,12 @@ def fzf_aws_region(c: Context) -> str:
     return run_with_fzf(c, f"rg -o '^region.+' {AWS_CONFIG} | tr -d ' ' | cut -d'=' -f 2 | sort -u")
 
 
-def run_aws_vault(c: Context, *pieces: str, profile: Optional[str] = None) -> Result:
+def run_aws_vault(c: Context, *pieces: str, profile: str | None = None) -> Result:
     """Run AWS vault commands in a subshell, or open a subshell if no commands were provided."""
     return run_command(c, "aws-vault exec", fzf_aws_profile(c, profile), "--", *pieces, pty=False)
 
 
-def clean_ecr_url(c: Context, url: Optional[str] = None) -> str:
+def clean_ecr_url(c: Context, url: str | None = None) -> str:
     """Clean an AWS ECR URL."""
     if not url:
         account = fzf_aws_account(c)

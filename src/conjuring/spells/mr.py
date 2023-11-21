@@ -1,8 +1,9 @@
 """[myrepos repository management tool](https://myrepos.branchable.com/): grep text in repos."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Optional
 
 import typer
 from invoke import Context, task
@@ -45,7 +46,7 @@ class MyRepos:
         return sorted({config_dir / c for c in chosen})
 
     @staticmethod
-    def _find_dir_with_mrconfigs(glob_pattern: str) -> Optional[Path]:
+    def _find_dir_with_mrconfigs(glob_pattern: str) -> Path | None:
         for dir_ in chain([Path.cwd()], Path.cwd().parents):
             for _ in dir_.glob(glob_pattern):
                 # Exit loop on the first file found; fzf will handle the rest

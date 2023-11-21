@@ -1,6 +1,8 @@
 """[Kubernetes](https://kubernetes.io/): get pods, show variables from config maps, validate score and more."""
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional, cast
+from typing import cast
 
 from invoke import Context, Result, task
 
@@ -15,7 +17,7 @@ class Kubectl:
 
     context: Context
 
-    def choose_apps(self, partial_app_name: Optional[str] = None, *, multi: bool = False) -> list[str]:
+    def choose_apps(self, partial_app_name: str | None = None, *, multi: bool = False) -> list[str]:
         """Select apps from Kubernetes deployments, using a partial app name and fzf."""
         return cast(
             list[str],

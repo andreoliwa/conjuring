@@ -59,7 +59,7 @@ class Git:
         for branch in branches:
             try:
                 self.context.run(f"git checkout {branch}")
-            except UnexpectedExit:
+            except UnexpectedExit:  # noqa: PERF203
                 pass
             else:
                 return branch
