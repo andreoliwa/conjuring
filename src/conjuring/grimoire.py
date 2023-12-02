@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
 REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
+RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --progress --modify-window=1"
 
 
 def join_pieces(*pieces: str) -> str:
@@ -336,3 +337,27 @@ def check_stop_file() -> bool:
         STOP_FILE_OR_DIR.unlink()
     print_error("Found stop file, stopping")
     return True
+
+
+def run_rsync(
+    c: Context,
+    src_dir: str,
+    dest_dir: str,
+    *pieces: str,
+    **kwargs: str | bool,
+) -> None:
+    """Run rsync with some sane defaults. On Linux, create the destination dir if local, and it doesn't exist."""
+    if not c.config.run.dry:
+        path = Path(dest_dir).expanduser()
+        if path.root == "/":
+            path.mkdir(parents=True, exist_ok=True)
+    run_command(
+        c,
+        RSYNC_DEFAULT,
+        "--dry-run" if c.config.run.dry else "",
+        src_dir,
+        dest_dir,
+        *pieces,
+        dry=False,
+        **kwargs,
+    )
