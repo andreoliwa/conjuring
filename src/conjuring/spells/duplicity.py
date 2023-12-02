@@ -14,7 +14,7 @@ BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
 
 def print_hostname(c: Context) -> str:
     """Print the hostname of the current machine."""
-    host = c.run("hostname | sed 's/.local//'").stdout.strip()
+    host = c.run("hostname | sed 's/.local//'", dry=False).stdout.strip()
     typer.echo(f"Host: {host}")
     return host
 
