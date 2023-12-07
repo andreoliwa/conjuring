@@ -1,29 +1,21 @@
 """[Python](https://www.python.org/) and [Poetry](https://github.com/python-poetry/poetry).
 
-Install venvs, run tests and coverage, install debug tools,
-generate [Ruff](https://github.com/charliermarsh/ruff) config.
+Install venvs, run tests and coverage, install debug tools.
 """
 from __future__ import annotations
 
-import re
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from textwrap import dedent
 
-import typer
 from invoke import Context, Result, task
 from packaging.version import parse
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_error, run_command, run_lines, run_with_fzf
-from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_poetry_project
+from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
 
 SHOULD_PREFIX = True
 should_display_tasks: ShouldDisplayTasks = is_poetry_project
-
-REGEX_RUFF_LINE = re.compile(r"^(?P<filename>.*?):\d+:\d+: (?P<code>.*?)(?P<message> .*)$")
-REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
 
 
 @dataclass
@@ -279,66 +271,3 @@ def debug_tools(  # noqa: PLR0913
         "pytest-watcher pytest-testmon" if watcher or all_ else "",
     ]
     run_command(c, "poetry run pip install --upgrade", *tools)
-
-
-@task(klass=MagicTask, help={"url": "Show the URL of the documentation"})
-def ruff_config(c: Context, url: bool = False) -> None:
-    """Generate ruff configuration from existing warnings."""
-    # TODO: feat: check if the global ruff is installed and use it if it is
-    ignore: dict[str, set[str]] = defaultdict(set)
-    per_file_ignores: dict[str, set[str]] = defaultdict(set)
-    for line in run_lines(c, "pre-commit run --all-files ruff", warn=True):
-        if line.startswith("warning:"):
-            typer.echo(line)
-            continue
-
-        match = REGEX_RUFF_LINE.match(line)
-        if not match:
-            continue
-
-        filename = match.group("filename")
-        code = match.group("code")
-        message = match.group("message")
-        clean_message = REGEX_RUFF_MESSAGE.sub("?", message)
-
-        ignore[code].add(clean_message.strip())
-        per_file_ignores[filename].add(code)
-
-    # TODO: edit pyproject.toml existing config for both sections,
-    #  skipping existing lines and adding new codes at the bottom
-    if ignore:
-        header = """
-            # https://beta.ruff.rs/docs/settings/#ignore
-            ignore = [
-                # Ignores to keep
-                # TODO: Ignores to fix
-        """
-        typer.echo(dedent(header).strip())
-        _print_ruff_codes(True, ignore, url)
-        typer.echo("]\n")
-
-    if per_file_ignores:
-        header = """
-            # https://beta.ruff.rs/docs/settings/#per-file-ignores
-            [tool.ruff.per-file-ignores]
-            # Ignores to keep
-            # TODO: Ignores to fix
-        """
-        typer.echo(dedent(header).strip())
-        _print_ruff_codes(False, ignore, url)
-        for file, codes in sorted(per_file_ignores.items()):
-            sorted_codes = '", "'.join(sorted(codes))
-            typer.echo(f'"{file}" = ["{sorted_codes}"]')
-
-
-def _print_ruff_codes(ignore_section: bool, ignore: dict, url: bool) -> None:
-    for _code, messages in sorted(ignore.items()):
-        joined_messages = ",".join(sorted(messages))
-        if ignore_section:
-            typer.echo(f'    "{_code}", # {joined_messages}', nl=False)
-        else:
-            typer.echo(f"# {_code} {joined_messages}", nl=False)
-        if url:
-            typer.echo(f" https://beta.ruff.rs/docs/rules/?q={_code}")
-        else:
-            typer.echo()

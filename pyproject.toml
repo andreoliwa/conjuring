@@ -93,6 +93,7 @@ packaging = "*"
 python = "^3.9"
 requests = "*"
 ruamel-yaml = "*"
+tomlkit = "*"
 tqdm = "*"
 typer = "*"
 
