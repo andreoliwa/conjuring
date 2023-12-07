@@ -118,11 +118,11 @@ def cleanup(c: Context, browse: bool = False) -> None:
 @task(
     help={
         "organize": "Call 'organize run' before categorizing",
-        "browse": "Open dir on Finder",
+        "browse": "How many dirs to open on on Finder",
         "empty": "Check dirs that are not empty but should be",
     },
 )
-def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bool = True) -> None:
+def categorize(c: Context, organize: bool = True, browse: int = 3, empty: bool = True) -> None:
     """Open directories with files/photos that have to be categorized/moved/renamed."""
     if organize:
         c.run("invoke organize")
@@ -150,6 +150,7 @@ def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bo
         Path(ONEDRIVE_PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
     ]
 
+    count = 0
     for path in chain(empty_dirs, picture_dirs):  # type: Path
         if not path.exists():
             continue
@@ -171,7 +172,9 @@ def categorize(c: Context, organize: bool = True, browse: bool = True, empty: bo
             )
             if last_file:
                 run_command(c, f"open -R {last_file!r}")
-                break
+                count += 1
+                if count >= browse:
+                    break
 
         typer.echo(str(path))
 
