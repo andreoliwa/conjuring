@@ -12,7 +12,7 @@ COMPLETION_DIRS = (COMPAT_DIR, USER_DIR)
 def completion_list(c: Context) -> None:
     """List existing shell completions."""
     for var in COMPLETION_DIRS:
-        c.run(f"exa -l {var}")
+        c.run(f"eza -l {var}")
 
 
 @task
@@ -24,7 +24,7 @@ def completion_install(c: Context, app: str) -> None:
     """
     completion_file = f"{COMPAT_DIR}{app}.bash-completion"
     c.run(f"_{app.upper()}_COMPLETE=bash_source {app} > {completion_file}")
-    c.run(f"exa -l {completion_file}")
+    c.run(f"eza -l {completion_file}")
     c.run(f"bat {completion_file}")
 
 
