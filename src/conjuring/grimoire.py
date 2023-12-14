@@ -361,3 +361,10 @@ def run_rsync(
         dry=False,
         **kwargs,
     )
+
+
+def keep_dirs(*dirs: Path, file_name: str = ".keep") -> None:
+    """Create a .keep file in the provided directories."""
+    for dir_ in dirs:
+        dir_.mkdir(parents=True, exist_ok=True)
+        (dir_ / file_name).touch()
