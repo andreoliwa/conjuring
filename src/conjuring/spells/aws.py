@@ -10,7 +10,7 @@ from invoke import Context, Result, task
 from conjuring.constants import AWS_CONFIG
 from conjuring.grimoire import run_command, run_lines, run_with_fzf
 
-LIST_AWS_PROFILES_COMMAND = rf"rg -o '\[profile[^\]]+' {AWS_CONFIG} | cut -d ' ' -f 2"
+LIST_AWS_PROFILES_COMMAND = rf"rg -o '^\[profile[^\]]+' {AWS_CONFIG} | cut -d ' ' -f 2"
 
 SHOULD_PREFIX = True
 

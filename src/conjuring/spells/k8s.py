@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import cast
 
 from invoke import Context, Result, task
@@ -9,6 +10,8 @@ from invoke import Context, Result, task
 from conjuring.grimoire import run_command, run_lines, run_with_fzf
 
 SHOULD_PREFIX = True
+
+KUBE_CONFIG = Path("~/.kube/config").expanduser()
 
 
 @dataclass
