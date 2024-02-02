@@ -1,4 +1,5 @@
 """[Kubernetes](https://kubernetes.io/): get pods, show variables from config maps, validate score and more."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,4 +1,5 @@
 """[Git](https://git-scm.com/): update all, extract subtree, rewrite history, ..."""
+
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass

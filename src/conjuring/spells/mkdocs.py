@@ -1,4 +1,5 @@
 """[MkDocs](https://github.com/mkdocs/mkdocs/) spells: install, build, deploy to GitHub, serve locally."""
+
 from invoke import Context, task
 
 from conjuring.visibility import has_pyproject_toml

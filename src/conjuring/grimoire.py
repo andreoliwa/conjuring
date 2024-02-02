@@ -1,4 +1,5 @@
 """Helper functions used in other modules."""
+
 from __future__ import annotations
 
 import fnmatch

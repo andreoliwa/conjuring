@@ -1,4 +1,5 @@
 """Backup and restore with [Duplicity](https://duplicity.us/)."""
+
 from pathlib import Path
 from string import Template
 from tempfile import NamedTemporaryFile

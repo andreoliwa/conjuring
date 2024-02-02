@@ -1,4 +1,5 @@
 """[myrepos repository management tool](https://myrepos.branchable.com/): grep text in repos."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

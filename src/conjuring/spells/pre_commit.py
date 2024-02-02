@@ -1,4 +1,5 @@
 """[pre-commit](https://pre-commit.com/): install, uninstall, run/autoupdate selected hooks."""
+
 from __future__ import annotations
 
 import itertools

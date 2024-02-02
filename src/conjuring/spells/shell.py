@@ -1,4 +1,5 @@
 """Shell: install/uninstall completion."""
+
 from invoke import Context, task
 
 SHOULD_PREFIX = True

@@ -1,4 +1,5 @@
 """Query tags and entries with the [jrnl](https://github.com/jrnl-org/jrnl) note-taking tool."""
+
 from invoke import Context, task
 
 SHOULD_PREFIX = True

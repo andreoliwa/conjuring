@@ -1,4 +1,5 @@
 """[GitHub](https://github.com/) forks: configure remote and sync."""
+
 from invoke import Context, Exit, task
 
 from conjuring.spells.git import Git

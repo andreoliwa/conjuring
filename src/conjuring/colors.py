@@ -1,4 +1,5 @@
 """Color constants."""
+
 from enum import Enum
 
 

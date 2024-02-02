@@ -1,4 +1,5 @@
 """Visibility predicates and a custom Invoke task that can be hidden."""
+
 from __future__ import annotations
 
 from pathlib import Path

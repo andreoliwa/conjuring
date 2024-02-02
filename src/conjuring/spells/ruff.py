@@ -1,4 +1,5 @@
 """[Ruff](https://github.com/astral-sh/ruff) spells to generate config and remind you of ignored warnings."""
+
 from __future__ import annotations
 
 import re
