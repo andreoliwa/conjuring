@@ -14,10 +14,10 @@ from tomlkit.exceptions import NonExistentKey
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_normal, print_success, print_warning, run_lines
-from conjuring.visibility import ShouldDisplayTasks, is_poetry_project
+from conjuring.visibility import ShouldDisplayTasks, has_pyproject_toml
 
 SHOULD_PREFIX = True
-should_display_tasks: ShouldDisplayTasks = is_poetry_project
+should_display_tasks: ShouldDisplayTasks = has_pyproject_toml
 
 REGEX_RUFF_LINE = re.compile(r"^(?P<filename>.*?):\d+:\d+: (?P<code>.*?)(?P<message> .*)$")
 REGEX_RUFF_MESSAGE = re.compile(r"`[^`]+`")
@@ -50,7 +50,7 @@ def config(c: Context, url: bool = False) -> None:
     #  skipping existing lines and adding new codes at the bottom
     if ignore:
         header = """
-            # https://beta.ruff.rs/docs/settings/#ignore
+            # https://docs.astral.sh/ruff/settings/#ignore
             ignore = [
                 # Ignores to keep
                 # TODO: Ignores to fix
@@ -61,7 +61,7 @@ def config(c: Context, url: bool = False) -> None:
 
     if per_file_ignores:
         header = """
-            # https://beta.ruff.rs/docs/settings/#per-file-ignores
+            # https://docs.astral.sh/ruff/settings/#per-file-ignores
             [tool.ruff.per-file-ignores]
             # Ignores to keep
             # TODO: Ignores to fix
@@ -81,7 +81,7 @@ def _print_ruff_codes(ignore_section: bool, ignore: dict, url: bool) -> None:
         else:
             typer.echo(f"# {_code} {joined_messages}", nl=False)
         if url:
-            typer.echo(f" https://beta.ruff.rs/docs/rules/?q={_code}")
+            typer.echo(f" https://docs.astral.sh/ruff/rules/?q={_code}")
         else:
             typer.echo()
 
