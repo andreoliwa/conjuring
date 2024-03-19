@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: keep-sorted
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.3
+    rev: v0.2.0
     hooks:
       - id: ruff
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -67,7 +67,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.14.0
+    rev: v3.20.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
