@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: keep-sorted
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.0
+    rev: v0.3.4
     hooks:
       - id: ruff
   - repo: https://github.com/pre-commit/mirrors-prettier
