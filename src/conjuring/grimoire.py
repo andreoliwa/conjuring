@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Callable
 
 import typer
 from invoke import Collection, Context, Result, Task
+from tqdm import tqdm
 
 from conjuring.colors import Color
 from conjuring.constants import STOP_FILE_OR_DIR
@@ -24,7 +25,7 @@ from conjuring.visibility import display_task
 
 if TYPE_CHECKING:
     import types
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
 # TODO: document or remove this variable
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -369,3 +370,20 @@ def keep_dirs(*dirs: Path, file_name: str = ".keep") -> None:
     for dir_ in dirs:
         dir_.mkdir(parents=True, exist_ok=True)
         (dir_ / file_name).touch()
+
+
+def iter_path_with_progress(c: Context, *fd_pieces: str, max_count: int) -> Iterator[Path]:
+    """Iterate over files or dirs with fd, display a progress bar and allow breaking the loop with a stop file."""
+    fd_command = join_pieces("fd", *fd_pieces)
+    lines = run_lines(c, fd_command, dry=False)
+    if not lines:
+        run_command(c, fd_command, dry=True)
+        print_warning("No files found")
+        return
+    for index, line in enumerate(tqdm(lines)):
+        if check_stop_file():
+            break
+        yield Path(line.strip()).absolute()
+        if max_count and index + 1 >= max_count:
+            print_error(f"Stopping after {max_count} iterations")
+            break

@@ -24,6 +24,7 @@ from conjuring.constants import (
 )
 from conjuring.grimoire import (
     check_stop_file,
+    iter_path_with_progress,
     print_error,
     print_normal,
     print_success,
@@ -406,3 +407,23 @@ def _execute(action: CompareDirsAction, source_file: Path, file_description: str
     else:
         msg = f"Unexpected {action}, adjust the code"
         raise RuntimeError(msg)
+
+
+@task(
+    help={
+        "dir": "Directory to unzip. Default: current dir",
+        "count": "Max number of files to unzip. Default: 1",
+        "delete": "Delete the .tar.gz file after unzipping with success. Default: False",
+    },
+    iterable=["dir_"],
+)
+def unzip_tree(c: Context, dir_: list[str | Path], count: int = 1, delete: bool = False) -> None:
+    """Unzip .tar.gz files in a directory tree."""
+    if not dir_:
+        dir_ = [Path.cwd()]
+
+    for one_dir in dir_:
+        for tar_gz_path in iter_path_with_progress(c, "-t f .tar.gz", str(one_dir), "| sort", max_count=count):
+            result = run_command(c, f"gtar -xzf '{tar_gz_path}' -C '{tar_gz_path.parent}'")
+            if result.ok and delete:
+                run_command(c, f"rm '{tar_gz_path}'")
