@@ -244,25 +244,25 @@ class CompareDirsAction(Enum):
 
 @task(
     help={
-        "from_dir": "Root directory to compare from",
-        "to_dir": "Root directory to compare to",
-        "max_count": f"Max number of files to compare. Default: {MAX_COUNT}",
-        "max_size": f"Max size of files to compare. Default: {MAX_SIZE}",
-        "delete": "Delete identical files from the first dir",
-        "move": "Move identical files from the first dir to the output dir",
-        "search_by_filename": "If not found with the exact name,"
-        " search the second dir using the file name with wildcards",
+        "from_dir": "Source root directory to compare from",
+        "to_dir": "Destination root directory to compare to",
+        "count": f"Max number of files to compare. Default: {MAX_COUNT}",
+        "size": f"Max size of files to compare. Default: {naturalsize(MAX_SIZE)}",
+        "delete": "Delete identical files from the source dir",
+        "move": "Move identical files from the source dir to the output dir",
+        "wildcard_search": "If not found with the exact name,"
+        " search the destination dir using the file name with wildcards",
     },
 )
 def compare_dirs(  # noqa: PLR0913
     c: Context,
     from_dir: str,
     to_dir: str,
-    max_count: int = MAX_COUNT,
-    max_size: int = MAX_SIZE,
+    count: int = MAX_COUNT,
+    size: int = MAX_SIZE,
     delete: bool = False,
     move: bool = False,
-    search_by_filename: bool = False,
+    wildcard_search: bool = False,
 ) -> None:
     """Compare files in two directories. Stops when it reaches max count or size."""
     if delete and move:
@@ -277,10 +277,10 @@ def compare_dirs(  # noqa: PLR0913
 
     print_success("Output dir:", str(output_dir), "/ Stop file or dir:", str(STOP_FILE_OR_DIR))
 
-    count = 0
-    total_size = 0
+    current_count = 0
+    current_size = 0
 
-    max_results = f"--max-results {max_count}" if max_count else ""
+    max_results = f"--max-results {count}" if count else ""
     lines = run_lines(c, "fd -t f -u", max_results, ".", str(abs_from_dir), "| sort", dry=False)
 
     with tqdm(lines) as pbar:
@@ -292,9 +292,9 @@ def compare_dirs(  # noqa: PLR0913
             if source_file.name == DOT_DS_STORE:
                 continue
 
-            count += 1
+            current_count += 1
             file_size = source_file.stat().st_size
-            total_size += file_size
+            current_size += file_size
 
             partial_source_path = source_file.relative_to(abs_from_dir)
             destination_file: Path = to_dir / partial_source_path
@@ -306,16 +306,16 @@ def compare_dirs(  # noqa: PLR0913
                 destination_file,
                 delete,
                 move,
-                search_by_filename,
+                wildcard_search,
             )
 
-            pbar.set_postfix(count=count, size=naturalsize(file_size), total_size=naturalsize(total_size))
+            pbar.set_postfix(count=current_count, size=naturalsize(file_size), total_size=naturalsize(current_size))
 
             # Check the file size after running the diff, so remote on-demand files are downloaded locally
-            if max_size and total_size > max_size:
+            if size and current_size > size:
                 print_error(
-                    f"Current size ({naturalsize(total_size)})",
-                    f"exceeded --size ({naturalsize(max_size)}), stopping",
+                    f"Current size ({naturalsize(current_size)})",
+                    f"exceeded --size ({naturalsize(size)}), stopping",
                     dry=dry,
                 )
                 break
@@ -340,11 +340,11 @@ def _determine_action(  # noqa: PLR0913
     destination_file: Path,
     delete: bool,
     move: bool,
-    search_by_filename: bool,
+    wildcard_search: bool,
 ) -> tuple[CompareDirsAction, str]:
     action = CompareDirsAction.DO_NOTHING
     if not destination_file.exists():
-        if search_by_filename:
+        if wildcard_search:
             # Clean common chars to try to find a file that was renamed in a simple way
             clean_stem = source_file.stem
             for char in "_-() ":
