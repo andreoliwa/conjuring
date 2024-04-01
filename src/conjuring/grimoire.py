@@ -30,8 +30,11 @@ if TYPE_CHECKING:
 # TODO: document or remove this variable
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
 
+# keep-sorted start
 REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
+REGEX_UNIQUE_FILE = re.compile(r"(?P<original_stem>.+)_copy(?P<index>\d+)?", re.IGNORECASE)
 RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --progress --modify-window=1"
+# keep-sorted end
 
 
 def join_pieces(*pieces: str) -> str:
@@ -372,18 +375,49 @@ def keep_dirs(*dirs: Path, file_name: str = ".keep") -> None:
         (dir_ / file_name).touch()
 
 
-def iter_path_with_progress(c: Context, *fd_pieces: str, max_count: int) -> Iterator[Path]:
-    """Iterate over files or dirs with fd, display a progress bar and allow breaking the loop with a stop file."""
-    fd_command = join_pieces("fd", *fd_pieces)
-    lines = run_lines(c, fd_command, dry=False)
-    if not lines:
-        run_command(c, fd_command, dry=True)
-        print_warning("No files found")
-        return
-    for index, line in enumerate(tqdm(lines)):
+def iter_path_with_progress(
+    c: Context,
+    *fd_pieces: str,
+    max_count: int,
+    reverse_depth: int | None = None,
+) -> Iterator[Path]:
+    """Iterate over files or dirs with fd, display a progress bar and allow breaking the loop with a stop file.
+
+    With the `reverse_depth` parameter, it's possible to iterate from inner directories to outer directories.
+    """
+    depth_range = [None] if reverse_depth is None else range(reverse_depth, 0, -1)
+    all_lines = []
+    for current_depth in depth_range:
+        min_max_depth = f"--min-depth {current_depth} --max-depth {current_depth}" if reverse_depth is not None else ""
+        fd_command = join_pieces("fd", min_max_depth, *fd_pieces)
+        lines = run_lines(c, fd_command, dry=False)
+        if lines:
+            all_lines.extend(lines)
+        else:
+            run_command(c, fd_command, dry=True)
+            print_warning("No files found")
+
+    for index, line in enumerate(tqdm(all_lines)):
         if check_stop_file():
             break
         yield Path(line.strip()).absolute()
         if max_count and index + 1 >= max_count:
             print_error(f"Stopping after {max_count} iterations")
             break
+
+
+def unique_file_name(path_or_str: Path | str) -> Path:
+    """Get a unique file name: append a number to the file name until the file is not found."""
+    path = Path(path_or_str)
+    while path.exists():
+        original_stem = None
+        index = None
+        for match in REGEX_UNIQUE_FILE.finditer(path.stem):
+            original_stem = match.group("original_stem")
+            index = int(match.group("index") or 0) + 1
+
+        new_stem = original_stem if original_stem else path.stem
+        new_name = f"{new_stem}_copy{index if index else ''}{path.suffix}"
+        path = path.with_name(new_name)
+
+    return path

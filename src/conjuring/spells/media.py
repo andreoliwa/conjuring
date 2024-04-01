@@ -32,6 +32,7 @@ from conjuring.grimoire import (
     run_command,
     run_lines,
     run_stdout,
+    unique_file_name,
 )
 
 SHOULD_PREFIX = True
@@ -411,7 +412,45 @@ def _execute(action: CompareDirsAction, source_file: Path, file_description: str
 
 @task(
     help={
-        "dir": "Directory to unzip. Default: current dir",
+        "dir": "Root directory to zip. Default: current dir",
+        "count": "Max number of sub dirs to zip. Default: 1",
+        "delete": "Delete the directory after zipping with success. Default: False",
+    },
+    iterable=["dir_"],
+)
+def zip_tree(c: Context, dir_: list[str | Path], count: int = 1, depth: int = 5, delete: bool = False) -> None:
+    """Zip files in a directory tree, creating a .tar.gz file."""
+    if not dir_:
+        dir_ = [Path.cwd()]
+
+    for raw_dir in dir_:
+        path_dir = Path(raw_dir)
+        for path_to_zip in iter_path_with_progress(
+            c,
+            "-t f --exclude '*.tar.gz' .",
+            str(raw_dir),
+            "--exec echo {//} | sort --unique --ignore-case",
+            max_count=count,
+            reverse_depth=depth,
+        ):
+            if path_to_zip == path_dir:
+                continue
+
+            tar_gz_file = unique_file_name(path_to_zip.with_suffix(".tar.gz"))
+            with c.cd(path_to_zip.parent):
+                run_command(
+                    c,
+                    "gtar",
+                    "--remove-files" if delete else "",
+                    "--exclude='*.tar.gz'",
+                    f'-czf "{tar_gz_file.name}" -C . "./{path_to_zip.name}"',
+                    warn=True,
+                )
+
+
+@task(
+    help={
+        "dir": "Root directory to unzip. Default: current dir",
         "count": "Max number of files to unzip. Default: 1",
         "delete": "Delete the .tar.gz file after unzipping with success. Default: False",
     },
@@ -423,7 +462,13 @@ def unzip_tree(c: Context, dir_: list[str | Path], count: int = 1, delete: bool 
         dir_ = [Path.cwd()]
 
     for one_dir in dir_:
-        for tar_gz_path in iter_path_with_progress(c, "-t f .tar.gz", str(one_dir), "| sort", max_count=count):
+        for tar_gz_path in iter_path_with_progress(
+            c,
+            "-t f .tar.gz",
+            str(one_dir),
+            "| sort --ignore-case",
+            max_count=count,
+        ):
             result = run_command(c, f"gtar -xzf '{tar_gz_path}' -C '{tar_gz_path.parent}'")
             if result.ok and delete:
                 run_command(c, f"rm '{tar_gz_path}'")
