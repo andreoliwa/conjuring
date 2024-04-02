@@ -136,6 +136,7 @@ def categorize(c: Context, organize: bool = True, browse: int = 3, empty: bool =
             for d in [
                 DOWNLOADS_DIR,
                 DESKTOP_DIR,
+                "~/Pictures/flameshot",
                 "~/Documents/Shared_Downloads",
                 ONEDRIVE_PICTURES_DIR / "Telegram",
                 ONEDRIVE_PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
