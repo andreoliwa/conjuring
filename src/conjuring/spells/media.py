@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
 from enum import Enum
-from itertools import chain
 from pathlib import Path
 
 import typer
@@ -14,11 +12,9 @@ from invoke import Context, task
 from tqdm import tqdm
 
 from conjuring.constants import (
-    DESKTOP_DIR,
     DOT_DS_STORE,
     DOT_NOMEDIA,
     DOWNLOADS_DIR,
-    ONEDRIVE_DIR,
     ONEDRIVE_PICTURES_DIR,
     STOP_FILE_OR_DIR,
 )
@@ -31,7 +27,6 @@ from conjuring.grimoire import (
     print_warning,
     run_command,
     run_lines,
-    run_stdout,
     unique_file_name,
 )
 
@@ -116,71 +111,6 @@ def cleanup(c: Context, browse: bool = False) -> None:
 
     for dir_ in sorted(copy_dirs):
         typer.echo(dir_)
-
-
-@task(
-    help={
-        "organize": "Call 'organize run' before categorizing",
-        "browse": "How many dirs to open on on Finder",
-        "empty": "Check dirs that are not empty but should be",
-    },
-)
-def categorize(c: Context, organize: bool = True, browse: int = 3, empty: bool = True) -> None:
-    """Open directories with files/photos that have to be categorized/moved/renamed."""
-    if organize:
-        c.run("invoke organize")
-
-    empty_dirs = (
-        [
-            Path(str(d)).expanduser()
-            for d in [
-                DOWNLOADS_DIR,
-                DESKTOP_DIR,
-                "~/Pictures/flameshot",
-                "~/Documents/Shared_Downloads",
-                ONEDRIVE_PICTURES_DIR / "Telegram",
-                ONEDRIVE_PICTURES_DIR / "Samsung_Gallery/Pictures/Telegram",
-                ONEDRIVE_DIR / "Documents/Mayan_Staging/Portugues",
-                ONEDRIVE_DIR / "Documents/Mayan_Staging/English",
-                ONEDRIVE_DIR / "Documents/Mayan_Staging/Deutsch",
-            ]
-        ]
-        if empty
-        else []
-    )
-
-    current_year = datetime.now(tz=timezone.utc).date().year
-    picture_dirs = [
-        Path(ONEDRIVE_PICTURES_DIR) / f"Camera_New/{sub}" for sub in chain([current_year], range(2008, current_year))
-    ]
-
-    count = 0
-    for path in chain(empty_dirs, picture_dirs):  # type: Path
-        if not path.exists():
-            continue
-        has_files = False
-        for file in path.glob("*"):
-            if not file.name.startswith("."):
-                has_files = True
-                break
-        if not has_files:
-            continue
-
-        if browse:
-            last_file = run_stdout(
-                c,
-                "fd . -t f --color never",
-                str(path),
-                "| sort -ru",
-                "| head -1",
-            )
-            if last_file:
-                run_command(c, f"open -R {last_file!r}")
-                count += 1
-                if count >= browse:
-                    break
-
-        typer.echo(str(path))
 
 
 @task
