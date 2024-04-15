@@ -13,17 +13,17 @@ repos:
       - id: nitpick-suggest
       - id: nitpick
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: debug-statements
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/google/keep-sorted
-    rev: v0.3.0
+    rev: v0.4.0
     hooks:
       - id: keep-sorted
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.0
+    rev: v0.3.7
     hooks:
       - id: ruff
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -36,7 +36,7 @@ repos:
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.1.1
+    rev: 24.4.0
     hooks:
       - id: black
         args: [--safe, --quiet]
@@ -54,7 +54,7 @@ repos:
       - id: python-no-log-warn
       - id: rst-backticks
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         # https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-show-error-codes
@@ -67,12 +67,12 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.14.0
+    rev: v3.22.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
