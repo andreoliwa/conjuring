@@ -29,5 +29,5 @@ jobs:
         # Run "invoke mkdocs.deploy" to create the "gh-pages" branch and deploy it first, otherwise this step fails
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           publish_dir: ./public
