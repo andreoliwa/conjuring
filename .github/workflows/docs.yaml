@@ -3,8 +3,9 @@ name: Publish documentation
 
 on:
   push:
-    branches:
-      - master
+    # TODO:
+#    branches:
+#      - master
 
 jobs:
   publish-documentation:
