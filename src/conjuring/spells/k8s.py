@@ -21,14 +21,20 @@ class Kubectl:
 
     context: Context
 
-    def choose_apps(self, partial_app_name: str | None = None, *, multi: bool = False) -> list[str]:
-        """Select apps from Kubernetes deployments, using a partial app name and fzf."""
+    def choose_apps(self, partial_name: str | None = None, *, multi: bool = False) -> list[str]:
+        """Select apps from Kubernetes deployments, using a partial app name and fzf.
+
+        Use the current dir as the app name if no partial app name is provided.
+        """
+        if not partial_name:
+            return [Path.cwd().name]
+
         return cast(
             list[str],
             run_with_fzf(
                 self.context,
                 """kubectl get deployments.apps -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'""",
-                query=partial_app_name or "",
+                query=partial_name or "",
                 multi=multi,
             ),
         )
@@ -73,8 +79,13 @@ def config_map(c: Context, app: str, rg: str = "") -> None:
     )
 
 
-@task(help={"replica_set": "Show the replica sets for an app"})
-def pods(c: Context, app: str, replica_set: bool = False) -> None:
+@task(
+    help={
+        "app": "Show the pods for an app; if not provided, the current directory name is used.",
+        "replica_set": "Show the replica sets for an app",
+    },
+)
+def pods(c: Context, app: str = "", replica_set: bool = False) -> None:
     """Show the pods and replica sets for an app."""
     kubectl = Kubectl(c)
     chosen_apps = kubectl.choose_apps(app, multi=True)
@@ -93,3 +104,17 @@ def pods(c: Context, app: str, replica_set: bool = False) -> None:
 
 # TODO: You can verify the containers running in a given pod with the following command
 #  > kubectl get pods <pod name> -o jsonpath='{.spec.containers[*].name}'
+
+
+@task(name="exec")
+def exec_(c: Context, app: str = "") -> None:
+    """Exec into the first pod found for the chosen app."""
+    kubectl = Kubectl(c)
+    chosen_app = kubectl.choose_apps(app)
+    chosen_pod = run_with_fzf(
+        c,
+        kubectl.cmd_get("pods", chosen_app),
+        "--no-headers",
+        "-o custom-columns=NAME:.metadata.name",
+    )
+    run_command(c, f"kubectl exec -it {chosen_pod} -- bash")
