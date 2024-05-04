@@ -130,7 +130,7 @@ def run_with_fzf(  # noqa: PLR0913
     **kwargs: str | bool,
 ) -> str:
     """Run a command with fzf and return the chosen entry."""
-    fzf_pieces = ["| fzf --reverse --select-1 --height 40% --cycle"]
+    fzf_pieces = ["| fzf --reverse --select-1 --height=~40% --cycle --no-unicode --no-separator"]
     if query:
         fzf_pieces.append(f"-q '{query}'")
     if header:
