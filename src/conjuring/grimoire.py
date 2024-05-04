@@ -33,7 +33,7 @@ CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(
 # keep-sorted start
 REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
 REGEX_UNIQUE_FILE = re.compile(r"(?P<original_stem>.+)_copy(?P<index>\d+)?", re.IGNORECASE)
-RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --progress --modify-window=1"
+RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --compress --modify-window=1"
 # keep-sorted end
 
 
@@ -42,7 +42,7 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool) -> Result:
+def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool | None) -> Result:
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
@@ -51,17 +51,16 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str
     return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, **kwargs: str | bool) -> str:
+def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool) -> str:
     """Run a (hidden) command and return the stripped stdout."""
-    kwargs.setdefault("warn", False)
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
-    return c.run(join_pieces(*pieces), **kwargs).stdout.strip()
+    return run_command(c, *pieces, dry=dry, **kwargs).stdout.strip()
 
 
 def run_lines(c: Context, *pieces: str, **kwargs: str | bool) -> list[str]:
     """Run a (hidden) command and return the result as lines."""
-    return run_stdout(c, *pieces, **kwargs).splitlines()
+    return run_stdout(c, *pieces, dry=None, **kwargs).splitlines()
 
 
 def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
@@ -349,23 +348,27 @@ def run_rsync(
     src_dir: str,
     dest_dir: str,
     *pieces: str,
+    count_files: bool = False,
     **kwargs: str | bool,
-) -> None:
+) -> int | None:
     """Run rsync with some sane defaults. On Linux, create the destination dir if local, and it doesn't exist."""
     if not c.config.run.dry:
         path = Path(dest_dir).expanduser()
         if path.root == "/":
             path.mkdir(parents=True, exist_ok=True)
-    run_command(
+    file_count = run_stdout(
         c,
         RSYNC_DEFAULT,
-        "--dry-run" if c.config.run.dry else "",
+        "--dry-run" if c.config.run.dry or count_files else "",
         src_dir,
         dest_dir,
         *pieces,
+        "| wc -l" if count_files else "--verbose --progress",
+        hide=False,
         dry=False,
         **kwargs,
     )
+    return int(file_count) if count_files else None
 
 
 def keep_dirs(*dirs: Path, file_name: str = ".keep") -> None:
