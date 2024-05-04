@@ -33,7 +33,7 @@ CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(
 # keep-sorted start
 REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
 REGEX_UNIQUE_FILE = re.compile(r"(?P<original_stem>.+)_copy(?P<index>\d+)?", re.IGNORECASE)
-RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --compress --modify-window=1"
+RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --modify-window=1"
 # keep-sorted end
 
 
@@ -363,7 +363,8 @@ def run_rsync(
         src_dir,
         dest_dir,
         *pieces,
-        "| wc -l" if count_files else "--verbose --progress",
+        # Discard the first 2 lines ("building file list") and the last 3 ("total size")
+        "| wc -l | awk '{print $1 - 5}'" if count_files else "--progress",
         hide=False,
         dry=False,
         **kwargs,
