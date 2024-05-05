@@ -51,16 +51,19 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str
     return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool) -> str:
+def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool | None) -> str:
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
-    return run_command(c, *pieces, dry=dry, **kwargs).stdout.strip()
+    if dry is not None:
+        kwargs.setdefault("dry", dry)
+    return run_command(c, *pieces, **kwargs).stdout.strip()  # type: ignore[arg-type]
 
 
-def run_lines(c: Context, *pieces: str, **kwargs: str | bool) -> list[str]:
+def run_lines(c: Context, *pieces: str, **kwargs: str | bool | None) -> list[str]:
     """Run a (hidden) command and return the result as lines."""
-    return run_stdout(c, *pieces, dry=None, **kwargs).splitlines()
+    kwargs.setdefault("dry", None)
+    return run_stdout(c, *pieces, **kwargs).splitlines()  # type: ignore[arg-type]
 
 
 def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
