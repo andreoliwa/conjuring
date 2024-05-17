@@ -7,24 +7,29 @@ from conjuring.spells.git import Git
 SHOULD_PREFIX = True
 
 
-@task
-def remote(c: Context, username: str, remote: str = "") -> None:
+@task(
+    help={
+        "username": "The owner of the original repository. Required",
+        "remote": "The remote to sync with (default: upstream)",
+    },
+)
+def remote(c: Context, username: str, remote_: str = "upstream") -> None:
     """[Configure a remote for a fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork)."""
     if username.startswith("-"):
         msg = "Arguments should be: username [--remote]"
         raise Exit(msg)
-    if not remote:
-        remote = username
+    if not remote_:
+        remote_ = username
 
     project = c.run(r"git remote -v | rg origin | head -1 | rg -o '/(.+)\.git' -r '$1'", pty=False).stdout.strip()
-    c.run(f"git remote add {remote} https://github.com/{username}/{project}.git", warn=True)
+    c.run(f"git remote add {remote_} https://github.com/{username}/{project}.git", warn=True)
     c.run("git remote -v")
 
 
-@task
-def sync(c: Context, remote: str = "upstream") -> None:
+@task(help={"remote": "The remote to sync with (default: upstream)"})
+def sync(c: Context, remote_: str = "upstream") -> None:
     """[Sync a fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)."""
-    c.run(f"git fetch {remote}")
+    c.run(f"git fetch {remote_}")
     existing_branch = Git(c).checkout("master", "main")
-    c.run(f"git merge {remote}/{existing_branch}")
+    c.run(f"git merge {remote_}/{existing_branch}")
     c.run("git push")
