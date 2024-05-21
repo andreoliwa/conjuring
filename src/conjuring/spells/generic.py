@@ -9,14 +9,14 @@ from shlex import quote
 
 import typer
 from invoke import Context, task
+from more_itertools import always_iterable
 
-from conjuring.grimoire import print_error, print_normal, print_success, run_command, run_lines
+from conjuring.grimoire import print_error, print_normal, print_success, run_command, run_with_rg
 
 # keep-sorted start
 # Split the strings to prevent this method from detecting them as tasks when running on this project
 FIX_ME = "FIX" + "ME"
 REGEX_ASSIGNEE_DESCRIPTION = re.compile(r"\s*(?P<assignee>\(.+\))?\s*:\s*(?P<description>.+)", re.IGNORECASE)
-REGEX_PATH_LINE_COMMENT = re.compile(r"(?P<path>[^:]+):(?P<line>\d+)[^/#]+([/#])(?P<comment>.+)")
 TO_DO = "TO" + "DO"
 # keep-sorted end
 
@@ -65,9 +65,11 @@ class Location:
         "priority": "Specify an assignee and show only higher priority tasks for them"
         f" ({FIX_ME} or {TO_DO}(<assignee>)",
         "markdown": "Print the output in Markdown format",
+        "dir": "Partial directory names to search for items. Use multiple times or a comma-separated list",
     },
+    iterable=["dir"],
 )
-def todo(  # noqa: PLR0913
+def todo(  # noqa: C901,PLR0913,PLR0912
     c: Context,
     cz: bool = False,
     valid: bool = True,
@@ -75,9 +77,17 @@ def todo(  # noqa: PLR0913
     short: bool = False,
     priority: str = "",
     markdown: bool = False,
+    dir_: str = "",
 ) -> None:
     """List to-dos and fix-mes in code. Optionally check if the description follows Conventional Commits (cz check)."""
-    all_todos: dict[ToDoItem, list[Location]] = _parse_all_todos(c, priority)
+    dir_names = []
+    if dir_:
+        for one_dir in always_iterable(dir_):
+            if "," in one_dir:
+                dir_names.extend(one_dir.split(","))
+            else:
+                dir_names.append(one_dir)
+    all_todos: dict[ToDoItem, list[Location]] = _parse_all_todos(c, priority, dir_names)
 
     if markdown:
         _print_todos_as_markdown(all_todos, short)
@@ -116,30 +126,30 @@ def _print_todos_as_markdown(all_todos: dict[ToDoItem, list[Location]], short: b
         print_normal(bullet)
 
 
-def _parse_all_todos(c: Context, priority: str) -> dict[ToDoItem, list[Location]]:
+def _parse_all_todos(c: Context, priority: str, dir_names: list[str]) -> dict[ToDoItem, list[Location]]:
     all_todos: dict[ToDoItem, list[Location]] = defaultdict(list)
     priority = priority.casefold()
     for which in (FIX_ME, TO_DO):
-        # This command freezes if pty=False
-        for line in run_lines(c, f"rg --color=never --no-heading {which}", warn=True, pty=True):
-            before, after = line.split(which, maxsplit=1)  # type: str,str
+        for rg_match in run_with_rg(c, which):
+            before, after = rg_match.text.split(which, maxsplit=1)  # type: str,str
 
             match = REGEX_ASSIGNEE_DESCRIPTION.match(after)
-            if not match:
-                print_error(f"Could not parse to-do item description: {after}")
-                continue
-
-            assignee = (match.group("assignee") or "").strip("()").casefold()
-            if priority and not (which == FIX_ME or assignee == priority):
-                continue
-            description = (match.group("description") or "").strip()
+            if match:
+                assignee = (match.group("assignee") or "").strip("()").casefold()
+                if priority and not (which == FIX_ME or assignee == priority):
+                    continue
+                description = (match.group("description") or "").strip()
+            else:
+                assignee = ""
+                description = after.strip()
             key = ToDoItem(which, assignee, description)
 
-            match = REGEX_PATH_LINE_COMMENT.match(before)
-            if not match:
-                print_error(f"Could not parse to-do item path/line: {before}")
+            location = Location(
+                path=rg_match.path,
+                line=rg_match.line,
+                comment="",
+            )
+            if dir_names and not any(dir_name in location.path for dir_name in dir_names):
                 continue
-
-            location = Location(**match.groupdict())
             all_todos[key].append(location)
     return all_todos

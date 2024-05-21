@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fnmatch
+import json
 import os
 import re
 import sys
@@ -25,7 +26,7 @@ from conjuring.visibility import display_task
 
 if TYPE_CHECKING:
     import types
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Generator, Iterator, Sequence
 
 # TODO: document or remove this variable
 CONJURING_IGNORE_MODULES = os.environ.get("CONJURING_IGNORE_MODULES", "").split(",")
@@ -428,3 +429,27 @@ def unique_file_name(path_or_str: Path | str) -> Path:
         path = path.with_name(new_name)
 
     return path
+
+
+@dataclass
+class RipGrepMatch:
+    """A match from ripgrep."""
+
+    path: str
+    line: int
+    text: str
+
+
+def run_with_rg(c: Context, search: str) -> Generator[RipGrepMatch, None, None]:
+    """Run ripgrep and return the matches."""
+    for json_str in run_lines(
+        c,
+        "rg --json --color=never --no-heading",
+        search,
+        " | jq --monochrome-output --compact-output 'select(.type | contains(\"match\"))'",
+        warn=True,
+        pty=True,  # This command freezes if pty=False
+    ):
+        json_dict = json.loads(json_str)
+        data = json_dict["data"]
+        yield RipGrepMatch(data["path"]["text"], data["line_number"], data["lines"]["text"])
