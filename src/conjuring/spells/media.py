@@ -403,3 +403,15 @@ def unzip_tree(c: Context, dir_: list[str | Path], count: int = 1, delete: bool 
             result = run_command(c, f"gtar -xzf '{tar_gz_path}' -C '{tar_gz_path.parent}'")
             if result.ok and delete:
                 run_command(c, f"rm '{tar_gz_path}'")
+
+
+@task
+def invidious(c: Context) -> None:
+    """Parse Invidious instances to be used in the Chrome plugin random instance pool.
+
+    "Invidious random instance pool (comma-separated)" text field config
+    from [Privacy Redirect](https://chromewebstore.google.com/detail/privacy-redirect/pmcmeagblkinmogikoikkdjiligflglb).
+    """
+    instances = run_lines(c, "curl -s https://api.invidious.io/instances.json | jq -rs '.[].[][1].uri'")
+    filtered = ",".join([i for i in instances if not i.endswith(".onion") and not i.endswith(".i2p")])
+    run_command(c, f"echo {filtered} | pbcopy")
