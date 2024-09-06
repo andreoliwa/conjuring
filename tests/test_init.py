@@ -37,7 +37,7 @@ def test_file_without_tasks(datadir: Path) -> None:
     assert file.read_text() == with_tasks.read_text()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_fzf(mocker: Mock) -> Mock:
     mocked_method = mocker.patch("conjuring.cli.iterfzf")
     mocked_method.return_value = ["abc", "def", "ghi"]
