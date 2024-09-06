@@ -11,7 +11,7 @@ from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 sys.path.append("tests")
 
 
-@pytest.fixture()
+@pytest.fixture
 def my_collection() -> Collection:
     return Collection("mine")
 
