@@ -32,7 +32,7 @@ repos:
       - id: prettier
         stages: [commit]
   - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
-    rev: v0.39.0
+    rev: v0.43.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/psf/black-pre-commit-mirror
@@ -67,7 +67,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.31.0
+    rev: v3.22.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
