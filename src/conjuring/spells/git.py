@@ -1,5 +1,7 @@
 """[Git](https://git-scm.com/): update all, extract subtree, rewrite history, ..."""
 
+import os.path
+import tempfile
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -16,7 +18,6 @@ from conjuring.grimoire import (
     print_success,
     run_command,
     run_lines,
-    run_multiple,
     run_stdout,
     run_with_fzf,
 )
@@ -117,96 +118,52 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
     help={
         "new_project_dir": "Dir of the project to be created. The dir might exist or not",
         "reset": "Remove the new dir and start over",
-        "keep": "Keep branches and remote after the extracting is done",
     },
 )
-def extract_subtree(c: Context, new_project_dir: str, reset: bool = False, keep: bool = False) -> None:
-    """Extract files from subdirectories of the current Git repo to another repo, using git subtree.
+def extract_subtree(c: Context, new_project_dir: str, reset: bool = False) -> None:
+    """Extract files from subdirectories of the current Git repo to another repo, using git-filter-repo.
 
-    The files will be moved to the root of the new repo.
-
-    Solutions adapted from:
-    - https://serebrov.github.io/html/2021-09-13-git-move-history-to-another-repository.html
-    - https://stackoverflow.com/questions/25574407/git-subtree-split-two-directories/58253979#58253979
+    Install https://github.com/newren/git-filter-repo with `pipx install git-filter-repo`.
     """
-    new_project_path: Path = Path(new_project_dir).expanduser().absolute()
+    new_project_path: Path = Path(new_project_dir).expanduser().resolve().absolute()
     if reset:
         c.run(f"rm -rf {new_project_path}")
 
-    new_project_path.mkdir(parents=False, exist_ok=True)
-    old_project_path = Path.cwd()
+    if not new_project_path.exists():
+        origin_url = run_stdout(c, "git remote get-url origin")
+        c.run(f"git clone {origin_url} {new_project_path}")
 
-    all_files = set(run_lines(c, Git.SHOW_ALL_FILE_HISTORY, dry=False))
-    chosen_files = set(
-        run_with_fzf(
-            c,
-            Git.SHOW_ALL_FILE_HISTORY,
-            dry=False,
-            header="Use TAB to choose the files you want to KEEP",
-            multi=True,
-            preview="test -f {} && head -20 {} || echo FILE NOT FOUND, IT EXISTS ONLY IN GIT HISTORY",
-        ),
-    )
-    sub_dirs = {part.rsplit("/", 1)[0] for part in chosen_files}
-    obliterate = set(all_files.difference(chosen_files))
+    files_and_dirs = set(run_lines(c, Git.SHOW_ALL_FILE_HISTORY, dry=False))
+    for line in sorted(files_and_dirs):
+        path = Path(line)
+        if os.path.sep in line:
+            files_and_dirs.add(str(path.parent) + os.path.sep)
+            continue
 
-    first_date = run_stdout(c, 'git log --format="%cI" --root | sort -u | head -1')
-
-    prefixes: list[str] = []
-    for sub_dir in sorted(sub_dirs):
-        absolute_subdir = Path(sub_dir).expanduser().absolute()
-        # Add slash to the end
-        prefixes.append(str(absolute_subdir.relative_to(Path.cwd())).rstrip("/") + "/")
+    _, temp_filename = tempfile.mkstemp()
+    temp_file = Path(temp_filename)
+    try:
+        temp_file.write_text(os.linesep.join(sorted(files_and_dirs)))
+        chosen_files = set(
+            run_with_fzf(
+                c,
+                f"cat {temp_filename}",
+                dry=False,
+                header="Use TAB to choose the files you want to copy to the new project",
+                multi=True,
+                preview="test -f {} && head -20 {} || echo FILE NOT FOUND, IT EXISTS ONLY IN GIT HISTORY",
+            ),
+        )
+    finally:
+        temp_file.unlink()
 
     with c.cd(new_project_dir):
-        run_multiple(
-            c,
-            "git init",
-            "touch README.md",
-            "git add README.md",
-            f'git commit -m "chore: first commit" --date {first_date}',
-            f"git remote add -f upstream {old_project_path}",
-            "git checkout -b upstream_master upstream/master",
-            pty=False,
-        )
-        pairs: set[PrefixBranch] = set()
-        for prefix in prefixes:
-            if not Path(prefix).exists():
-                print_error(f"Skipping non-existent prefix {prefix}...")
-                continue
-
-            clean = prefix.strip(" /").replace("/", "_")
-            branch = f"upstream_subtree_{clean}"
-            local_obliterate = {f[len(prefix) :] for f in obliterate if f.startswith(prefix)}
-            pairs.add(PrefixBranch(prefix, branch))
-
-            run_multiple(
-                c,
-                "git checkout upstream_master",
-                f"git subtree split --prefix={prefix} -b {branch}",
-                f"git checkout {branch}",
-                "git obliterate " + " ".join(sorted(local_obliterate)) if obliterate else "",
-                "git checkout master",
-                # TODO: fix: deal with files that have the same name in different subdirs
-                #  The files are merged in the root, without prefix.
-                #  What happens if a file has the same name in multiple subdirs? e.g.: bin/file.py and src/file.py
-                f"git merge {branch} --allow-unrelated-histories -m 'refactor: merge subtree {prefix}'",
-            )
-
-        if obliterate:
-            c.run("git obliterate " + " ".join(sorted(obliterate)))
-        if not keep:
-            run_multiple(
-                c,
-                "git branch -D upstream_master",
-                *[f"git branch -D {pair.branch}" for pair in pairs],
-                "git remote remove upstream",
-            )
+        all_paths = [f"--path '{line}'" for line in sorted(chosen_files)]
+        c.run(f"git-filter-repo {' '.join(all_paths)}")
         history(c, full=True)
     print_error("Don't forget to switch to the new repo:", f"  cd {new_project_dir}", join_nl=True)
     print_success(
         "Next steps:",
-        "- Run 'git obliterate' manually for files in Git history (listed above) you still want to remove",
         "- Run 'invoke git.rewrite' to fix dates and authors",
         "- Create a new empty repo on https://github.com/new without initializing it (no README/.gitignore/license)",
         "- Follow the instructions to add a remote (from 'push an existing repository from the command line')",
@@ -263,7 +220,7 @@ def history(c: Context, full: bool = False, files: bool = False, author: bool = 
     help={
         "commit": "Base commit to be used for the range (default: --root)",
         "gpg": "Sign the commit (default: True)",
-        "author": "Set the current author (from 'git config') on the commit range",
+        "author": "Set the current author (taken from 'git config') on the commit range",
     },
 )
 def rewrite(c: Context, commit: str = "--root", gpg: bool = True, author: bool = True) -> None:
