@@ -415,3 +415,12 @@ def invidious(c: Context) -> None:
     instances = run_lines(c, "curl -s https://api.invidious.io/instances.json | jq -rs '.[].[][1].uri'")
     filtered = ",".join([i for i in instances if not i.endswith(".onion") and not i.endswith(".i2p")])
     run_command(c, f"echo {filtered} | pbcopy")
+
+
+@task
+def sync_subtitle(c: Context, episode: str) -> None:
+    """Sync subtitles for an episode or movie."""
+    fzf_cmd = "fzf --height 40% --reverse --inline-info"
+    video = c.run(f"fd {episode} | {fzf_cmd} --header='Choose a video file'", pty=False).stdout.strip()
+    subtitle = c.run(f"fd {episode} | {fzf_cmd} --header='Choose a subtitle'", pty=False).stdout.strip()
+    c.run(f'ffsubsync --max-offset-seconds 600 --overwrite-input "{video}" -i "{subtitle}"')
