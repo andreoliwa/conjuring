@@ -1,8 +1,9 @@
 # Features
 
-## Modes
+## Spell options
 
-Conjuring has 3 available modes (all tasks, opt-in and opt-out), detailed below.
+Conjuring has 4 available options for built-in spells (all, opt-in, opt-out,
+imported only), detailed below.
 
 When you run `conjuring init`, it creates an `~/.invoke.yaml` file and a
 `~/conjuring_init.py` on your home directory.
@@ -18,7 +19,7 @@ Invoke documentation](https://docs.pyinvoke.org/en/stable/concepts/configuration
 To use all global Conjuring tasks provided by this package, run:
 
 ```shell
-conjuring init --mode all
+conjuring init --spells all
 ```
 
 Run `invoke --list` from any directory, and you will see all Conjuring tasks.
@@ -29,7 +30,7 @@ If you want to only include the global Conjuring tasks you want, run this
 command and select the files with [fzf](https://github.com/junegunn/fzf):
 
 ```shell
-conjuring init --mode opt-in
+conjuring init --spells opt-in
 ```
 
 Or you can edit the Python bootstrap file manually. Suppose you only want
@@ -47,7 +48,7 @@ This is how you can do it:
 # ~/conjuring_init.py
 from conjuring import Spellbook
 
-namespace = Spellbook().cast_only("aws*", "k8s*", "pre-commit*", "py*", "*install")
+namespace = Spellbook().conjure_only("aws*", "k8s*", "pre-commit*", "py*", "*install")
 ```
 
 ### Opt-out
@@ -56,7 +57,7 @@ To use all Conjuring modules and tasks, except for a few, run this
 command and select the files with [fzf](https://github.com/junegunn/fzf):
 
 ```shell
-conjuring init --mode opt-out
+conjuring init --spells opt-out
 ```
 
 Or you can edit the Python bootstrap file manually.
@@ -68,8 +69,18 @@ This is the way:
 # ~/conjuring_init.py
 from conjuring import Spellbook
 
-namespace = Spellbook().cast_all_except("media*", "onedrive*")
+namespace = Spellbook().conjure_all_except("media*", "onedrive*")
 ```
+
+### Imported only
+
+To use only the tasks that are imported with a list of directories, run:
+
+```shell
+conjuring init --spells imported-only --dir ~/path/to/your/src --dir ~/path/to/another/src
+```
+
+These directories must contain Python modules or packages with Invoke tasks.
 
 ## Shell enhancements
 

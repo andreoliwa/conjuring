@@ -42,17 +42,23 @@ def conjuring() -> None:
     """Conjuring: Reusable global Invoke tasks that can be merged with local project tasks."""
 
 
-class Mode(str, Enum):
+class Spells(str, Enum):
     """Which spells to include in the root config file."""
 
-    opt_in = "opt-in"
-    opt_out = "opt-out"
-    all_ = "all"
+    OPT_IN = "opt-in"
+    OPT_OUT = "opt-out"
+    ALL = "all"
+    IMPORTED = "imported"
 
 
 @app.command()
 def init(
-    mode: Mode = Mode.all_,
+    spells: Spells = typer.Option(
+        Spells.ALL,
+        "--spells",
+        "-s",
+        help="Which built-in spells to include in the root config file",
+    ),
     dir_: list[Path] = typer.Option(
         None,
         "--dir",
@@ -71,7 +77,7 @@ def init(
     else:
         print_success(f"File {ROOT_INVOKE_YAML} is already configured for Conjuring")
 
-    output = generate_conjuring_init(CONJURING_INIT_PY_PATH, mode, dir_, force)
+    output = generate_conjuring_init(CONJURING_INIT_PY_PATH, spells, dir_, force)
     if output:
         typer.echo(output)
 
@@ -100,7 +106,7 @@ def patch_invoke_yaml(config_file: Path) -> bool:
     return True
 
 
-def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], force: bool) -> str:
+def generate_conjuring_init(path: Path, spells: Spells, import_dirs: list[Path], force: bool) -> str:
     """Generate the Conjuring init file. Return True if the file is correct, False otherwise."""
     python_code = '''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
@@ -115,25 +121,33 @@ def generate_conjuring_init(path: Path, mode: Mode, import_dirs: list[Path], for
         flat_list = "\n".join([f'    "{dir_}",' for dir_ in import_dirs])
         import_dirs_call = f".import_dirs(\n{flat_list}\n)"
 
-    if mode == Mode.all_:
-        contents = template.substitute(import_dirs=import_dirs_call, function="cast_all", args="")
+    if spells == Spells.ALL:
+        contents = template.substitute(import_dirs=import_dirs_call, function="conjure_all", args="")
     else:
-        spells = sorted([file.stem for file in CONJURING_SPELLS_DIR.glob("*.py") if not file.stem.startswith("_")])
-        if mode == Mode.opt_in:
-            function_name = "cast_only"
+        spell_names = sorted([file.stem for file in CONJURING_SPELLS_DIR.glob("*.py") if not file.stem.startswith("_")])
+        if spells == Spells.OPT_IN:
+            function_name = "conjure_only"
             prompt = "opt-in: choose the spells to add to global tasks"
-        else:
-            function_name = "cast_all_except"
+        elif spells == Spells.OPT_OUT:
+            function_name = "conjure_all_except"
             prompt = "opt-out: choose the spells to remove from global tasks: "
-        chosen = iterfzf(
-            spells,
-            multi=True,
-            prompt=f"conjuring init {prompt}",
-            executable=which("fzf"),
-        )
-        if not chosen:
-            raise typer.Abort
-        with_stars = sorted(f'    "{spell}*",' for spell in chosen)
+        else:
+            function_name = "conjure_imported_only"
+            prompt = None
+
+        if prompt:
+            chosen = iterfzf(
+                spell_names,
+                multi=True,
+                prompt=f"conjuring init {prompt}",
+                executable=which("fzf"),
+            )
+            if not chosen:
+                raise typer.Abort
+            with_stars = sorted(f'    "{spell}*",' for spell in chosen)
+        else:
+            with_stars = []
+
         contents = template.substitute(
             import_dirs=import_dirs_call,
             function=function_name,

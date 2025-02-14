@@ -65,19 +65,23 @@ class Spellbook:
             self.sys_path_dirs[package_dir or dir_] = package
         return self
 
-    def cast_all(self) -> Collection:  # TODO: test
+    def conjure_all(self) -> Collection:  # TODO: test
         """Load all spell modules."""
-        return self._cast_chosen_spells(ConjuringConfig(include=None, exclude=None))
+        return self._cast_chosen_spells(ConjuringConfig(include=None, exclude=None), True)
 
-    def cast_only(self, *include: str) -> Collection:  # TODO: test
+    def conjure_only(self, *include: str) -> Collection:  # TODO: test
         """Load only the chosen spell modules by partial task name."""
-        return self._cast_chosen_spells(ConjuringConfig(include=include, exclude=None))
+        return self._cast_chosen_spells(ConjuringConfig(include=include, exclude=None), True)
 
-    def cast_all_except(self, *exclude: str) -> Collection:  # TODO: test
+    def conjure_all_except(self, *exclude: str) -> Collection:  # TODO: test
         """Load all spell modules except the chosen ones by partial task name."""
-        return self._cast_chosen_spells(ConjuringConfig(include=None, exclude=exclude))
+        return self._cast_chosen_spells(ConjuringConfig(include=None, exclude=exclude), True)
 
-    def _cast_chosen_spells(self, config: ConjuringConfig) -> Collection:
+    def conjure_imported_only(self) -> Collection:  # TODO: test
+        """Load only the imported dirs and no built-in spell modules."""
+        return self._cast_chosen_spells(ConjuringConfig(include=None, exclude=None), False)
+
+    def _cast_chosen_spells(self, config: ConjuringConfig, builtin_spells: bool) -> Collection:
         """Load the chosen spell modules dynamically and add their tasks to the namespace."""
         namespace = collection_from_python_files(
             sys.modules[__name__],
@@ -87,12 +91,13 @@ class Spellbook:
             exclude=config.exclude,
         )
 
-        self._add_tasks(
-            namespace,
-            sorted(CONJURING_SPELLS_DIR.glob("*.py")),
-            ".".join(CONJURING_SPELLS_DIR.parts[-2:]),
-            config,
-        )
+        if builtin_spells:
+            self._add_tasks(
+                namespace,
+                sorted(CONJURING_SPELLS_DIR.glob("*.py")),
+                ".".join(CONJURING_SPELLS_DIR.parts[-2:]),
+                config,
+            )
 
         # Add the package to PYTHONPATH so that we can import its modules
         package_count = 0
