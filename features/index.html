@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.d7758b05.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -294,13 +294,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#modes" class="md-nav__link">
+  <a href="#spell-options" class="md-nav__link">
     <span class="md-ellipsis">
-      Modes
+      Spell options
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Modes">
+    <nav class="md-nav" aria-label="Spell options">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -325,6 +325,15 @@
   <a href="#opt-out" class="md-nav__link">
     <span class="md-ellipsis">
       Opt-out
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#imported-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Imported only
     </span>
   </a>
   
@@ -544,13 +553,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#modes" class="md-nav__link">
+  <a href="#spell-options" class="md-nav__link">
     <span class="md-ellipsis">
-      Modes
+      Spell options
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Modes">
+    <nav class="md-nav" aria-label="Spell options">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -575,6 +584,15 @@
   <a href="#opt-out" class="md-nav__link">
     <span class="md-ellipsis">
       Opt-out
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#imported-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Imported only
     </span>
   </a>
   
@@ -716,8 +734,9 @@
 
 
 <h1 id="features">Features</h1>
-<h2 id="modes">Modes</h2>
-<p>Conjuring has 3 available modes (all tasks, opt-in and opt-out), detailed below.</p>
+<h2 id="spell-options">Spell options</h2>
+<p>Conjuring has 4 available options for built-in spells (all, opt-in, opt-out,
+imported only), detailed below.</p>
 <p>When you run <code>conjuring init</code>, it creates an <code>~/.invoke.yaml</code> file and a
 <code>~/conjuring_init.py</code> on your home directory.</p>
 <p>This will merge any existing local <code>tasks.py</code> file with the global
@@ -726,13 +745,13 @@ Conjuring tasks.</p>
 Invoke documentation</a>.</p>
 <h3 id="all-tasks">All tasks</h3>
 <p>To use all global Conjuring tasks provided by this package, run:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--mode<span class="w"> </span>all
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--spells<span class="w"> </span>all
 </span></code></pre></div>
 <p>Run <code>invoke --list</code> from any directory, and you will see all Conjuring tasks.</p>
 <h3 id="opt-in">Opt-in</h3>
 <p>If you want to only include the global Conjuring tasks you want, run this
 command and select the files with <a href="https://github.com/junegunn/fzf">fzf</a>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--mode<span class="w"> </span>opt-in
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--spells<span class="w"> </span>opt-in
 </span></code></pre></div>
 <p>Or you can edit the Python bootstrap file manually. Suppose you only want
 these global tasks:</p>
@@ -747,12 +766,12 @@ these global tasks:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># ~/conjuring_init.py</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spellbook</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">Spellbook</span><span class="p">()</span><span class="o">.</span><span class="n">cast_only</span><span class="p">(</span><span class="s2">&quot;aws*&quot;</span><span class="p">,</span> <span class="s2">&quot;k8s*&quot;</span><span class="p">,</span> <span class="s2">&quot;pre-commit*&quot;</span><span class="p">,</span> <span class="s2">&quot;py*&quot;</span><span class="p">,</span> <span class="s2">&quot;*install&quot;</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">Spellbook</span><span class="p">()</span><span class="o">.</span><span class="n">conjure_only</span><span class="p">(</span><span class="s2">&quot;aws*&quot;</span><span class="p">,</span> <span class="s2">&quot;k8s*&quot;</span><span class="p">,</span> <span class="s2">&quot;pre-commit*&quot;</span><span class="p">,</span> <span class="s2">&quot;py*&quot;</span><span class="p">,</span> <span class="s2">&quot;*install&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="opt-out">Opt-out</h3>
 <p>To use all Conjuring modules and tasks, except for a few, run this
 command and select the files with <a href="https://github.com/junegunn/fzf">fzf</a>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--mode<span class="w"> </span>opt-out
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--spells<span class="w"> </span>opt-out
 </span></code></pre></div>
 <p>Or you can edit the Python bootstrap file manually.</p>
 <p>Suppose you want all Conjuring tasks except media and OneDrive tasks.
@@ -760,8 +779,13 @@ This is the way:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ~/conjuring_init.py</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spellbook</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">Spellbook</span><span class="p">()</span><span class="o">.</span><span class="n">cast_all_except</span><span class="p">(</span><span class="s2">&quot;media*&quot;</span><span class="p">,</span> <span class="s2">&quot;onedrive*&quot;</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="n">Spellbook</span><span class="p">()</span><span class="o">.</span><span class="n">conjure_all_except</span><span class="p">(</span><span class="s2">&quot;media*&quot;</span><span class="p">,</span> <span class="s2">&quot;onedrive*&quot;</span><span class="p">)</span>
 </span></code></pre></div>
+<h3 id="imported-only">Imported only</h3>
+<p>To use only the tasks that are imported with a list of directories, run:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>conjuring<span class="w"> </span>init<span class="w"> </span>--spells<span class="w"> </span>imported-only<span class="w"> </span>--dir<span class="w"> </span>~/path/to/your/src<span class="w"> </span>--dir<span class="w"> </span>~/path/to/another/src
+</span></code></pre></div>
+<p>These directories must contain Python modules or packages with Invoke tasks.</p>
 <h2 id="shell-enhancements">Shell enhancements</h2>
 <p>Invoke can also be configured with environment variables for an even smoother
 experience.</p>
@@ -769,8 +793,8 @@ experience.</p>
 <h3 id="echo-all-commands">Echo all commands</h3>
 <p>Echo all commands in all tasks by default, like
 <a href="https://www.gnu.org/software/make/">Make</a> does.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">INVOKE_RUN_ECHO</span><span class="o">=</span><span class="m">1</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">INVOKE_RUN_ECHO</span><span class="o">=</span><span class="m">1</span>
 </span></code></pre></div>
 <div class="admonition docs">
 <p class="admonition-title">Docs</p>
@@ -779,8 +803,8 @@ experience.</p>
 </div>
 <h3 id="coloured-output">Coloured output</h3>
 <p>Use a pseudo-terminal by default (display colored output):</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">INVOKE_RUN_PTY</span><span class="o">=</span><span class="m">1</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">INVOKE_RUN_PTY</span><span class="o">=</span><span class="m">1</span>
 </span></code></pre></div>
 <div class="admonition docs">
 <p class="admonition-title">Docs</p>
@@ -789,36 +813,36 @@ experience.</p>
 </div>
 <h3 id="short-aliases">Short aliases</h3>
 <p>Add short aliases for the <code>invoke</code> command:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">i</span><span class="o">=</span><span class="s1">&#39;invoke&#39;</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">il</span><span class="o">=</span><span class="s1">&#39;invoke --list&#39;</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">ih</span><span class="o">=</span><span class="s1">&#39;invoke --help&#39;</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">ir</span><span class="o">=</span><span class="s1">&#39;invoke --dry&#39;</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ~/.bashrc, ~/.zshrc or your favourite shell</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">i</span><span class="o">=</span><span class="s1">&#39;invoke&#39;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">il</span><span class="o">=</span><span class="s1">&#39;invoke --list&#39;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">ih</span><span class="o">=</span><span class="s1">&#39;invoke --help&#39;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">ir</span><span class="o">=</span><span class="s1">&#39;invoke --dry&#39;</span>
 </span></code></pre></div>
 <h3 id="auto-completion">Auto-completion</h3>
 <p>Follow this quick copy/paste setup to configure auto-completion for Conjuring.
 Or read the links below for more details.</p>
 <p>To enable completion on terminals, add this to your <code>~/.bash_profile</code>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ~/.bash_profile</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BASH_COMPLETION_USER_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bash-completion&quot;</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BASH_COMPLETION_USER_DIR</span><span class="s2">/completions&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span>COMPLETION<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BASH_COMPLETION_USER_DIR</span><span class="s2">/completions/&quot;</span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="k">done</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="k">fi</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># https://github.com/tiangolo/typer installs completion files in this directory</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.bash_completions/&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span>COMPLETION<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.bash_completions/&quot;</span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">        </span><span class="o">[[</span><span class="w"> </span>-r<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span><span class="k">done</span>
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="k">fi</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># ~/.bash_profile</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BASH_COMPLETION_USER_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bash-completion&quot;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BASH_COMPLETION_USER_DIR</span><span class="s2">/completions&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span>COMPLETION<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BASH_COMPLETION_USER_DIR</span><span class="s2">/completions/&quot;</span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">        </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="k">done</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">fi</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># https://github.com/tiangolo/typer installs completion files in this directory</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.bash_completions/&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span>COMPLETION<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.bash_completions/&quot;</span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">        </span><span class="o">[[</span><span class="w"> </span>-r<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$COMPLETION</span><span class="s2">&quot;</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="k">done</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="k">fi</span>
 </span></code></pre></div>
 <p>Then run these commands to install auto-completion for Invoke and Conjuring:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># To get help, run `invoke` or `invoke --help`</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>invoke<span class="w"> </span>--print-completion-script<span class="o">=</span>bash<span class="w"> </span>&gt;<span class="w"> </span><span class="nv">$BASH_COMPLETION_USER_DIR</span>/completions/invoke.bash-completion
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># To get help, run `conjuring` or `conjuring --help`</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>conjuring<span class="w"> </span>--install-completion<span class="w"> </span>bash
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># To get help, run `invoke` or `invoke --help`</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>invoke<span class="w"> </span>--print-completion-script<span class="o">=</span>bash<span class="w"> </span>&gt;<span class="w"> </span><span class="nv">$BASH_COMPLETION_USER_DIR</span>/completions/invoke.bash-completion
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># To get help, run `conjuring` or `conjuring --help`</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>conjuring<span class="w"> </span>--install-completion<span class="w"> </span>bash
 </span></code></pre></div>
 <p>Then open a new terminal, type <code>invoke &lt;TAB&gt;</code> or <code>conjuring &lt;TAB&gt;</code>,
 and you will have auto-completion.</p>
@@ -842,17 +866,17 @@ can be added to the global scope and be available from any directory.</p>
   methods described above (<a href="#opt-in">opt-in</a>
   or <a href="#opt-out">opt-out</a>).</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ~/conjuring_init.py</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spellbook</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">Spellbook</span><span class="p">()</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="o">.</span><span class="n">import_dirs</span><span class="p">(</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="s2">&quot;~/path/to/your/src/my_package&quot;</span><span class="p">,</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="s2">&quot;~/path/to/a/some-directory-with-py-files&quot;</span><span class="p">,</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="p">)</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="o">.</span><span class="n">cast_all</span><span class="p">()</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># ~/conjuring_init.py</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spellbook</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">namespace</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">Spellbook</span><span class="p">()</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="o">.</span><span class="n">import_dirs</span><span class="p">(</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        <span class="s2">&quot;~/path/to/your/src/my_package&quot;</span><span class="p">,</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>        <span class="s2">&quot;~/path/to/a/some-directory-with-py-files&quot;</span><span class="p">,</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="p">)</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="o">.</span><span class="n">cast_all</span><span class="p">()</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="display-your-custom-task-modules-conditionally">Display your custom task modules conditionally</h3>
 <p>Some modules under the <code>spells</code> directory have a <code>should_display_tasks</code> boolean
@@ -860,10 +884,10 @@ function to control whether the tasks are displayed or not.</p>
 <p>The <code>conjuring.visibility</code> module has boolean functions that can be reused by
 your modules and tasks.</p>
 <p>Example from the <code>conjuring.spells.git</code> module:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># /path/to/your_task_module.py</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_git_repo</span><span class="p">,</span> <span class="n">ShouldDisplayTasks</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">should_display_tasks</span><span class="p">:</span> <span class="n">ShouldDisplayTasks</span> <span class="o">=</span> <span class="n">is_git_repo</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># /path/to/your_task_module.py</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_git_repo</span><span class="p">,</span> <span class="n">ShouldDisplayTasks</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">should_display_tasks</span><span class="p">:</span> <span class="n">ShouldDisplayTasks</span> <span class="o">=</span> <span class="n">is_git_repo</span>
 </span></code></pre></div>
 <p>Other use cases:</p>
 <ul>
@@ -875,26 +899,26 @@ your modules and tasks.</p>
 <h3 id="display-your-custom-individual-tasks-conditionally">Display your custom individual tasks conditionally</h3>
 <p>A task can have its own visibility settings, even if the owner module is
 configured to not display tasks.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># /path/to/another_task_module.py</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">MagicTask</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">)</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">an_always_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A MagicTask is always visible by default.</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="sd">    It will always be displayed in every directory,</span>
-</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="sd">        regardless of the module ``should_display_tasks()`` function.</span>
-</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="k">pass</span>
-</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>
-</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>
-</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">,</span> <span class="n">should_display</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
-</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">a_conditionally_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;You can use any boolean function to determine visibility.&quot;&quot;&quot;</span>
-</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>    <span class="k">pass</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># /path/to/another_task_module.py</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">conjuring.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">MagicTask</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">)</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">an_always_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A MagicTask is always visible by default.</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="sd">    It will always be displayed in every directory,</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="sd">        regardless of the module ``should_display_tasks()`` function.</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    <span class="k">pass</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="nd">@task</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">MagicTask</span><span class="p">,</span> <span class="n">should_display</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">a_conditionally_visible_task</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;You can use any boolean function to determine visibility.&quot;&quot;&quot;</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>    <span class="k">pass</span>
 </span></code></pre></div>
 <p>Use case:</p>
 <ul>
@@ -907,40 +931,40 @@ configured to not display tasks.</p>
 in your home dir.
 Your project dir can be anywhere under your home dir.</p>
 <p>Create two modules with Invoke tasks:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># ~/path/to/project/conjuring_foo.py</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nd">@task</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_foo</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My foo task.&quot;&quot;&quot;</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="k">pass</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="c1"># ~/path/to/project/conjuring_bar.py</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>
-</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>
-</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="nd">@task</span>
-</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_bar</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
-</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My bar task.&quot;&quot;&quot;</span>
-</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>    <span class="k">pass</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># ~/path/to/project/conjuring_foo.py</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nd">@task</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_foo</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My foo task.&quot;&quot;&quot;</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="k">pass</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="c1"># ~/path/to/project/conjuring_bar.py</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="kn">from</span><span class="w"> </span><span class="nn">invoke</span><span class="w"> </span><span class="kn">import</span> <span class="n">task</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="nd">@task</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_bar</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;My bar task.&quot;&quot;&quot;</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="k">pass</span>
 </span></code></pre></div>
 <p>The task list in your project dir will show tasks from all files, including
 the home dir task list.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/path/to/project/
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>$<span class="w"> </span>invoke<span class="w"> </span>--list
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Available<span class="w"> </span>tasks:
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w"> </span>my-bar<span class="w">               </span>My<span class="w"> </span>bar<span class="w"> </span>task.
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w"> </span>my-foo<span class="w">               </span>My<span class="w"> </span>foo<span class="w"> </span>task.
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w"> </span>&lt;...<span class="w"> </span>the<span class="w"> </span>global<span class="w"> </span>Conjuring<span class="w"> </span>tasks<span class="w"> </span>will<span class="w"> </span>show<span class="w"> </span>up<span class="w"> </span>here...&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/path/to/project/
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>$<span class="w"> </span>invoke<span class="w"> </span>--list
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Available<span class="w"> </span>tasks:
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w"> </span>my-bar<span class="w">               </span>My<span class="w"> </span>bar<span class="w"> </span>task.
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w"> </span>my-foo<span class="w">               </span>My<span class="w"> </span>foo<span class="w"> </span>task.
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w"> </span>&lt;...<span class="w"> </span>the<span class="w"> </span>global<span class="w"> </span>Conjuring<span class="w"> </span>tasks<span class="w"> </span>will<span class="w"> </span>show<span class="w"> </span>up<span class="w"> </span>here...&gt;
 </span></code></pre></div>
 <h3 id="prefix-task-names-of-your-custom-module">Prefix task names of your custom module</h3>
 <p>If the module defines this boolean constant with a value of <code>True</code>, then the
 name of the module will be added as a prefix to tasks.</p>
 <p>Example for the <code>conjuring.spells.pre_commit</code> module:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">SHOULD_PREFIX</span> <span class="o">=</span> <span class="kc">True</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">SHOULD_PREFIX</span> <span class="o">=</span> <span class="kc">True</span>
 </span></code></pre></div>
 <p>All the tasks of this module will have a <code>pre-commit.</code> prefix when you run
 <code>invoke --list</code>.</p>
@@ -993,7 +1017,7 @@ name of the module will be added as a prefix to tasks.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f13b1293.min.js"></script>
+      <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
       
     
   </body>
