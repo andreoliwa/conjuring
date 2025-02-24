@@ -1,6 +1,53 @@
 [build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.0.8", "poetry-core>=1.0.8", "poetry-core>=1.1.0"]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+authors = [{email = "andreoliwa@sent.com", name = "W. Augusto Andreoli"}]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: Software Development",
+]
+dependencies = [
+  "humanize",
+  "invoke",
+  "iterfzf",
+  "more-itertools",
+  "packaging",
+  "requests",
+  "ruamel-yaml",
+  "tomlkit",
+  "tqdm",
+  "typer",
+]
+description = "🐍🤖 Reusable global Invoke tasks that can be merged with local project tasks"
+documentation = "https://andreoliwa.github.io/conjuring/"
+keywords = ["automation", "cli", "invoke", "python", "tasks"]
+license = "MIT"
+name = "conjuring"
+readme = "docs/README.md"
+repository = "https://github.com/andreoliwa/conjuring"
+requires-python = ">=3.9"
+version = "0.7.0"
+
+[project.optional-dependencies]
+dev = [
+  "ipdb",
+  "ipython",
+  "pytest",
+  "pytest-cov",
+  "pytest-datadir",
+  "pytest-mock",
+]
+lint = ["pylint"]
+
+[project.scripts]
+conjuring = "conjuring.cli:app"
 
 [tool.black]
 line-length = 120
@@ -28,11 +75,16 @@ ignore_styles = [
   "py://nitpick/resources/python/311",
   "py://nitpick/resources/python/312",
   "py://nitpick/resources/python/38",
+  "py://nitpick/resources/python/39",
   "py://nitpick/resources/python/autoflake",
   "py://nitpick/resources/python/bandit",
   "py://nitpick/resources/python/flake8",
   "py://nitpick/resources/python/github-workflow",
+  "py://nitpick/resources/python/ipython",
   "py://nitpick/resources/python/isort",
+  "py://nitpick/resources/python/poetry",
+  "py://nitpick/resources/python/poetry-editable",
+  "py://nitpick/resources/python/poetry-venv",
   "py://nitpick/resources/python/pylint",
   "py://nitpick/resources/python/radon",
   "py://nitpick/resources/python/sonar-python",
@@ -49,14 +101,9 @@ style = [
   "py://nitpick/resources/any/pre-commit-hooks",
   "py://nitpick/resources/any/prettier",
   "py://nitpick/resources/markdown/markdownlint",
-  "py://nitpick/resources/python/39",
   "py://nitpick/resources/python/absent",
   "py://nitpick/resources/python/black",
-  "py://nitpick/resources/python/ipython",
   "py://nitpick/resources/python/mypy",
-  "py://nitpick/resources/python/poetry",
-  "py://nitpick/resources/python/poetry-editable",
-  "py://nitpick/resources/python/poetry-venv",
   "py://nitpick/resources/python/pre-commit-hooks",
   "py://nitpick/resources/python/readthedocs",
   "py://nitpick/resources/shell/bashate",
@@ -64,59 +111,6 @@ style = [
   "py://nitpick/resources/shell/shfmt",
   "py://nitpick/resources/toml/toml-sort",
 ]
-
-[tool.poetry]
-authors = ["W. Augusto Andreoli <andreoliwa@gmail.com>"]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Environment :: Console",
-  "Intended Audience :: Developers",
-  "Operating System :: MacOS",
-  "Operating System :: Microsoft :: Windows",
-  "Operating System :: POSIX :: Linux",
-  "Topic :: Software Development",
-]
-description = "🐍🤖 Reusable global Invoke tasks that can be merged with local project tasks"
-documentation = "https://andreoliwa.github.io/conjuring/"
-keywords = ["automation", "cli", "invoke", "python", "tasks"]
-license = "MIT"
-name = "conjuring"
-readme = "docs/README.md"
-repository = "https://github.com/andreoliwa/conjuring"
-version = "0.7.0"
-
-[tool.poetry.dependencies]
-humanize = "*"
-invoke = "*"
-iterfzf = "*"
-more-itertools = "*"
-packaging = "*"
-python = "^3.9"
-requests = "*"
-ruamel-yaml = "*"
-tomlkit = "*"
-tqdm = "*"
-typer = "*"
-
-[tool.poetry.dependencies.pylint]
-optional = true
-version = "*"
-
-[tool.poetry.dev-dependencies]
-ipdb = "*"
-ipython = "*"
-
-[tool.poetry.extras]
-lint = ["pylint"]
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-datadir = "*"
-pytest-mock = "*"
-
-[tool.poetry.scripts]
-conjuring = "conjuring.cli:app"
 
 [tool.ruff]
 fix = true

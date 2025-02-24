@@ -78,10 +78,10 @@ def test_module_with_magic_task(my_collection: Collection) -> None:
     assert_tasks(my_collection, ["depends-on-the-module-config", "this-task-is-always-visible"])
 
 
-def test_detects_this_project_as_poetry_project() -> None:
+def test_detects_this_project_not_as_poetry_project() -> None:
     """Assumes this project has a valid pyproject.toml."""
     # TODO: add tests for non-poetry projects with pyproject.toml still present
-    assert visibility.is_poetry_project()
+    assert not visibility.is_poetry_project()
 
 
 @pytest.mark.xfail(reason="Empty collection.tasks is causing this test to fail")
