@@ -29,4 +29,4 @@ def sync(c: Context) -> None:
 @task
 def gazelle(c: Context, update: bool = False) -> None:
     """Run Gazelle."""
-    run_command(c, "bazel run //:gazelle", "--update" if update else "")
+    run_command(c, "bazel run //:gazelle", "-- update" if update else "")
