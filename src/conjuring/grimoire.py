@@ -58,7 +58,11 @@ def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str 
     kwargs.setdefault("pty", False)
     if dry is not None:
         kwargs.setdefault("dry", dry)
-    return run_command(c, *pieces, **kwargs).stdout.strip()  # type: ignore[arg-type]
+    result = run_command(c, *pieces, **kwargs, warn=True)  # type: ignore[arg-type]
+    if result.failed:
+        print_error(result.command, f"\n{result}")
+        return ""
+    return result.stdout.strip()  # type: ignore[arg-type]
 
 
 def run_lines(c: Context, *pieces: str, **kwargs: str | bool | None) -> list[str]:
@@ -453,3 +457,16 @@ def run_with_rg(c: Context, search: str) -> Generator[RipGrepMatch, None, None]:
         json_dict = json.loads(json_str)
         data = json_dict["data"]
         yield RipGrepMatch(data["path"]["text"], data["line_number"], data["lines"]["text"])
+
+
+def list_processes_using_port(c: Context, port: int, pid_only: bool = False) -> int:
+    """List the processes using a port."""
+    cmd = f"lsof -iTCP:{port} -sTCP:LISTEN"
+    pid = int(run_stdout(c, cmd, "-t") or 0)
+
+    if not pid_only:
+        run_command(c, cmd, warn=True)
+        if pid:
+            c.run(f"ps aux | grep {pid}")
+
+    return pid
