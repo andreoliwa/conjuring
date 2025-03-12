@@ -56,9 +56,10 @@ def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str 
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
+    kwargs["warn"] = True
     if dry is not None:
         kwargs.setdefault("dry", dry)
-    result = run_command(c, *pieces, **kwargs, warn=True)  # type: ignore[arg-type]
+    result = run_command(c, *pieces, **kwargs)  # type: ignore[arg-type]
     if result.failed:
         print_error(result.command, f"\n{result}")
         return ""

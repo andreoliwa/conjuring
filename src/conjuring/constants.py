@@ -1,5 +1,6 @@
 """Paths, filenames and other constants."""
 
+import re
 from pathlib import Path
 
 # Paths
@@ -24,3 +25,4 @@ PYPROJECT_TOML = "pyproject.toml"
 ROOT_INVOKE_YAML = Path("~/.invoke.yaml").expanduser()
 STOP_FILE_OR_DIR = Path.home() / "stop"
 # keep-sorted end
+REGEX_JIRA_TICKET_TITLE = re.compile(r"^(?P<ticket>[A-Z]+-\d+)\s*(?P<title>.+)?")

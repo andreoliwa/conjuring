@@ -19,6 +19,7 @@ dependencies = [
   "iterfzf",
   "more-itertools",
   "packaging",
+  "python-slugify",
   "requests",
   "ruamel-yaml",
   "tomlkit",
@@ -126,7 +127,6 @@ target-version = "py39"
 [tool.ruff.lint]
 # https://docs.astral.sh/ruff/settings/#ignore
 ignore = [
-  "ANN101", # Missing type annotation for ? in method
   "D105", # Missing docstring in magic method
   "D107", # Missing docstring in ?
   "D203", # 1 blank line required before class docstring
@@ -147,6 +147,11 @@ select = ["ALL"]
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"
 
+# https://docs.astral.sh/ruff/rules/#mccabe-c90
+[tool.ruff.lint.mccabe]
+# https://docs.astral.sh/ruff/settings/#max-complexity
+max-complexity = 10
+
 # https://docs.astral.sh/ruff/settings/#per-file-ignores
 [tool.ruff.lint.per-file-ignores]
 # B008 Do not perform function call ? in argument defaults
@@ -156,11 +161,6 @@ inline-quotes = "double"
 # S101 Use of ? detected https://docs.astral.sh/ruff/rules/#flake8-bandit-s
 "src/conjuring/cli.py" = ["B008"]
 "tests/**" = ["D100", "D103", "D104", "S101"]
-
-# https://docs.astral.sh/ruff/rules/#mccabe-c90
-[tool.ruff.mccabe]
-# https://docs.astral.sh/ruff/settings/#max-complexity
-max-complexity = 10
 
 [tool.tomlsort]
 all = true

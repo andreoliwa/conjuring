@@ -10,8 +10,10 @@ from pathlib import Path
 
 import typer
 from invoke import Context, Exit, UnexpectedExit, task
+from slugify import slugify
 
 from conjuring.colors import Color
+from conjuring.constants import REGEX_JIRA_TICKET_TITLE
 from conjuring.grimoire import (
     REGEX_JIRA,
     print_error,
@@ -389,3 +391,20 @@ def body(c: Context, prefix: bool = False, original_order: bool = False) -> None
 
     results = bullets if original_order else sorted(set(bullets))
     typer.echo("\n".join(results))
+
+
+@task
+def new_branch(c: Context, title: str) -> None:
+    """Create a new Git branch with a slugified title while keeping the Jira ticket in uppercase."""
+    match = REGEX_JIRA_TICKET_TITLE.match(title)
+
+    if match:
+        ticket: str = match.group("ticket")
+        title_text: str = match.group("title") or ""
+        slugified_title: str = slugify(title_text)
+        branch_name: str = f"{ticket}-{slugified_title}" if slugified_title else ticket
+    else:
+        branch_name = slugify(title)
+
+    typer.echo(f"Creating branch: {branch_name}")
+    c.run(f"git checkout -b {branch_name}")
