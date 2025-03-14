@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from conjuring.cli import Spells, generate_conjuring_init, patch_invoke_yaml
+from conjuring.cli import SpellMode, generate_conjuring_init, patch_invoke_yaml
 
 
 def test_file_doesnt_exist(datadir: Path) -> None:
@@ -47,9 +47,9 @@ def mock_fzf(mocker: Mock) -> Mock:
 @pytest.mark.parametrize(
     ("mode", "function_call"),
     [
-        (Spells.ALL, "conjure_all()" + os.linesep),
+        (SpellMode.ALL, "conjure_all()" + os.linesep),
         (
-            Spells.OPT_IN,
+            SpellMode.OPT_IN,
             """
             conjure_only(
                 "abc*",
@@ -59,7 +59,7 @@ def mock_fzf(mocker: Mock) -> Mock:
             """,
         ),
         (
-            Spells.OPT_OUT,
+            SpellMode.OPT_OUT,
             """
             conjure_all_except(
                 "abc*",
@@ -70,11 +70,11 @@ def mock_fzf(mocker: Mock) -> Mock:
         ),
     ],
 )
-def test_spells(datadir: Path, mode: Spells, function_call: str, mock_fzf: Mock) -> None:
+def test_spells(datadir: Path, mode: SpellMode, function_call: str, mock_fzf: Mock) -> None:
     assert mock_fzf
     file: Path = datadir / "root.py"
     assert not file.exists()
-    assert generate_conjuring_init(file, mode, [], False)
+    assert generate_conjuring_init(file, mode, [], [], False)
 
     expected = '''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
@@ -89,7 +89,7 @@ def test_import_dirs(datadir: Path) -> None:
     file: Path = datadir / "root.py"
     assert not file.exists()
     package: Path = datadir / "my_package"
-    assert generate_conjuring_init(file, Spells.ALL, [datadir, package], False)
+    assert generate_conjuring_init(file, SpellMode.ALL, [datadir, package], [], False)
 
     expected = f'''
         """Bootstrap file for Conjuring, created with the `conjuring init` command https://github.com/andreoliwa/conjuring."""
@@ -107,10 +107,10 @@ def test_file_exists(datadir: Path, mock_fzf: Mock) -> None:
     assert mock_fzf
     file: Path = datadir / "root.py"
     assert not file.exists()
-    output = generate_conjuring_init(file, Spells.ALL, [], False)
+    output = generate_conjuring_init(file, SpellMode.ALL, [], [], False)
     assert output == file.read_text()
 
-    assert not generate_conjuring_init(file, Spells.ALL, [], False)
+    assert not generate_conjuring_init(file, SpellMode.ALL, [], [], False)
 
-    output = generate_conjuring_init(file, Spells.OPT_IN, [], False)
+    output = generate_conjuring_init(file, SpellMode.OPT_IN, [], [], False)
     assert "conjure_only(" in output
