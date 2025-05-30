@@ -127,7 +127,7 @@ def youtube_dl(c: Context, url: str, min_height: int = 360, download_archive_pat
 
         result = run_command(
             c,
-            "youtube-dl --ignore-errors --restrict-filenames",
+            "yt-dlp --ignore-errors --restrict-filenames",
             # "--get-title --get-id",
             # "--get-thumbnail --get-description --get-duration --get-filename",
             # "--get-format",
