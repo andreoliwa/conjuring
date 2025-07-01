@@ -23,7 +23,7 @@ def clean(c: Context, expunge: bool = True) -> None:
 @task
 def sync(c: Context) -> None:
     """Sync the Bazel workspace."""
-    c.run("bazel sync")
+    c.run("bazel sync --enable_workspace")
 
 
 @task
