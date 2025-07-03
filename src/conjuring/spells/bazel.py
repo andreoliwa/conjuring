@@ -15,7 +15,7 @@ def should_display_tasks() -> bool:
 
 
 @task
-def clean(c: Context, expunge: bool = True) -> None:
+def clean(c: Context, expunge: bool = False) -> None:
     """Clean the Bazel workspace."""
     run_command(c, "bazel clean", "--expunge" if expunge else "")
 
