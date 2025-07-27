@@ -191,7 +191,7 @@ def install(  # noqa: PLR0913
         "s": "Don't capture output (same shortcut as pytest)",
     },
 )
-def test(c: Context, s: bool = False) -> None:
+def test(c: Context, s: bool = False) -> None:  # noqa: PT028
     """Run tests with pytest."""
     if not Poetry(c).used_in_project():
         return

@@ -30,7 +30,7 @@ class Kubectl:
             return [Path.cwd().name]
 
         return cast(
-            list[str],
+            "list[str]",
             run_with_fzf(
                 self.context,
                 """kubectl get deployments.apps -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'""",

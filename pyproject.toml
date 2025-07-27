@@ -2,6 +2,11 @@
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
+[dependency-groups]
+dev = [
+  "ruff>=0.12.5",
+]
+
 [project]
 authors = [{email = "andreoliwa@sent.com", name = "W. Augusto Andreoli"}]
 classifiers = [

@@ -1,5 +1,7 @@
 """[Git](https://git-scm.com/): update all, extract subtree, rewrite history, ..."""
 
+from __future__ import annotations
+
 import os.path
 import tempfile
 from collections import defaultdict
@@ -18,6 +20,7 @@ from conjuring.grimoire import (
     REGEX_JIRA,
     print_error,
     print_success,
+    print_warning,
     run_command,
     run_lines,
     run_stdout,
@@ -408,3 +411,126 @@ def new_branch(c: Context, title: str) -> None:
 
     typer.echo(f"Creating branch: {branch_name}")
     c.run(f"git checkout -b {branch_name}")
+
+
+def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
+    """Find all Git repositories in the given directories using fd."""
+    git_repos = set()
+    for search_dir in search_dirs:
+        if not search_dir.exists():
+            print_warning(f"Directory does not exist: {search_dir}")
+            continue
+
+        # Use fd to find .git directories, then get their parent directories
+        try:
+            # Use fd to find .git directories recursively (need --no-ignore-vcs to see .git dirs)
+            lines = run_lines(c, rf"fd -H -t d --no-ignore-vcs '^\.git$' '{search_dir}'", dry=False)
+            for line in lines:
+                repo_path = Path(line).parent
+                git_repos.add(repo_path)
+        except Exception as e:  # noqa: BLE001
+            print_warning(f"Error searching for Git repos in {search_dir}: {e}")
+            continue
+
+    return git_repos
+
+
+def _is_valid_git_repository(repo_path: Path) -> bool:
+    """Check if the given path is a valid Git repository."""
+    git_dir: Path = repo_path / ".git"
+    return (git_dir / "HEAD").exists() and (git_dir / "refs").exists()
+
+
+def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
+    """Count staged, modified, and untracked files from git status output."""
+    modified_count = 0
+    untracked_count = 0
+    staged_count = 0
+
+    for line in status_lines:
+        if len(line) < 2:  # noqa: PLR2004
+            continue
+
+        index_status = line[0]  # Staged changes
+        worktree_status = line[1]  # Working tree changes
+
+        # Count staged changes
+        if index_status in "MADRC":
+            staged_count += 1
+
+        # Count working tree changes
+        if worktree_status in "MD":
+            modified_count += 1
+        elif worktree_status == "?":
+            untracked_count += 1
+
+    return staged_count, modified_count, untracked_count
+
+
+def _format_git_status_message(staged_count: int, modified_count: int, untracked_count: int) -> str:
+    """Format the git status message for display."""
+    status_parts = []
+    if staged_count > 0:
+        status_parts.append(f"{staged_count} staged")
+    if modified_count > 0:
+        status_parts.append(f"{modified_count} modified")
+    if untracked_count > 0:
+        status_parts.append(f"{untracked_count} untracked")
+
+    return ", ".join(status_parts) + " files"
+
+
+def _check_repository_status(c: Context, repo_path: Path) -> None:
+    """Check if a single repository is dirty and print warning if so."""
+    try:
+        # Change to the repository directory and check status
+        with c.cd(str(repo_path)):
+            # First verify this is a valid git repository
+            if not _is_valid_git_repository(repo_path):
+                return
+
+            # Use git status --porcelain for machine-readable output
+            status_lines = run_lines(c, "git status --porcelain", dry=False)
+
+            if not status_lines:
+                return  # Repository is clean
+
+            # Count different types of changes
+            staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
+
+            # Build and display status message
+            status_message = _format_git_status_message(staged_count, modified_count, untracked_count)
+            print_warning(f"Git repo is dirty: {repo_path}, {status_message}")
+
+    except Exception:  # noqa: BLE001,S110
+        # Skip directories that aren't actually git repositories
+        # (this can happen if fd finds directories with .git in the name)
+        pass
+
+
+@task(
+    help={
+        "dir": "Directory to check recursively for dirty repos. Can be used multiple times. Default: current dir",
+    },
+    iterable=["dir_"],
+    klass=MagicTask,
+)
+def dirty(c: Context, dir_: list[str | Path]) -> None:
+    """Find Git dirs in multiple directories recursively and print the ones which are dirty."""
+    # Use current directory if no directories provided
+    if not dir_:
+        dir_ = [Path.cwd()]
+
+    # Convert to Path objects and expand user paths
+    search_dirs = [Path(d).expanduser().resolve() for d in dir_]
+
+    # Find all Git repositories using fd
+    git_repos = _find_git_repositories(c, search_dirs)
+
+    if not git_repos:
+        print_warning("No Git repositories found")
+        return
+
+    # Check each repository for dirty status
+    for repo_path in sorted(git_repos):
+        _check_repository_status(c, repo_path)
