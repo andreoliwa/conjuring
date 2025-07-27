@@ -480,20 +480,25 @@ def _format_git_status_message(staged_count: int, modified_count: int, untracked
     return ", ".join(status_parts) + " files"
 
 
-def _check_repository_status(c: Context, repo_path: Path) -> None:
-    """Check if a single repository is dirty and print warning if so."""
+def _check_repository_status(c: Context, repo_path: Path) -> bool:
+    """Check if a single repository is dirty and print warning if so.
+
+    Returns:
+        True if the repository is dirty, False if clean or invalid.
+
+    """
     try:
         # Change to the repository directory and check status
         with c.cd(str(repo_path)):
             # First verify this is a valid git repository
             if not _is_valid_git_repository(repo_path):
-                return
+                return False
 
             # Use git status --porcelain for machine-readable output
             status_lines = run_lines(c, "git status --porcelain", dry=False)
 
             if not status_lines:
-                return  # Repository is clean
+                return False  # Repository is clean
 
             # Count different types of changes
             staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
@@ -502,10 +507,12 @@ def _check_repository_status(c: Context, repo_path: Path) -> None:
             status_message = _format_git_status_message(staged_count, modified_count, untracked_count)
             print_warning(f"Git repo is dirty: {repo_path}, {status_message}")
 
-    except Exception:  # noqa: BLE001,S110
+            return True  # Repository is dirty
+
+    except Exception:  # noqa: BLE001
         # Skip directories that aren't actually git repositories
         # (this can happen if fd finds directories with .git in the name)
-        pass
+        return False
 
 
 @task(
@@ -532,5 +539,11 @@ def dirty(c: Context, dir_: list[str | Path]) -> None:
         return
 
     # Check each repository for dirty status
+    dirty_repos_found = False
     for repo_path in sorted(git_repos):
-        _check_repository_status(c, repo_path)
+        if _check_repository_status(c, repo_path):
+            dirty_repos_found = True
+
+    # Exit with non-zero code if any dirty repositories were found
+    if dirty_repos_found:
+        raise Exit(code=1)
