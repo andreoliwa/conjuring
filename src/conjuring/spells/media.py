@@ -57,10 +57,10 @@ def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: boo
     xargs = "xargs -0 -n 1 rm -v"
     for hidden_file in [DOT_DS_STORE, DOT_NOMEDIA]:
         if fd:
-            c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | {xargs}")
+            c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | {xargs}", hide=True)
         else:
             for one_dir in dirs:
-                c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | {xargs}")
+                c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | {xargs}", hide=True)
 
     f_option = " ".join([f"-f {d}/" for d in dirs[:-1]])
     delete_flag = "-delete" if delete else ""
