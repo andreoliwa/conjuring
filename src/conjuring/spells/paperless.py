@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass, field
 from http import HTTPStatus
@@ -39,15 +41,35 @@ REGEX_TITLE_WITH_ID = re.compile(r"(?P<name>.*) ?\(#(?P<id>\d+)\)")
 
 def paperless_cmd(instance: str = "") -> str:
     """Command to run Paperless with Docker."""
-    yaml_file = lazy_env_variable("PAPERLESS_COMPOSE_YAML", "path to the Paperless Docker compose YAML file")
+    value = lazy_env_variable("PAPERLESS_COMPOSE_YAML", "path to the Paperless Docker compose YAML file")
+    yaml_file = Path(value).expanduser()
+    if not yaml_file.exists():
+        msg = f"Paperless compose YAML file doesn't exist: {yaml_file}"
+        raise FileNotFoundError(msg)
+
     suffix = f"_{instance}" if instance else ""
     return f"docker compose -f {yaml_file} exec webserver{suffix}"
 
 
+def paperless_root_dir(instance: str = "") -> Path:
+    """Root directory for Paperless."""
+    value = lazy_env_variable("PAPERLESS_ROOT_DIR", "root directory for Paperless")
+    subdir = "paperless_" + instance
+    root_dir = Path(value).expanduser() / subdir
+    if not root_dir.exists():
+        msg = f"Paperless root directory doesn't exist: {root_dir}"
+        raise FileNotFoundError(msg)
+    return root_dir
+
+
 def paperless_documents_dir() -> Path:
     """Directory where Paperless stores documents."""
-    documents_dir = lazy_env_variable("PAPERLESS_MEDIA_DOCUMENTS_DIR", "directory where Paperless stores documents")
-    return Path(documents_dir).expanduser()
+    value = lazy_env_variable("PAPERLESS_MEDIA_DOCUMENTS_DIR", "directory where Paperless stores documents")
+    documents_dir = Path(value).expanduser()
+    if not documents_dir.exists():
+        msg = f"Documents directory doesn't exist: {documents_dir}"
+        raise FileNotFoundError(msg)
+    return documents_dir
 
 
 def paperless_url() -> str:
@@ -97,6 +119,15 @@ class Document:
     document_id: int
     title: str
     errors: list = field(default_factory=list, init=False)
+
+    @property
+    def url(self) -> str:
+        """Return the URL to the document details page."""
+        return f"{paperless_url()}/documents/{self.document_id}/details"
+
+    def __repr__(self) -> str:
+        """Return a string representation of the document."""
+        return f"Document(document_id={self.document_id}, title='{self.title}', url='{self.url}', errors={self.errors})"
 
 
 @dataclass
@@ -367,3 +398,73 @@ def delete_failed_duplicates(c: Context, max_delete: int = 100) -> None:
 
         print_error(document_url, clean_line, f"Something wrong: {req_delete.status_code=}")
         c.run(f"open {document_url}")
+
+
+@task
+def fix_unicode_filenames(c: Context, instance: str) -> None:
+    """Fix Unicode normalization issues in document filenames.
+
+    macOS uses NFD (decomposed) Unicode normalization while Linux uses NFC (composed).
+    This causes issues when files are synced between systems and Paperless can't find them.
+    """
+    documents_dir = paperless_root_dir(instance) / "media/documents"
+    if not documents_dir.exists():
+        print_error(f"Documents directory doesn't exist: {documents_dir}")
+        return
+
+    total_fixed = 0
+    for directory in [(documents_dir / "originals"), (documents_dir / "archive")]:
+        if not directory.exists():
+            print_warning(f"Directory doesn't exist: {directory}")
+            continue
+
+        print_success(f"Scanning {directory}")
+        fixed_count = _fix_unicode_in_directory(directory, c.config.run.dry)
+        total_fixed += fixed_count
+
+    if c.config.run.dry:
+        if total_fixed > 0:
+            print_warning(f"Found {total_fixed} files with Unicode issues. Run with --no-dry-run to fix them.")
+        else:
+            print_success("No Unicode normalization issues found.")
+    else:
+        print_success(f"Fixed {total_fixed} files.")
+
+
+def _fix_unicode_in_directory(directory: Path, dry_run: bool) -> int:
+    """Fix Unicode normalization in a specific directory."""
+    fixed_count = 0
+
+    for root, _dirs, files in os.walk(directory):
+        root_path = Path(root)
+        for filename in files:
+            current_path = root_path / filename
+            nfc_filename = unicodedata.normalize("NFC", filename)
+
+            # Check if the filename is not in NFC form
+            if filename != nfc_filename:
+                target_path = root_path / nfc_filename
+
+                if dry_run:
+                    print_warning("Unicode issue found:")
+                    typer.echo(f"  Current: {current_path}")
+                    typer.echo(f"  Should be: {target_path}")
+                    typer.echo(f"  Current form: {filename!r}")
+                    typer.echo(f"  NFC form: {nfc_filename!r}")
+                    typer.echo()
+                else:
+                    try:
+                        if target_path.exists():
+                            print_error(f"Target already exists, skipping: {target_path}")
+                            continue
+
+                        current_path.rename(target_path)
+                        print_success(f"Renamed: {current_path.name} -> {nfc_filename}")
+
+                    except Exception as e:  # noqa: BLE001
+                        print_error(f"Failed to rename {current_path}: {e}")
+                        continue
+
+                fixed_count += 1
+
+    return fixed_count
