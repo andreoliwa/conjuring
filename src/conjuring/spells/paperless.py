@@ -37,10 +37,11 @@ DUPLICATE_OF = " It is a duplicate of "
 REGEX_TITLE_WITH_ID = re.compile(r"(?P<name>.*) ?\(#(?P<id>\d+)\)")
 
 
-def paperless_cmd() -> str:
+def paperless_cmd(instance: str = "") -> str:
     """Command to run Paperless with Docker."""
     yaml_file = lazy_env_variable("PAPERLESS_COMPOSE_YAML", "path to the Paperless Docker compose YAML file")
-    return f"docker compose -f {yaml_file} exec webserver"
+    suffix = f"_{instance}" if instance else ""
+    return f"docker compose -f {yaml_file} exec webserver{suffix}"
 
 
 def paperless_documents_dir() -> Path:
@@ -60,27 +61,33 @@ def paperless_token() -> str:
 
 
 @task
-def maintenance(c: Context, reindex: bool = True, optimize: bool = True, thumbnails: bool = True) -> None:
+def maintenance(
+    c: Context,
+    instance: str,
+    reindex: bool = True,
+    optimize: bool = True,
+    thumbnails: bool = True,
+) -> None:
     """Reindex all docs and optionally optimize them.
 
     https://docs.paperless-ngx.com/administration/#index
     https://docs.paperless-ngx.com/administration/#thumbnails
     """
     if reindex:
-        c.run(f"{paperless_cmd()} document_index reindex")
+        c.run(f"{paperless_cmd(instance)} document_index reindex")
     if optimize:
-        c.run(f"{paperless_cmd()} document_index optimize")
+        c.run(f"{paperless_cmd(instance)} document_index optimize")
     if thumbnails:
-        c.run(f"{paperless_cmd()} document_thumbnails")
+        c.run(f"{paperless_cmd(instance)} document_thumbnails")
 
 
 @task
-def rename(c: Context) -> None:
+def rename(c: Context, instance: str) -> None:
     """Rename files.
 
     https://docs.paperless-ngx.com/administration/#renamer
     """
-    c.run(f"{paperless_cmd()} document_renamer")
+    c.run(f"{paperless_cmd(instance)} document_renamer")
 
 
 @dataclass
@@ -117,7 +124,8 @@ class OrphanFile:
 )
 def sanity(  # noqa: PLR0913
     c: Context,
-    hide: bool = True,
+    instance: str,
+    hide: bool = False,
     orphans: bool = False,
     thumbnails: bool = False,
     documents: bool = False,
@@ -137,9 +145,8 @@ def sanity(  # noqa: PLR0913
         raise RuntimeError(msg)
 
     # TODO: fix(paperless): implement dry-run mode with dry=False and actually avoid files being copied/moved
-    lines = run_lines(c, paperless_cmd(), "document_sanity_checker", hide=hide, warn=True, pty=True)
+    lines = run_lines(c, paperless_cmd(instance), "document_sanity_checker", hide=hide, warn=True, pty=True)
 
-    progress_bar: list[str] = []
     original_or_archive_files: dict[str, list[OrphanFile]] = defaultdict(list)
     matched_files: list[OrphanFile] = []
     unmatched_files: list[OrphanFile] = []
@@ -150,15 +157,16 @@ def sanity(  # noqa: PLR0913
     unknown_lines = []
     for line in lines:
         if "it/s]" in line:
-            progress_bar.append(line)
             continue
 
-        if (msg := "Orphaned file in media dir: ") in line:
+        msg = "Orphaned file in media dir: "
+        if msg in line:
             partial_path = Path(line.split(msg)[1].replace(USR_SRC_DOCUMENTS, ""))
             _process_orphans(partial_path, documents_dir, original_or_archive_files, orphan_files, thumbnail_files)
             continue
 
-        if (msg := "Detected following issue(s) with document #") in line:
+        msg = "Detected following issue(s) with document #"
+        if msg in line:
             # Append the previous document
             if current_document:
                 documents_with_issues.append(current_document)
@@ -176,11 +184,11 @@ def sanity(  # noqa: PLR0913
 
     _split_matched_unmatched(original_or_archive_files, matched_files, unmatched_files, together)
 
-    _handle_items(fix, move, orphans, "Matched files", matched_files)
-    _handle_items(fix, move, orphans, "Unmatched files", unmatched_files)
-    _handle_items(False, move, orphans, "Orphan files", orphan_files)
+    _handle_items(fix, move, orphans, "Matched originals/archive pairs", matched_files)
+    _handle_items(fix, move, orphans, "Unmatched originals/archive files", unmatched_files)
+    _handle_items(False, move, orphans, "Other orphaned files", orphan_files)
     # TODO: feat(paperless): move thumbnail files to downloads dir
-    _handle_items(fix, move, thumbnails, "Thumbnail files", thumbnail_files)
+    _handle_items(fix, move, thumbnails, "Orphaned thumbnail files", thumbnail_files)
     _handle_items(False, move, documents, "Documents with issues", documents_with_issues)
     _handle_items(False, move, unknown, "Unknown lines", unknown_lines)
 
