@@ -6,11 +6,11 @@ import os
 import re
 import shutil
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import requests
 import typer
@@ -202,7 +202,11 @@ def sanity(  # noqa: PLR0913
             if current_document:
                 documents_with_issues.append(current_document)
 
-            document_id, title = line.split(msg)[1].split(", titled ")
+            # Extract document ID and title from the line
+            # Format: "Detected following issue(s) with document #123, titled Title"
+            rest_of_line = line.split(msg)[1]
+            document_id, title = rest_of_line.split(", titled ")
+
             current_document = Document(int(document_id), title)
             continue
 
@@ -315,6 +319,13 @@ def _handle_items(
 ) -> None:
     length = len(collection)
     which_function = print_error if length else print_success
+
+    # Special handling for documents to show error counts
+    if collection and isinstance(collection[0], Document):
+        doc_collection = cast("list[Document]", collection)
+        _display_documents_with_error_counts(title, doc_collection, show_details)
+        return
+
     which_function(f"{title} (count: {length})")
     if not show_details:
         return
@@ -344,6 +355,38 @@ def _handle_items(
             shutil.move(item.source, dest_file)
         else:
             shutil.copy2(item.source, dest_file)
+
+
+def _display_documents_with_error_counts(title: str, documents: Sequence[Document], show_details: bool) -> None:
+    """Display documents with error counts grouped by error type."""
+
+    def display_count() -> None:
+        length = len(documents)
+        which_function = print_error if length else print_success
+        which_function(f"{title} (count: {length})")
+
+    if not show_details:
+        display_count()
+        return
+
+    error_counts: dict[str, int] = Counter()
+    for doc in documents:
+        should_display_doc = False
+        for error in doc.errors:
+            if "not exist" in error:
+                should_display_doc = True
+            error_counts[error] += 1
+            print_warning(doc.url)
+
+        if should_display_doc:
+            typer.echo(doc)
+
+    display_count()
+    if error_counts:
+        typer.echo("Error breakdown:")
+        for error, count in sorted(error_counts.items()):
+            print_error(f"- {error} = {count}")
+        typer.echo()
 
 
 @task
