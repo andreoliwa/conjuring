@@ -358,6 +358,7 @@ def run_rsync(
     dest_dir: str,
     *pieces: str,
     count_files: bool = False,
+    use_iconv: bool = True,
     **kwargs: str | bool,
 ) -> int | None:
     """Run rsync with some sane defaults. On Linux, create the destination dir if local, and it doesn't exist."""
@@ -368,6 +369,8 @@ def run_rsync(
     file_count = run_stdout(
         c,
         RSYNC_DEFAULT,
+        # Assumes macOS to Linux direction
+        "--iconv=UTF-8-MAC,UTF-8" if use_iconv else "",
         "--dry-run" if c.config.run.dry or count_files else "",
         src_dir,
         dest_dir,
