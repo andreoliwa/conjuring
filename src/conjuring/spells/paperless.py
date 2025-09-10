@@ -17,26 +17,25 @@ import typer
 from invoke import Context, task
 
 from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
-from conjuring.grimoire import lazy_env_variable, print_error, print_success, print_warning, run_lines
+from conjuring.grimoire import ask_user_prompt, lazy_env_variable, print_error, print_success, print_warning, run_lines
+from conjuring.spells import media
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-COUNT_PARTS = 4
-
-STARTING_YEAR = 1900
-
+# keep-sorted start
 COUNT_PAIR = 2
-
-SHOULD_PREFIX = True
-
-USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
+COUNT_PARTS = 4
+DOWNLOAD_DESTINATION_DIR = DOWNLOADS_DIR / __name__.rsplit(".")[-1]
+DUPLICATE_OF = " It is a duplicate of "
 ORPHAN_ARCHIVE = "archive"
 ORPHAN_ORIGINALS = "originals"
 ORPHAN_THUMBNAILS = "thumbnails"
-DOWNLOAD_DESTINATION_DIR = DOWNLOADS_DIR / __name__.rsplit(".")[-1]
-DUPLICATE_OF = " It is a duplicate of "
 REGEX_TITLE_WITH_ID = re.compile(r"(?P<name>.*) ?\(#(?P<id>\d+)\)")
+SHOULD_PREFIX = True
+STARTING_YEAR = 1900
+USR_SRC_DOCUMENTS = "/usr/src/paperless/media/documents/"
+# keep-sorted end
 
 
 def paperless_cmd(instance: str = "") -> str:
@@ -501,3 +500,23 @@ def _fix_unicode_in_directory(directory: Path, dry_run: bool) -> int:
                 fixed_count += 1
 
     return fixed_count
+
+
+@task
+def empty_consume_dir(c: Context, instance: str) -> None:
+    """Empty the consume dir."""
+    consume_dir = paperless_root_dir(instance) / "consume-into-paperless"
+    print_success(str(consume_dir))
+
+    fd_cmd = f"fd -uu -t f . {consume_dir}"
+    if not c.run(fd_cmd).stdout:
+        print_success("Consume dir is already empty.")
+        return
+
+    if ask_user_prompt("Delete files above?", allowed_keys="yn") != "y":
+        raise SystemExit
+
+    c.run(fd_cmd + " -0 | xargs -0 -r -n 1 rm -v")
+
+    media.empty_dirs(c, [consume_dir], delete=True)
+    c.run(f"ls -l {consume_dir}")
