@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import re
 import shutil
-import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from http import HTTPStatus
@@ -430,76 +428,6 @@ def delete_failed_duplicates(c: Context, max_delete: int = 100) -> None:
 
         print_error(document_url, clean_line, f"Something wrong: {req_delete.status_code=}")
         c.run(f"open {document_url}")
-
-
-@task
-def fix_unicode_filenames(c: Context, instance: str) -> None:
-    """Fix Unicode normalization issues in document filenames.
-
-    macOS uses NFD (decomposed) Unicode normalization while Linux uses NFC (composed).
-    This causes issues when files are synced between systems and Paperless can't find them.
-    """
-    documents_dir = paperless_root_dir(instance) / "media/documents"
-    if not documents_dir.exists():
-        print_error(f"Documents directory doesn't exist: {documents_dir}")
-        return
-
-    total_fixed = 0
-    for directory in [(documents_dir / "originals"), (documents_dir / "archive")]:
-        if not directory.exists():
-            print_warning(f"Directory doesn't exist: {directory}")
-            continue
-
-        print_success(f"Scanning {directory}")
-        fixed_count = _fix_unicode_in_directory(directory, c.config.run.dry)
-        total_fixed += fixed_count
-
-    if c.config.run.dry:
-        if total_fixed > 0:
-            print_warning(f"Found {total_fixed} files with Unicode issues. Run with --no-dry-run to fix them.")
-        else:
-            print_success("No Unicode normalization issues found.")
-    else:
-        print_success(f"Fixed {total_fixed} files.")
-
-
-def _fix_unicode_in_directory(directory: Path, dry_run: bool) -> int:
-    """Fix Unicode normalization in a specific directory."""
-    fixed_count = 0
-
-    for root, _dirs, files in os.walk(directory):
-        root_path = Path(root)
-        for filename in files:
-            current_path = root_path / filename
-            nfc_filename = unicodedata.normalize("NFC", filename)
-
-            # Check if the filename is not in NFC form
-            if filename != nfc_filename:
-                target_path = root_path / nfc_filename
-
-                if dry_run:
-                    print_warning("Unicode issue found:")
-                    typer.echo(f"  Current: {current_path}")
-                    typer.echo(f"  Should be: {target_path}")
-                    typer.echo(f"  Current form: {filename!r}")
-                    typer.echo(f"  NFC form: {nfc_filename!r}")
-                    typer.echo()
-                else:
-                    try:
-                        if target_path.exists():
-                            print_error(f"Target already exists, skipping: {target_path}")
-                            continue
-
-                        current_path.rename(target_path)
-                        print_success(f"Renamed: {current_path.name} -> {nfc_filename}")
-
-                    except Exception as e:  # noqa: BLE001
-                        print_error(f"Failed to rename {current_path}: {e}")
-                        continue
-
-                fixed_count += 1
-
-    return fixed_count
 
 
 @task
