@@ -54,7 +54,7 @@ def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: boo
         dir_ = [Path.cwd()]
 
     dirs = list({str(Path(d).expanduser().absolute()) for d in dir_})
-    xargs = "xargs -0 -n 1 rm -v"
+    xargs = "xargs -0 -r -n 1 rm -v"
     for hidden_file in [DOT_DS_STORE, DOT_NOMEDIA]:
         if fd:
             c.run(f"fd -uu -0 -tf -i {hidden_file} {'/ '.join(dirs)}/ | {xargs}", hide=True)
