@@ -62,16 +62,6 @@ def paperless_root_dir(instance: str = "") -> Path:
     return root_dir
 
 
-def paperless_documents_dir() -> Path:
-    """Directory where Paperless stores documents."""
-    value = lazy_env_variable("PAPERLESS_MEDIA_DOCUMENTS_DIR", "directory where Paperless stores documents")
-    documents_dir = Path(value).expanduser()
-    if not documents_dir.exists():
-        msg = f"Documents directory doesn't exist: {documents_dir}"
-        raise FileNotFoundError(msg)
-    return documents_dir
-
-
 def paperless_url() -> str:
     """URL where Paperless is running."""
     return lazy_env_variable("PAPERLESS_URL", "URL where Paperless is running")
@@ -149,7 +139,7 @@ class OrphanFile:
         "documents": "Show documents with issues",
         "unknown": "Show unknown lines from the log",
         "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
-        "fix": "Fix broken files by copying them to the downloads dir",
+        "fix": "Fix broken files by copying/moving them to the downloads dir",
         "move": "Move files instead of copying",
     },
 )
@@ -170,7 +160,7 @@ def sanity(  # noqa: PLR0913
     https://docs.paperless-ngx.com/administration/#sanity-checker
     """
     # Fail fast if the env var is not set
-    documents_dir = paperless_documents_dir() if fix else None
+    documents_dir = paperless_root_dir(instance) / "media/documents"
     if documents_dir and not documents_dir.exists():
         msg = f"Documents directory doesn't exist: {documents_dir}"
         raise RuntimeError(msg)
@@ -327,7 +317,7 @@ def _handle_items(
         return
 
     which_function(f"{title} (count: {length})")
-    if not show_details:
+    if not (show_details or fix):
         return
 
     # https://docs.python.org/3/library/shutil.html#shutil.copy2
