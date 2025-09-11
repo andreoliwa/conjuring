@@ -135,6 +135,7 @@ class OrphanFile:
         "thumbnails": "Show thumbnail files",
         "documents": "Show documents with issues",
         "unknown": "Show unknown lines from the log",
+        "errors": "Show documents with specific errors (comma-separated list)",
         "together": f"Keep {ORPHAN_ORIGINALS} and {ORPHAN_ARCHIVE} in the same output directory",
         "fix": "Fix broken files by copying/moving them to the downloads dir",
         "move": "Move files instead of copying",
@@ -148,6 +149,7 @@ def sanity(  # noqa: PLR0913
     thumbnails: bool = False,
     documents: bool = False,
     unknown: bool = True,
+    errors: str = "",
     together: bool = False,
     fix: bool = False,
     move: bool = False,
@@ -211,7 +213,7 @@ def sanity(  # noqa: PLR0913
     _handle_items(False, move, orphans, "Other orphaned files", orphan_files)
     # TODO: feat(paperless): move thumbnail files to downloads dir
     _handle_items(fix, move, thumbnails, "Orphaned thumbnail files", thumbnail_files)
-    _handle_items(False, move, documents, "Documents with issues", documents_with_issues)
+    _handle_items(False, move, documents, "Documents with issues", documents_with_issues, errors)
     _handle_items(False, move, unknown, "Unknown lines", unknown_lines)
 
 
@@ -297,12 +299,13 @@ def _split_matched_unmatched(
             unmatched_files.extend(single_or_pair)
 
 
-def _handle_items(
+def _handle_items(  # noqa: PLR0913
     fix: bool,
     move: bool,
     show_details: bool,
     title: str,
     collection: Sequence[str | OrphanFile | Document],
+    errors: str = "",
 ) -> None:
     length = len(collection)
     which_function = print_error if length else print_success
@@ -310,7 +313,7 @@ def _handle_items(
     # Special handling for documents to show error counts
     if collection and isinstance(collection[0], Document):
         doc_collection = cast("list[Document]", collection)
-        _display_documents_with_error_counts(title, doc_collection, show_details)
+        _display_documents_with_error_counts(title, doc_collection, show_details, errors)
         return
 
     which_function(f"{title} (count: {length})")
@@ -344,36 +347,44 @@ def _handle_items(
             shutil.copy2(item.source, dest_file)
 
 
-def _display_documents_with_error_counts(title: str, documents: Sequence[Document], show_details: bool) -> None:
+def _display_documents_with_error_counts(  # noqa: C901
+    title: str,
+    documents: Sequence[Document],
+    show_details: bool,
+    errors: str = "",
+) -> None:
     """Display documents with error counts grouped by error type."""
+    error_list = errors.split(",")
 
     def display_count() -> None:
         length = len(documents)
         which_function = print_error if length else print_success
         which_function(f"{title} (count: {length})")
 
-    if not show_details:
-        display_count()
-        return
-
     error_counts: dict[str, int] = Counter()
+    docs_by_error: dict[str, list[Document]] = defaultdict(list)
     for doc in documents:
-        should_display_doc = False
         for error in doc.errors:
-            if "not exist" in error:
-                should_display_doc = True
             error_counts[error] += 1
-            print_warning(doc.url)
-
-        if should_display_doc:
-            typer.echo(doc)
+            docs_by_error[error].append(doc)
 
     display_count()
     if error_counts:
         typer.echo("Error breakdown:")
         for error, count in sorted(error_counts.items()):
-            print_error(f"- {error} = {count}")
-        typer.echo()
+            display_error = False
+            if error_list:
+                for err in error_list:
+                    if err in error:
+                        display_error = True
+                        break
+
+            listed_below = " (documents listed below)" if show_details and display_error else ""
+            print_error(f"- {error} = {count}{listed_below}")
+
+            if show_details and display_error:
+                for doc in docs_by_error[error]:
+                    typer.echo(f"  - {doc}")
 
 
 @task
