@@ -522,7 +522,7 @@ def _check_repository_status(c: Context, repo_path: Path) -> bool:
     iterable=["dir_"],
     klass=MagicTask,
 )
-def dirty(c: Context, dir_: list[str | Path]) -> None:
+def dirty(c: Context, dir_: list[str | Path]) -> bool:
     """Find Git dirs in multiple directories recursively and print the ones which are dirty."""
     # Use current directory if no directories provided
     if not dir_:
@@ -536,7 +536,7 @@ def dirty(c: Context, dir_: list[str | Path]) -> None:
 
     if not git_repos:
         print_warning("No Git repositories found")
-        return
+        return False
 
     # Check each repository for dirty status
     dirty_repos_found = False
@@ -544,6 +544,4 @@ def dirty(c: Context, dir_: list[str | Path]) -> None:
         if _check_repository_status(c, repo_path):
             dirty_repos_found = True
 
-    # Exit with non-zero code if any dirty repositories were found
-    if dirty_repos_found:
-        raise Exit(code=1)
+    return dirty_repos_found
