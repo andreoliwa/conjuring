@@ -366,7 +366,7 @@ def run_rsync(
         path = Path(dest_dir).expanduser()
         if path.root == "/":
             path.mkdir(parents=True, exist_ok=True)
-    file_count = run_stdout(
+    result = run_command(
         c,
         RSYNC_DEFAULT,
         # Assumes macOS to Linux direction
@@ -381,6 +381,7 @@ def run_rsync(
         dry=False,
         **kwargs,
     )
+    file_count = result.stdout.strip()
     return int(file_count) if count_files else None
 
 
