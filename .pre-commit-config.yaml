@@ -31,7 +31,8 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
-        stages: [commit]
+        stages:
+          - pre-commit
   - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
     rev: v0.45.0
     hooks:
