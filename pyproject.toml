@@ -141,6 +141,8 @@ ignore = [
   "FBT002", # Boolean default value in function definition
   "FBT003", # Boolean positional value in function call
   "FIX002", # Line contains TO DO, consider resolving the issue
+  "PLC0415", # Import should be at top of file (lazy imports for performance)
+  "TC004", # Move import out of type-checking block (we use lazy imports + TYPE_CHECKING for type hints)
   "TD001", # Invalid TO DO tag
   "TD002", # Missing author https://docs.astral.sh/ruff/rules/#flake8-todos-td
   "TD003", # Missing issue link on the line following this

@@ -131,7 +131,7 @@ def _parse_all_todos(c: Context, priority: str, dir_names: list[str]) -> dict[To
     priority = priority.casefold()
     for which in (FIX_ME, TO_DO):
         for rg_match in run_with_rg(c, which):
-            before, after = rg_match.text.split(which, maxsplit=1)  # type: str,str
+            _before, after = rg_match.text.split(which, maxsplit=1)  # type: str,str
 
             match = REGEX_ASSIGNEE_DESCRIPTION.match(after)
             if match:

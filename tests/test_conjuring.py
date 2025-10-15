@@ -25,7 +25,7 @@ def assert_tasks(collection: Collection, task_names: list[str], *, by_name: bool
 
 
 def test_prefixed_tasks(my_collection: Collection) -> None:
-    from tests.fixtures import prefixed  # noqa: PLC0415
+    from tests.fixtures import prefixed
 
     magically_add_tasks(my_collection, prefixed)
     assert_tasks(my_collection, ["prefixed.task-a", "prefixed.task-b"], by_name=True)
@@ -42,21 +42,21 @@ def test_create_collection_from_glob_python_patterns() -> None:
 
 
 def test_not_prefixed_tasks(my_collection: Collection) -> None:
-    from tests.fixtures import not_prefixed  # noqa: PLC0415
+    from tests.fixtures import not_prefixed
 
     magically_add_tasks(my_collection, not_prefixed)
     assert_tasks(my_collection, ["task-c", "task-d"])
 
 
 def test_hide_all(my_collection: Collection) -> None:
-    from tests.fixtures import conditional  # noqa: PLC0415
+    from tests.fixtures import conditional
 
     magically_add_tasks(my_collection, conditional)
     assert_tasks(my_collection, [])
 
 
 def test_display_all(my_collection: Collection) -> None:
-    from tests.fixtures import conditional  # noqa: PLC0415
+    from tests.fixtures import conditional
 
     os.environ["DISPLAY"] = "yes"
     magically_add_tasks(my_collection, conditional)
@@ -64,14 +64,14 @@ def test_display_all(my_collection: Collection) -> None:
 
 
 def test_magic_task_always_visible(my_collection: Collection) -> None:
-    from tests.fixtures import magic  # noqa: PLC0415
+    from tests.fixtures import magic
 
     magically_add_tasks(my_collection, magic)
     assert_tasks(my_collection, ["this-task-is-always-visible"])
 
 
 def test_module_with_magic_task(my_collection: Collection) -> None:
-    from tests.fixtures import magic  # noqa: PLC0415
+    from tests.fixtures import magic
 
     os.environ["INDIVIDUAL"] = "yes"
     magically_add_tasks(my_collection, magic)
@@ -86,7 +86,7 @@ def test_detects_this_project_not_as_poetry_project() -> None:
 
 @pytest.mark.xfail(reason="Empty collection.tasks is causing this test to fail")
 def test_add_task_with_the_same_name(my_collection: Collection) -> None:
-    from tests.fixtures import not_prefixed, same  # noqa: PLC0415
+    from tests.fixtures import not_prefixed, same
 
     magically_add_tasks(my_collection, not_prefixed)
     magically_add_tasks(my_collection, same)
