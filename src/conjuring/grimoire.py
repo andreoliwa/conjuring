@@ -136,10 +136,27 @@ def run_with_fzf(  # noqa: PLR0913
     multi: bool = False,
     options: str = "",
     preview: str = "",
+    unicode: bool = False,
+    info: str = "default",
     **kwargs: str | bool,
 ) -> str:
-    """Run a command with fzf and return the chosen entry."""
-    fzf_pieces = ["| fzf --reverse --select-1 --height=~40% --cycle --no-unicode --no-separator"]
+    """Run a command with fzf and return the chosen entry.
+
+    Args:
+        c: Invoke context
+        pieces: Command pieces to pipe into fzf
+        query: Initial query string
+        header: Header text to display
+        multi: Enable multi-select mode
+        options: Additional fzf options
+        preview: Preview command
+        unicode: Enable Unicode support (default: False, uses --no-unicode)
+        info: Info line style (default|right|hidden|inline[-right]) (default: "default")
+        **kwargs: Additional arguments passed to run command
+
+    """
+    unicode_flag = "" if unicode else "--no-unicode"
+    fzf_pieces = [f"| fzf --reverse --select-1 --height=~40% --cycle {unicode_flag} --no-separator --info={info}"]
     if query:
         fzf_pieces.append(f"-q '{query}'")
     if header:
