@@ -28,9 +28,13 @@ from conjuring.grimoire import (
 )
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
-SHOULD_PREFIX = True
-should_display_tasks: ShouldDisplayTasks = is_git_repo
+# keep-sorted start
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
+GLOBAL_GITIGNORE = "~/.gitignore_global"
+SHOULD_PREFIX = True
+# keep-sorted end
+
+should_display_tasks: ShouldDisplayTasks = is_git_repo
 
 
 @lru_cache
@@ -343,9 +347,9 @@ def changes_since_tag(
                 author, commit = line.split("|")
                 commits_by_author[author].append(commit)
             for author, commits in commits_by_author.items():
-                print(f"\n{author}:")  # noqa: T201
+                print(f"\n{author}:")
                 for commit in commits:
-                    print(f"  {commit}")  # noqa: T201
+                    print(f"  {commit}")
         else:
             c.run(cmd)
 
