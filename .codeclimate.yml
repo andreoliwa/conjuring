@@ -1,0 +1,17 @@
+version: "2"
+checks:
+  file-lines:
+    config:
+      threshold: 1000
+  method-complexity:
+    config:
+      threshold: 10
+plugins:
+  fixme:
+    enabled: false
+  editorconfig:
+    enabled: true
+  markdownlint:
+    enabled: false
+  shellcheck:
+    enabled: true
