@@ -2,15 +2,22 @@
 
 from invoke import Context, task
 
+from conjuring.grimoire import run_command
 from conjuring.visibility import has_pyproject_toml
 
 SHOULD_PREFIX = True
 
 
 EXTENSIONS: list[str] = [
+    # keep-sorted start
+    "mkdocs-gen-files",  # https://github.com/oprypin/mkdocs-gen-files
+    "mkdocs-glightbox",  # https://github.com/blueswen/mkdocs-glightbox
+    "mkdocs-literate-nav",  # https://github.com/oprypin/mkdocs-literate-nav
     "mkdocs-material",  # https://github.com/squidfunk/mkdocs-material
     "mkdocs-render-swagger-plugin",  # https://github.com/bharel/mkdocs-render-swagger-plugin
+    "mkdocs-section-index",  # https://github.com/oprypin/mkdocs-section-index
     "mkdocstrings[python]",  # https://github.com/mkdocstrings/mkdocstrings
+    # keep-sorted end
 ]
 
 
@@ -45,10 +52,11 @@ def deploy(c: Context) -> None:
     c.run("mkdocs gh-deploy")
 
 
-@task(pre=[build])
-def serve(c: Context) -> None:
-    """Start the live-reloading server to test the docs locally."""
-    c.run("mkdocs serve")
+@task
+def serve(c: Context, browse: bool = True) -> None:
+    """Start the live-reloading server to test the docs locally. The "serve" command already builds the docs."""
+    opt_open = "--open" if browse else ""
+    run_command(c, "mkdocs serve --livereload --watch-theme", opt_open)
 
 
 @task
