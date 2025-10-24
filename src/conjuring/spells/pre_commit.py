@@ -16,6 +16,7 @@ should_display_tasks: ShouldDisplayTasks = has_pre_commit_config_yaml
 
 
 def _run_garbage_collector(c: Context) -> None:
+    # TODO: prek doesn't have a "gc" command yet: https://prek.j178.dev/todo/
     c.run("pre-commit gc")
 
 
@@ -64,22 +65,26 @@ def get_hook_types(commit_msg: bool, desired_hooks: list[str] | None = None) -> 
     iterable=["before"],
 )
 def install(c: Context, before: list[str], gc: bool = False, commit_msg: bool = True) -> None:
-    """Pre-commit install hooks."""
+    """Install pre-commit with prek."""
     if gc:
         _run_garbage_collector(c)
-    c.run(f"pre-commit install {get_hook_types(commit_msg)} --install-hooks")
+    c.run(f"prek install {get_hook_types(commit_msg)} --install-hooks")
     if before:
         _patch_pre_commit_configs(before)
 
 
 @task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Uninstall commit message hooks"})
 def uninstall(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
-    """Pre-commit uninstall ALL hooks."""
+    """Uninstall ALL pre-commit hooks with prek."""
     if gc:
         _run_garbage_collector(c)
 
-    installed_hooks = [hook for hook in run_stdout(c, "ls .git/hooks", dry=False).splitlines() if ".sample" not in hook]
-    c.run(f"pre-commit uninstall {get_hook_types(commit_msg, installed_hooks)}")
+    installed_hooks = [
+        git_hook
+        for git_hook in run_stdout(c, "ls .git/hooks", dry=False).splitlines()
+        if ".sample" not in git_hook and ".legacy" not in git_hook
+    ]
+    c.run(f"prek uninstall {get_hook_types(commit_msg, installed_hooks)}")
 
 
 @task(
@@ -89,7 +94,7 @@ def uninstall(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
     },
 )
 def run(c: Context, hooks: str) -> None:
-    """Pre-commit run all hooks or a specific one. Don't stop on failures. Needs fzf and yq."""
+    """Run all pre-commit hooks or a specific one using prek. Don't stop on failures. Needs fzf and yq."""
     split_hooks = hooks.split(",")
     chosen_hooks = []
     for special in ("all", ".", "-"):
@@ -108,7 +113,7 @@ def run(c: Context, hooks: str) -> None:
         ]
 
     for chosen_hook in chosen_hooks:
-        run_command(c, "pre-commit run --all-files", chosen_hook, warn=True)
+        run_command(c, "prek run --all-files", chosen_hook, warn=True)
 
 
 @task()
@@ -118,4 +123,4 @@ def auto(c: Context, repo: str = "", bleed: bool = False) -> None:
     if repo:
         chosen = run_with_fzf(c, "yq e '.repos[].repo' .pre-commit-config.yaml", query=repo, dry=False)
         command = f"--repo {chosen}"
-    run_command(c, "pre-commit autoupdate", "--bleeding-edge" if bleed else "", command)
+    run_command(c, "prek auto-update", "--bleeding-edge" if bleed else "", command)
