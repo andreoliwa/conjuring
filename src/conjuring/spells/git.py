@@ -484,11 +484,12 @@ def _format_git_status_message(staged_count: int, modified_count: int, untracked
     return ", ".join(status_parts) + " files"
 
 
-def _check_repository_status(c: Context, repo_path: Path) -> bool:
+def _is_repo_dirty(c: Context, repo_path: Path) -> list[str]:
     """Check if a single repository is dirty and print warning if so.
 
     Returns:
-        True if the repository is dirty, False if clean or invalid.
+        List of reasons why the repository is dirty. Empty list if clean or invalid.
+        Possible reasons: "staged files", "modified files", "untracked files", "stashed code"
 
     """
     try:
@@ -496,27 +497,40 @@ def _check_repository_status(c: Context, repo_path: Path) -> bool:
         with c.cd(str(repo_path)):
             # First verify this is a valid git repository
             if not _is_valid_git_repository(repo_path):
-                return False
+                return []
+
+            reasons = []
 
             # Use git status --porcelain for machine-readable output
             status_lines = run_lines(c, "git status --porcelain", dry=False)
 
-            if not status_lines:
-                return False  # Repository is clean
+            if status_lines:
+                # Count different types of changes
+                staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
 
-            # Count different types of changes
-            staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
+                if staged_count > 0:
+                    reasons.append(f"staged files: {staged_count}")
+                if modified_count > 0:
+                    reasons.append(f"modified files: {modified_count}")
+                if untracked_count > 0:
+                    reasons.append(f"untracked files: {untracked_count}")
 
-            # Build and display status message
-            status_message = _format_git_status_message(staged_count, modified_count, untracked_count)
-            print_warning(f"Git repo is dirty: {repo_path}, {status_message}")
+            # Check for stashed code
+            stash_count = int(run_stdout(c, "git stash list | wc -l", dry=False))
+            if stash_count:
+                reasons.append(f"stashes: {stash_count}")
 
-            return True  # Repository is dirty
+            # Print warning if repository is dirty
+            if reasons:
+                status_message = ", ".join(reasons)
+                print_warning(f"Git repo is dirty: {repo_path}, {status_message}")
+
+            return reasons
 
     except Exception:  # noqa: BLE001
         # Skip directories that aren't actually git repositories
         # (this can happen if fd finds directories with .git in the name)
-        return False
+        return []
 
 
 @task(
@@ -545,7 +559,8 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
     # Check each repository for dirty status
     dirty_repos_found = False
     for repo_path in sorted(git_repos):
-        if _check_repository_status(c, repo_path):
+        reasons = _is_repo_dirty(c, repo_path)
+        if reasons:
             dirty_repos_found = True
 
     return dirty_repos_found
