@@ -14,10 +14,10 @@ from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from shutil import which
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, NoReturn
 
 import typer
-from invoke import Collection, Context, Result, Task
+from invoke import Collection, Context, Exit, Result, Task
 from tqdm import tqdm
 
 from conjuring.colors import Color
@@ -107,6 +107,12 @@ def print_warning(*message: str, join_nl: bool = False, dry: bool = False) -> No
     print_color(Color.YELLOW, *message, join_nl=join_nl, dry=dry)
 
 
+def vanish(message: str, code: int = 1) -> NoReturn:
+    """Exit the program with an error message and exit code."""
+    error_msg = f"{Color.BOLD_RED.value}ERROR: {message}{Color.NONE.value}"
+    raise Exit(error_msg, code)
+
+
 def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys: str = "") -> str:
     """Display a prompt with a message. Wait a little before, so stdout is flushed before the input message."""
     lowercase_key_list = [char.lower() for char in allowed_keys] if allowed_keys else []
@@ -125,6 +131,14 @@ def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys
         lowercase_key = typed_input.lower()
         if lowercase_key in lowercase_key_list:
             return lowercase_key
+
+
+def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> None:
+    """Ask a yes/no question and exit if the user answers no."""
+    try:
+        typer.confirm(f"{color.value}{' '.join(message)}{Color.NONE.value}", abort=True)
+    except typer.Abort:
+        vanish("Operation cancelled by user", 1)
 
 
 # TODO: Use iterfzf or create Fzf class with multi() and single() methods (with different return types
@@ -345,9 +359,8 @@ def lazy_env_variable(variable: str, description: str) -> str:
     """Fetch environment variable. On error, display a message with its description."""
     try:
         return os.environ[variable]
-    except KeyError as err:
-        print_error(f"Set the {variable!r} environment variable with the {description}.")
-        raise SystemExit from err
+    except KeyError:
+        vanish(f"Missing environment variable! Set the {variable!r} environment variable with the {description}.")
 
 
 def bat(c: Context, *pieces: str) -> Result:
