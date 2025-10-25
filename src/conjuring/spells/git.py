@@ -290,7 +290,7 @@ def merge_default(
     default_branch = set_default_branch(c, remote)
 
     if update:
-        tidy_up(c)
+        c.run("git pull")
     which_verb = "rebase" if rebase else "merge"
     run_command(c, f"git {which_verb}", f"origin/{default_branch}")
     if push:
