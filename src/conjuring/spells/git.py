@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os.path
 import tempfile
+import time
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -11,13 +12,14 @@ from functools import lru_cache
 from pathlib import Path
 
 import typer
-from invoke import Context, Exit, UnexpectedExit, task
+from invoke import Context, UnexpectedExit, task
 from slugify import slugify
 
 from conjuring.colors import Color
 from conjuring.constants import REGEX_JIRA_TICKET_TITLE
 from conjuring.grimoire import (
     REGEX_JIRA,
+    ask_yes_no,
     print_error,
     print_success,
     print_warning,
@@ -25,12 +27,14 @@ from conjuring.grimoire import (
     run_lines,
     run_stdout,
     run_with_fzf,
+    vanish,
 )
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 # keep-sorted start
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 GLOBAL_GITIGNORE = "~/.gitignore_global"
+IMPORT_REPOS_TAG_PREFIX = "before-import-repos"
 SHOULD_PREFIX = True
 # keep-sorted end
 
@@ -132,9 +136,26 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
 def extract_subtree(c: Context, new_project_dir: str, reset: bool = False) -> None:
     """Extract files from subdirectories of the current Git repo to another repo, using git-filter-repo.
 
-    Install https://github.com/newren/git-filter-repo with `pipx install git-filter-repo`.
+    This function extracts a subset of files from the current repository's entire Git history into a new
+    repository, preserving all commits that touched those files.
+
+    Steps:
+    1. Prepare new project directory (clone from origin or reset if requested)
+    2. Gather all files from Git history including deleted files
+    3. Interactive selection with fzf (TAB to select/deselect)
+    4. Filter repository history using git-filter-repo with selected paths
+    5. Display next steps and instructions
+
+    Prerequisites:
+    - Install git-filter-repo: `pipx install git-filter-repo`
+    - Current directory must be a Git repository with a remote origin
+
+    Warning:
+    - Rewrites Git history in the new repository
+    - Do NOT push filtered repository to the same remote as the original
+
     """
-    new_project_path: Path = Path(new_project_dir).expanduser().resolve().absolute()
+    new_project_path = _resolve_repo_path(new_project_dir)
     if reset:
         c.run(f"rm -rf {new_project_path}")
 
@@ -222,7 +243,7 @@ def history(c: Context, full: bool = False, files: bool = False, author: bool = 
             func(*fields)
     if not option_chosen:
         msg = "Choose at least one option: --full, --files, --author, --dates"
-        raise Exit(msg, 1)
+        vanish(msg, 1)
 
 
 @task(
@@ -445,6 +466,36 @@ def _is_valid_git_repository(repo_path: Path) -> bool:
     return (git_dir / "HEAD").exists() and (git_dir / "refs").exists()
 
 
+def _resolve_repo_path(path: str | Path) -> Path:
+    """Resolve and normalize a repository path.
+
+    Args:
+        path: Path string or Path object to resolve
+
+    Returns:
+        Resolved absolute Path object
+
+    """
+    return Path(path).expanduser().resolve().absolute()
+
+
+def _validate_git_repo(repo_path: Path, repo_name: str = "Repository") -> None:
+    """Validate that a path exists and is a Git repository.
+
+    Args:
+        repo_path: Path to validate
+        repo_name: Name to use in error messages (e.g., "Target repository", "Source repository")
+
+    Raises:
+        SystemExit: If path doesn't exist or is not a Git repository
+
+    """
+    if not repo_path.exists():
+        vanish(f"{repo_name} does not exist: {repo_path}")
+    if not (repo_path / ".git").exists():
+        vanish(f"{repo_name} is not a Git repository: {repo_path}")
+
+
 def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
     """Count staged, modified, and untracked files from git status output."""
     modified_count = 0
@@ -564,3 +615,236 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
             dirty_repos_found = True
 
     return dirty_repos_found
+
+
+def _handle_rollback(c: Context, target_path: Path) -> None:
+    """Handle rollback mode for import_repos.
+
+    Args:
+        c: Invoke context
+        target_path: Path to the target repository
+
+    Raises:
+        SystemExit: If rollback is aborted or no tags found
+
+    """
+    _validate_git_repo(target_path, "Target directory")
+
+    with c.cd(str(target_path)):
+        safety_tags = run_lines(c, f"git tag -l '{IMPORT_REPOS_TAG_PREFIX}-*'", dry=False)
+        if not safety_tags:
+            vanish(f"No safety tags found (tags starting with '{IMPORT_REPOS_TAG_PREFIX}-')")
+
+        try:
+            chosen_tag = run_with_fzf(
+                c,
+                f"git tag -l '{IMPORT_REPOS_TAG_PREFIX}-*'",
+                dry=False,
+                header="Select a safety tag to rollback to",
+            )
+        except Exception:  # noqa: BLE001
+            vanish("Rollback aborted, no tag was selected")
+
+        if not chosen_tag:
+            vanish("Rollback aborted, no tag was selected")
+
+        ask_yes_no(f"Are you sure you want to rollback to tag {chosen_tag}?")
+
+        print_success(f"Rolling back to tag: {chosen_tag}")
+        c.run(f"git reset --hard {chosen_tag}")
+
+        c.run(f"git tag -d {chosen_tag}")
+        print_success(f"Deleted safety tag: {chosen_tag}")
+
+        print_success("Remaining tags:")
+        c.run("git tag")
+
+
+def _validate_and_display_repo_status(
+    c: Context,
+    repo_path: Path,
+    repo_label: str,
+    show_branches: bool = False,
+) -> str:
+    """Validate a repository and display its status.
+
+    Args:
+        c: Invoke context
+        repo_path: Path to the repository
+        repo_label: Label for display (e.g., "Target repository", "Source repository")
+        show_branches: Whether to show all branches
+
+    Returns:
+        Current branch name
+
+    """
+    with c.cd(str(repo_path)):
+        current_branch = Git(c).current_branch()
+
+    print_success(f"{repo_label}: {repo_path} (current branch: {current_branch})")
+
+    if show_branches:
+        with c.cd(str(repo_path)):
+            c.run("git branch -a")
+
+    dirty(c, [repo_path])
+
+    return current_branch
+
+
+def _perform_repo_merge(
+    c: Context,
+    target_path: Path,
+    src_path: Path,
+    src_branch: str,
+    dir_: str,
+) -> None:
+    """Perform the actual repository merge operation.
+
+    Args:
+        c: Invoke context
+        target_path: Path to target repository
+        src_path: Path to source repository
+        src_branch: Branch name from source repository to merge
+        dir_: Destination directory name in target repository
+
+    """
+    temp_dir = Path(tempfile.mkdtemp(prefix="git-import-repos-"))
+    try:
+        print_success(f"\nMerging {src_path.name} (branch: {src_branch}) into {dir_}/ ...")
+
+        temp_clone = temp_dir / dir_
+        print(f"Creating a fresh clone at {temp_clone} (required by git-filter-repo)...")
+        # Use --no-local to avoid hardlinks which git-filter-repo refuses to work with
+        c.run(f"git clone --no-local {src_path} {temp_clone}")
+
+        with c.cd(str(temp_clone)):
+            print(f"Rewriting history to move everything into the subdirectory {dir_}/ ...")
+            c.run(f"git checkout {src_branch}")
+            c.run(f"git filter-repo --force --to-subdirectory-filter {dir_}")
+
+        remote_name = f"temp-import-{dir_}"
+        with c.cd(str(target_path)):
+            print("Adding temporary remote and fetching...")
+            c.run(f"git remote add {remote_name} {temp_clone}")
+            c.run(f"git fetch {remote_name}")
+
+            print(f"Merging {dir_} history...")
+            merge_msg = f"chore(git): merge repository {src_path} into subdir {dir_!r}"
+            c.run(f'git merge --allow-unrelated-histories -m "{merge_msg}" {remote_name}/{src_branch}')
+
+            print("Cleaning up temporary remote...")
+            c.run(f"git remote remove {remote_name}")
+
+        print_success(f"Successfully merged {dir_}")
+    finally:
+        print(f"\nCleaning up temporary clone at {temp_dir}...")
+        c.run(f"rm -rf {temp_dir}")
+
+
+@task(
+    help={
+        "target": "Path to the target repository where source repo will be merged into",
+        "source": "Path to source repository to merge",
+        "dir_": "Name of the destination directory in the target repository (default: source repo name)",
+        "yes": "Skip confirmation prompt and proceed automatically",
+        "rollback": "Rollback a previous import by selecting a safety tag",
+    },
+)
+def import_repos(  # noqa: PLR0913
+    c: Context,
+    target: str,
+    source: str = "",
+    dir_: str = "",
+    yes: bool = False,
+    rollback: bool = False,
+) -> None:
+    """Merge a Git repository into a target repository as a subdirectory, preserving history.
+
+    This function safely merges a source repository into a target repository locally, without pushing
+    any changes. All operations are Git-reversible using standard Git commands.
+
+    The current branch of the source repository will be used for the merge.
+    If the destination directory is not specified, the source repository name will be used.
+
+    Detailed steps:
+    1. Validate repositories and check that destination directory doesn't exist
+    2. Create a temporary clone of the source repository
+    3. Rewrite the temporary clone's history to move all files into the destination subdirectory
+    4. Add the rewritten repository as a temporary remote and fetch it
+    5. Merge the unrelated histories into the target repository
+    6. Clean up temporary remote and clone directory
+    7. Display rollback instructions
+
+    Prerequisites:
+    - Install git-filter-repo: pipx install git-filter-repo
+    - Target repository must exist and be a Git repository
+    - Source repository must exist and be a Git repository
+
+    Safety features:
+    - No git push commands - all changes are local only
+    - Source repository is never modified (temporary clone is used)
+    - Target repository can be rolled back using git reset
+    - Creates a tag before merging for easy rollback
+
+    Note: git-extras has a git-merge-repo command, but I only found out about it after I had written
+    this function, which does a lot of verifications that git-merge-repo doesn't.
+
+    Example usage:
+      invoke git.import-repos --target=/path/to/target --source=/path/to/source --dir_=my-subdir
+      invoke git.import-repos --source=/path/to/source  # Uses source repo name as destination dir
+
+    Rollback:
+      invoke git.import-repos --target=/path/to/target --rollback
+
+    """
+    if rollback:
+        target_path = _resolve_repo_path(target) if target else Path.cwd()
+        _handle_rollback(c, target_path)
+        return
+
+    if not source:
+        vanish("Source repository must be specified using --source")
+
+    target_path = _resolve_repo_path(target) if target else Path.cwd()
+    _validate_git_repo(target_path, "Target repository")
+
+    src_path = _resolve_repo_path(source)
+    _validate_git_repo(src_path, "Source repository")
+
+    if not dir_:
+        dir_ = src_path.name
+    dest_dir_path = target_path / dir_
+    if dest_dir_path.exists():
+        vanish(f"The destination dir {dir_!r} already exists")
+
+    _validate_and_display_repo_status(c, target_path, "Target repository")
+    print_success(f"Destination directory: {dir_}")
+    src_branch = _validate_and_display_repo_status(c, src_path, "Source repository", show_branches=True)
+
+    if not yes:
+        ask_yes_no("Do you want to proceed with merging this repository?")
+
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+    safety_tag = f"{IMPORT_REPOS_TAG_PREFIX}-{timestamp}"
+    tag_message = f"Before merging repo {src_path.name} into {target_path.name}/{dir_}"
+
+    with c.cd(str(target_path)):
+        c.run(f"git tag -a {safety_tag} -m '{tag_message}'")
+        print_success(f"Created safety tag: {safety_tag}")
+
+    _perform_repo_merge(c, target_path, src_path, src_branch, dir_)
+
+    with c.cd(str(target_path)):
+        c.run("git log -1")
+
+    print_success("\nRepository merged successfully!")
+    print("\nRollback option if needed:")
+    target_flag = f" --target={target_path}" if target else ""
+    print(f"  invoke git.import-repos{target_flag} --rollback")
+    print("\nOr manually:")
+    print(f"  cd {target_path} && git reset --hard {safety_tag}")
+    print("\nTo keep the changes, you can delete the safety tag:")
+    print(f"  cd {target_path} && git tag -d {safety_tag}")
+    print_warning("\nRemember: No changes have been pushed. Run 'git push' when ready.")
+    print("\nNote: Source repository was not modified (temporary clone was used).")
