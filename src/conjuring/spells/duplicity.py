@@ -50,6 +50,16 @@ def backup(c: Context) -> None:
 
 
 @task
+def list_current_files(c: Context) -> None:
+    """List all files included in the current duplicity backup."""
+    host = print_hostname(c)
+    backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
+    print(f"Backup dir: {backup_dir}")
+
+    c.run(f"duplicity list-current-files {backup_dir}")
+
+
+@task
 def restore(c: Context) -> None:
     """Restore files with Duplicity. You will be prompted to choose the source dir. Restore dir is ~/Downloads."""
     print_hostname(c)
