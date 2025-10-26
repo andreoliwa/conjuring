@@ -4,10 +4,12 @@ from pathlib import Path
 from string import Template
 from tempfile import NamedTemporaryFile
 
-import typer
 from invoke import Context, task
+from my_den.utils import WOLT_DIR
 
-from conjuring.grimoire import run_command, run_with_fzf
+from conjuring.constants import CODE_DIR
+from conjuring.grimoire import print_success, print_warning, run_command, run_lines, run_with_fzf
+from conjuring.spells.git import DOT_GIT, is_valid_git_repository
 
 SHOULD_PREFIX = True
 BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
@@ -16,7 +18,7 @@ BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
 def print_hostname(c: Context) -> str:
     """Print the hostname of the current machine."""
     host = c.run("hostname | sed 's/.local//'", dry=False).stdout.strip()
-    typer.echo(f"Host: {host}")
+    print(f"Host: {host}")
     return host
 
 
@@ -27,16 +29,36 @@ def backup(c: Context) -> None:
     backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
     # To back up directly on OneDrive:
     # backup_dir = f"onedrive://Backup/{host}/duplicity/"
-    typer.echo(f"Backup dir: {backup_dir}")
+    print(f"Backup dir: {backup_dir}")
+
+    print_success("Scanning repos:")
+    files_to_append = []
+    for line in run_lines(c, f"fd -u -t d --max-depth 2 {DOT_GIT}$ {CODE_DIR} {WOLT_DIR}"):
+        repo = Path(line).parent
+        if not is_valid_git_repository(repo):
+            continue
+
+        print_success(f"Files to keep in repo {repo}:")
+        with c.cd(repo):
+            for relative_path in run_lines(c, "git keep"):
+                abs_path = (repo / relative_path).absolute()
+                end_slash = "/" if abs_path.is_dir() else ""
+
+                keep_file_path = f"{abs_path}{end_slash}"
+                files_to_append.append(keep_file_path)
+
+                print_func = print_warning if end_slash else print
+                print_func(f"  {abs_path.relative_to(Path.home())}")
 
     template_file = Path("~/dotfiles/backup-duplicity-template.cfg").expanduser()
-    typer.echo(f"Template file: {template_file}")
+    print(f"Template file: {template_file}")
 
     template_contents = template_file.read_text()
     duplicity_config = Template(template_contents).substitute({"HOME": Path.home()})
 
     with NamedTemporaryFile("r+", delete=False) as temp_file:
         temp_file.write(duplicity_config)
+        temp_file.write("\n".join(files_to_append))
         temp_file.flush()
         run_command(
             c,

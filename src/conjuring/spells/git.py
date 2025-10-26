@@ -32,6 +32,7 @@ from conjuring.grimoire import (
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 # keep-sorted start
+DOT_GIT = ".git"
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 GLOBAL_GITIGNORE = "~/.gitignore_global"
 IMPORT_REPOS_TAG_PREFIX = "before-import-repos"
@@ -120,8 +121,8 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
         typer.echo(f"{Color.BOLD_RED.value}Match not found{Color.NONE.value}")
     else:
         repo = f"https://{match}" if https else f"git@{match}"
-        if not repo.endswith(".git"):
-            repo += ".git"
+        if not repo.endswith(DOT_GIT):
+            repo += DOT_GIT
         c.run(f"git remote set-url {remote} {repo}")
 
     c.run("git remote -v")
@@ -460,9 +461,9 @@ def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
     return git_repos
 
 
-def _is_valid_git_repository(repo_path: Path) -> bool:
+def is_valid_git_repository(repo_path: Path) -> bool:
     """Check if the given path is a valid Git repository."""
-    git_dir: Path = repo_path / ".git"
+    git_dir: Path = repo_path / DOT_GIT
     return (git_dir / "HEAD").exists() and (git_dir / "refs").exists()
 
 
@@ -492,7 +493,7 @@ def _validate_git_repo(repo_path: Path, repo_name: str = "Repository") -> None:
     """
     if not repo_path.exists():
         vanish(f"{repo_name} does not exist: {repo_path}")
-    if not (repo_path / ".git").exists():
+    if not is_valid_git_repository(repo_path):
         vanish(f"{repo_name} is not a Git repository: {repo_path}")
 
 
@@ -547,7 +548,7 @@ def _is_repo_dirty(c: Context, repo_path: Path) -> list[str]:
         # Change to the repository directory and check status
         with c.cd(str(repo_path)):
             # First verify this is a valid git repository
-            if not _is_valid_git_repository(repo_path):
+            if not is_valid_git_repository(repo_path):
                 return []
 
             reasons = []
