@@ -133,12 +133,13 @@ def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys
             return lowercase_key
 
 
-def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> None:
+def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> bool:
     """Ask a yes/no question and exit if the user answers no."""
     try:
         typer.confirm(f"{color.value}{' '.join(message)}{Color.NONE.value}", abort=True)
     except typer.Abort:
-        vanish("Operation cancelled by user", 1)
+        return False
+    return True
 
 
 # TODO: Use iterfzf or create Fzf class with multi() and single() methods (with different return types
