@@ -61,40 +61,65 @@ def get_hook_types(commit_msg: bool, desired_hooks: list[str] | None = None) -> 
         "gc": "Run the garbage collector to remove unused venvs",
         "commit_msg": "Install commit message hooks",
         "before": "Config files to run before the current one.",
+        "legacy": "Use legacy pre-commit instead of prek",
     },
     iterable=["before"],
 )
-def install(c: Context, before: list[str], gc: bool = False, commit_msg: bool = True) -> None:
-    """Install pre-commit with prek."""
+def install(c: Context, before: list[str], gc: bool = False, commit_msg: bool = True, legacy: bool = False) -> None:
+    """Install pre-commit with prek (or legacy pre-commit)."""
     if gc:
         _run_garbage_collector(c)
-    c.run(f"prek install {get_hook_types(commit_msg)} --install-hooks")
+    c.run(f"{'pre-commit' if legacy else 'prek'} install {get_hook_types(commit_msg)} --install-hooks")
     if before:
         _patch_pre_commit_configs(before)
 
 
-@task(help={"gc": "Run the garbage collector to remove unused venvs", "commit_msg": "Uninstall commit message hooks"})
-def uninstall(c: Context, gc: bool = False, commit_msg: bool = True) -> None:
-    """Uninstall ALL pre-commit hooks with prek."""
+@task(
+    help={
+        "gc": "Run the garbage collector to remove unused venvs",
+        "commit_msg": "Uninstall commit message hooks",
+        "legacy": "Use legacy pre-commit instead of prek",
+    },
+)
+def uninstall(
+    c: Context,
+    gc: bool = False,
+    commit_msg: bool = False,
+    all_hooks: bool = False,
+    legacy: bool = False,
+) -> None:
+    """Uninstall ALL pre-commit hooks with prek (or legacy pre-commit)."""
     if gc:
         _run_garbage_collector(c)
 
-    installed_hooks = [
-        git_hook
-        for git_hook in run_stdout(c, "ls .git/hooks", dry=False).splitlines()
-        if ".sample" not in git_hook and ".legacy" not in git_hook
-    ]
-    c.run(f"prek uninstall {get_hook_types(commit_msg, installed_hooks)}")
+    if all_hooks:
+        installed_hooks = [
+            git_hook
+            for git_hook in run_stdout(c, "ls .git/hooks", dry=False).splitlines()
+            if ".sample" not in git_hook and ".legacy" not in git_hook
+        ]
+    else:
+        installed_hooks = []
+    run_command(
+        c,
+        "pre-commit" if legacy else "prek",
+        "uninstall",
+        get_hook_types(commit_msg, installed_hooks) if commit_msg or installed_hooks else "",
+    )
 
 
 @task(
     help={
         "hooks": "Comma-separated list of partial hook IDs (fzf will be used to match them)."
         " Use 'all', '.' or '-' to run all hooks.",
+        "legacy": "Use legacy pre-commit instead of prek",
     },
 )
-def run(c: Context, hooks: str) -> None:
-    """Run all pre-commit hooks or a specific one using prek. Don't stop on failures. Needs fzf and yq."""
+def run(c: Context, hooks: str, legacy: bool = False) -> None:
+    """Run all pre-commit hooks or a specific one using prek (or legacy pre-commit). Don't stop on failures.
+
+    Needs fzf and yq.
+    """
     split_hooks = hooks.split(",")
     chosen_hooks = []
     for special in ("all", ".", "-"):
@@ -113,14 +138,25 @@ def run(c: Context, hooks: str) -> None:
         ]
 
     for chosen_hook in chosen_hooks:
-        run_command(c, "prek run --all-files", chosen_hook, warn=True)
+        run_command(c, "pre-commit" if legacy else "prek", "run --all-files", chosen_hook, warn=True)
 
 
-@task()
-def auto(c: Context, repo: str = "", bleed: bool = False) -> None:
-    """Autoupdate a Git hook or all hooks with the latest tag. Needs fzf and yq."""
+@task(
+    help={
+        "repo": "Partial name of the repo to autoupdate (fzf will be used to match it)",
+        "bleed": "Update to the latest commit instead of the latest tag",
+        "legacy": "Use legacy pre-commit instead of prek",
+    },
+)
+def auto(c: Context, repo: str = "", bleed: bool = False, legacy: bool = False) -> None:
+    """Autoupdate a Git hook or all hooks with the latest tag, using prek (or legacy pre-commit). Needs fzf and yq."""
     command = ""
     if repo:
         chosen = run_with_fzf(c, "yq e '.repos[].repo' .pre-commit-config.yaml", query=repo, dry=False)
         command = f"--repo {chosen}"
-    run_command(c, "prek auto-update", "--bleeding-edge" if bleed else "", command)
+    run_command(
+        c,
+        "pre-commit autoupdate" if legacy else "prek auto-update",
+        "--bleeding-edge" if bleed else "",
+        command,
+    )
