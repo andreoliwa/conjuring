@@ -71,7 +71,7 @@ def install(  # noqa: PLR0913
     before: list[str],
     *,
     gc: bool = False,
-    commit_msg: bool = True,
+    commit_msg: bool = False,
     legacy: bool = False,
     root_only: bool = False,
 ) -> None:
@@ -82,7 +82,10 @@ def install(  # noqa: PLR0913
 
     if gc:
         _run_garbage_collector(c)
-    run_command(c, "pre-commit" if legacy else "prek", "install", get_hook_types(commit_msg), "--install-hooks")
+
+    cmd = "pre-commit" if legacy else "prek"
+    run_command(c, cmd, "install")
+
     if before:
         _patch_pre_commit_configs(before)
 
@@ -94,6 +97,10 @@ def install(  # noqa: PLR0913
         )
         print_success(f"Patched {hook_file} to use root config only (--config {PRE_COMMIT_CONFIG_YAML})")
         print_warning("NOTE: This change will be overwritten if you run 'prek install' again")
+
+    if commit_msg:
+        run_command(c, cmd, "install", get_hook_types(commit_msg))
+    run_command(c, cmd, "install", "--install-hooks")
 
 
 @task(
