@@ -8,7 +8,7 @@ from pathlib import Path
 from invoke import Context, task
 
 from conjuring.constants import PRE_COMMIT_CONFIG_YAML
-from conjuring.grimoire import print_success, run_command, run_stdout, run_with_fzf
+from conjuring.grimoire import print_success, print_warning, run_command, run_stdout, run_with_fzf
 from conjuring.visibility import ShouldDisplayTasks, has_pre_commit_config_yaml
 
 SHOULD_PREFIX = True
@@ -62,16 +62,38 @@ def get_hook_types(commit_msg: bool, desired_hooks: list[str] | None = None) -> 
         "commit_msg": "Install commit message hooks",
         "before": "Config files to run before the current one.",
         "legacy": "Use legacy pre-commit instead of prek",
+        "root_only": "Only use root .pre-commit-config.yaml, ignore nested configs (prek only)",
     },
     iterable=["before"],
 )
-def install(c: Context, before: list[str], gc: bool = False, commit_msg: bool = True, legacy: bool = False) -> None:
+def install(  # noqa: PLR0913
+    c: Context,
+    before: list[str],
+    *,
+    gc: bool = False,
+    commit_msg: bool = True,
+    legacy: bool = False,
+    root_only: bool = False,
+) -> None:
     """Install pre-commit with prek (or legacy pre-commit)."""
+    if root_only and legacy:
+        print_warning("WARNING: --root-only flag is ignored when using --legacy mode")
+        root_only = False
+
     if gc:
         _run_garbage_collector(c)
-    c.run(f"{'pre-commit' if legacy else 'prek'} install {get_hook_types(commit_msg)} --install-hooks")
+    run_command(c, "pre-commit" if legacy else "prek", "install", get_hook_types(commit_msg), "--install-hooks")
     if before:
         _patch_pre_commit_configs(before)
+
+    if root_only:
+        hook_file = ".git/hooks/pre-commit"
+        c.run(
+            f"sed -i '' 's/ARGS=(hook-impl/ARGS=(hook-impl --config \"{PRE_COMMIT_CONFIG_YAML}\"/' {hook_file}",
+            warn=True,
+        )
+        print_success(f"Patched {hook_file} to use root config only (--config {PRE_COMMIT_CONFIG_YAML})")
+        print_warning("NOTE: This change will be overwritten if you run 'prek install' again")
 
 
 @task(
