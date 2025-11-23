@@ -53,7 +53,9 @@ def get_hook_types(commit_msg: bool, desired_hooks: list[str] | None = None) -> 
     if commit_msg:
         hooks.append("commit-msg")
         hooks.append("prepare-commit-msg")
-    return " ".join([f"--hook-type {h}" for h in hooks])
+    return " ".join(
+        [f"--hook-type {h}" for h in hooks if h not in ("post-applypatch", "pre-auto-gc", "reference-transaction")],
+    )
 
 
 @task(
@@ -89,10 +91,12 @@ def install(  # noqa: PLR0913
     if before:
         _patch_pre_commit_configs(before)
 
+    config_arg = ""
     if root_only:
         hook_file = ".git/hooks/pre-commit"
+        config_arg = f"--config {PRE_COMMIT_CONFIG_YAML}"
         c.run(
-            f"sed -i '' 's/ARGS=(hook-impl/ARGS=(hook-impl --config \"{PRE_COMMIT_CONFIG_YAML}\"/' {hook_file}",
+            f"sed -i '' 's/ARGS=(hook-impl/ARGS=(hook-impl {config_arg}/' {hook_file}",
             warn=True,
         )
         print_success(f"Patched {hook_file} to use root config only (--config {PRE_COMMIT_CONFIG_YAML})")
@@ -100,7 +104,7 @@ def install(  # noqa: PLR0913
 
     if commit_msg:
         run_command(c, cmd, "install", get_hook_types(commit_msg))
-    run_command(c, cmd, "install", "--install-hooks")
+    run_command(c, cmd, "install", "--install-hooks", config_arg)
 
 
 @task(
@@ -142,13 +146,18 @@ def uninstall(
         "hooks": "Comma-separated list of partial hook IDs (fzf will be used to match them)."
         " Use 'all', '.' or '-' to run all hooks.",
         "legacy": "Use legacy pre-commit instead of prek",
+        "root_only": "Only use root .pre-commit-config.yaml, ignore nested configs (prek only)",
     },
 )
-def run(c: Context, hooks: str, legacy: bool = False) -> None:
+def run(c: Context, hooks: str, legacy: bool = False, root_only: bool = False) -> None:
     """Run all pre-commit hooks or a specific one using prek (or legacy pre-commit). Don't stop on failures.
 
     Needs fzf and yq.
     """
+    if root_only and legacy:
+        print_warning("WARNING: --root-only flag is ignored when using --legacy mode")
+        root_only = False
+
     split_hooks = hooks.split(",")
     chosen_hooks = []
     for special in ("all", ".", "-"):
@@ -166,8 +175,9 @@ def run(c: Context, hooks: str, legacy: bool = False) -> None:
             for partial_hook in split_hooks
         ]
 
+    config_arg = f"--config {PRE_COMMIT_CONFIG_YAML}" if root_only else ""
     for chosen_hook in chosen_hooks:
-        run_command(c, "pre-commit" if legacy else "prek", "run --all-files", chosen_hook, warn=True)
+        run_command(c, "pre-commit" if legacy else "prek", "run --all-files", config_arg, chosen_hook, warn=True)
 
 
 @task(
