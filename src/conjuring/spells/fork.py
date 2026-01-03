@@ -2,7 +2,7 @@
 
 from invoke import Context, Exit, task
 
-from conjuring.spells.git import Git
+from conjuring.spells import git
 
 SHOULD_PREFIX = True
 
@@ -30,6 +30,6 @@ def remote(c: Context, username: str, remote_: str = "upstream") -> None:
 def sync(c: Context, remote_: str = "upstream") -> None:
     """[Sync a fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)."""
     c.run(f"git fetch {remote_}")
-    existing_branch = Git(c).checkout("master", "main")
-    c.run(f"git merge {remote_}/{existing_branch}")
+    default_branch = git.set_default_branch(c)
+    c.run(f"git rebase {remote_}/{default_branch}")
     c.run("git push")

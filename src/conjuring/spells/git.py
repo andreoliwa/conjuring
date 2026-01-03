@@ -56,6 +56,8 @@ class Git:
     # Use "tail +2" to remove the blank line at the top
     SHOW_ALL_FILE_HISTORY = 'git log --pretty="format:" --name-only | sort -u | tail +2'
 
+    READ_DEFAULT_BRANCH = "git config git-extras.default-branch"
+
     def __init__(self, context: Context) -> None:
         self.context = context
 
@@ -64,11 +66,8 @@ class Git:
         return run_stdout(self.context, "git branch --show-current")
 
     def default_branch(self) -> str:
-        """Return the default branch name (master/main/develop/development)."""
-        return run_stdout(
-            self.context,
-            "git branch -a | rg -o -e /master -e /develop.+ -e /main | sort -u | cut -b 2- | head -1",
-        )
+        """Return the default branch nam as configured in git-extras.default-branch, if available."""
+        return run_stdout(self.context, Git.READ_DEFAULT_BRANCH, warn=True, dry=False)
 
     def checkout(self, *branches: str) -> str:
         """Try checking out the specified branches in order."""
@@ -322,19 +321,18 @@ def merge_default(
 
 def set_default_branch(c: Context, remote: bool = False) -> str:
     """Set the default branch config on the repo, if not configured yet."""
-    cmd_read_default_branch = "git config git-extras.default-branch"
-    default_branch = run_stdout(c, cmd_read_default_branch, warn=True, dry=False)
-    if not default_branch:
-        default_branch = run_with_fzf(
+    branch = Git(c).default_branch()
+    if not branch:
+        branch = run_with_fzf(
             c,
             "git branch --list",
             "--all" if remote else "",
             "| cut -b 3- | grep -v HEAD | sed -E 's#remotes/[^/]+/##g' | sort -u",
         )
-        run_command(c, cmd_read_default_branch, default_branch)
-        run_command(c, "git config init.defaultBranch", default_branch)
+        run_command(c, Git.READ_DEFAULT_BRANCH, branch)
+        run_command(c, "git config init.defaultBranch", branch)
         run_command(c, "git config --list | rg default.*branch")
-    return default_branch
+    return branch
 
 
 @task(
