@@ -26,6 +26,7 @@ dependencies = [
   "packaging",
   "python-slugify",
   "requests",
+  "rich",
   "ruamel-yaml",
   "tomlkit",
   "tqdm",
