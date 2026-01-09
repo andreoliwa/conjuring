@@ -105,6 +105,26 @@ class PrefixBranch:
     branch: str
 
 
+@dataclass(frozen=True)
+class GitChanges:
+    """Git repository change counts."""
+
+    staged: int
+    modified: int
+    untracked: int
+
+
+@dataclass(frozen=True)
+class RepoDirtyStatus:
+    """Status of a dirty Git repository."""
+
+    repo_path: Path
+    staged: int
+    modified: int
+    untracked: int
+    stashes: int
+
+
 @task(klass=MagicTask)
 def update_all(c: Context, group: str = "") -> None:
     """Run gita super to update and clean branches."""
@@ -510,7 +530,7 @@ def _validate_git_repo(repo_path: Path, repo_name: str = "Repository") -> None:
         vanish(f"{repo_name} is not a Git repository: {repo_path}")
 
 
-def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
+def _count_git_changes(status_lines: list[str]) -> GitChanges:
     """Count staged, modified, and untracked files from git status output."""
     modified_count = 0
     untracked_count = 0
@@ -533,28 +553,14 @@ def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
         elif worktree_status == "?":
             untracked_count += 1
 
-    return staged_count, modified_count, untracked_count
+    return GitChanges(staged=staged_count, modified=modified_count, untracked=untracked_count)
 
 
-def _format_git_status_message(staged_count: int, modified_count: int, untracked_count: int) -> str:
-    """Format the git status message for display."""
-    status_parts = []
-    if staged_count > 0:
-        status_parts.append(f"{staged_count} staged")
-    if modified_count > 0:
-        status_parts.append(f"{modified_count} modified")
-    if untracked_count > 0:
-        status_parts.append(f"{untracked_count} untracked")
-
-    return ", ".join(status_parts) + " files"
-
-
-def _is_repo_dirty(c: Context, repo_path: Path) -> tuple[Path, int, int, int, int] | None:
+def _is_repo_dirty(c: Context, repo_path: Path) -> RepoDirtyStatus | None:
     """Check if a single repository is dirty.
 
     Returns:
-        Tuple of (repo_path, staged_count, modified_count, untracked_count, stash_count) if dirty.
-        None if clean or invalid.
+        RepoDirtyStatus if dirty, None if clean or invalid.
 
     """
     try:
@@ -568,14 +574,20 @@ def _is_repo_dirty(c: Context, repo_path: Path) -> tuple[Path, int, int, int, in
             status_lines = run_lines(c, "git status --porcelain", dry=False)
 
             # Count different types of changes
-            staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
+            changes = _count_git_changes(status_lines)
 
             # Check for stashed code
             stash_count = int(run_stdout(c, "git stash list | wc -l", dry=False))
 
             # Return data if repository is dirty
-            if staged_count > 0 or modified_count > 0 or untracked_count > 0 or stash_count > 0:
-                return repo_path, staged_count, modified_count, untracked_count, stash_count
+            if changes.staged > 0 or changes.modified > 0 or changes.untracked > 0 or stash_count > 0:
+                return RepoDirtyStatus(
+                    repo_path=repo_path,
+                    staged=changes.staged,
+                    modified=changes.modified,
+                    untracked=changes.untracked,
+                    stashes=stash_count,
+                )
 
             return None
 
@@ -632,17 +644,17 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
     table.add_column("Untracked", justify="right")
     table.add_column("Stashes", justify="right")
 
-    for repo_path, staged, modified, untracked, stashes in dirty_repos_data:
+    for repo_status in dirty_repos_data:
         # Helper function to format counts (empty string for zero)
         def format_count(count: int) -> str:
             return str(count) if count > 0 else ""
 
         table.add_row(
-            str(repo_path),
-            format_count(staged),
-            format_count(modified),
-            format_count(untracked),
-            format_count(stashes),
+            str(repo_status.repo_path),
+            format_count(repo_status.staged),
+            format_count(repo_status.modified),
+            format_count(repo_status.untracked),
+            format_count(repo_status.stashes),
         )
 
     # Print the table using rich
