@@ -10,6 +10,7 @@ from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from invoke import Context, UnexpectedExit, task
@@ -17,6 +18,9 @@ from rich.console import Console
 from rich.table import Table
 from slugify import slugify
 from tqdm import tqdm
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 from conjuring.colors import Color
 from conjuring.constants import REGEX_JIRA_TICKET_TITLE
@@ -440,9 +444,17 @@ def new_branch(c: Context, title: str) -> None:
     c.run(f"git checkout -b {branch_name}")
 
 
-def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
-    """Find all Git repositories in the given directories using fd."""
-    git_repos = set()
+def _find_git_repositories_streaming(c: Context, search_dirs: list[Path]) -> Generator[Path, None, None]:
+    """Find Git repositories and yield them as they're discovered.
+
+    This streaming version allows processing to start immediately without waiting
+    for all repositories to be found first.
+
+    Yields:
+        Path: Repository path as it's discovered
+
+    """
+    seen_repos = set()
     for search_dir in search_dirs:
         if not search_dir.exists():
             print_warning(f"Directory does not exist: {search_dir}")
@@ -454,12 +466,12 @@ def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
             lines = run_lines(c, rf"fd -H -t d --no-ignore-vcs '^\.git$' '{search_dir}'", dry=False)
             for line in lines:
                 repo_path = Path(line).parent
-                git_repos.add(repo_path)
+                if repo_path not in seen_repos:
+                    seen_repos.add(repo_path)
+                    yield repo_path
         except Exception as e:  # noqa: BLE001
             print_warning(f"Error searching for Git repos in {search_dir}: {e}")
             continue
-
-    return git_repos
 
 
 def is_valid_git_repository(repo_path: Path) -> bool:
@@ -589,23 +601,24 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
     # Convert to Path objects and expand user paths
     search_dirs = [Path(d).expanduser().resolve() for d in dir_]
 
-    # Find all Git repositories using fd
-    git_repos = _find_git_repositories(c, search_dirs)
-
-    if not git_repos:
-        print_warning("No Git repositories found")
-        return False
-
-    # Check each repository for dirty status and collect data
+    # Collect repositories as they're found and check them immediately
     dirty_repos_data = []
-    sorted_repos = sorted(git_repos)
-    with tqdm(total=len(sorted_repos), desc="Checking repositories", unit="repo") as pbar:
-        for repo_path in sorted_repos:
+    all_repos = []
+
+    # Use streaming approach: process repos as they're discovered
+    # This makes the progress bar appear immediately
+    with tqdm(desc="Finding dirty repositories", unit=" repos") as pbar:
+        for repo_path in _find_git_repositories_streaming(c, search_dirs):
+            all_repos.append(repo_path)
             pbar.set_postfix_str(str(repo_path))
             repo_data = _is_repo_dirty(c, repo_path)
             if repo_data:
                 dirty_repos_data.append(repo_data)
             pbar.update(1)
+
+    if not all_repos:
+        print_warning("No Git repositories found")
+        return False
 
     if not dirty_repos_data:
         print_warning("No dirty repositories found")
