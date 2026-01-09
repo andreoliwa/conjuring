@@ -10,10 +10,17 @@ from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from invoke import Context, UnexpectedExit, task
+from rich.console import Console
+from rich.table import Table
 from slugify import slugify
+from tqdm import tqdm
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 from conjuring.colors import Color
 from conjuring.constants import REGEX_JIRA_TICKET_TITLE
@@ -96,6 +103,26 @@ class PrefixBranch:
 
     prefix: str
     branch: str
+
+
+@dataclass(frozen=True)
+class GitChanges:
+    """Git repository change counts."""
+
+    staged: int
+    modified: int
+    untracked: int
+
+
+@dataclass(frozen=True)
+class RepoDirtyStatus:
+    """Status of a dirty Git repository."""
+
+    repo_path: Path
+    staged: int
+    modified: int
+    untracked: int
+    stashes: int
 
 
 @task(klass=MagicTask)
@@ -437,9 +464,17 @@ def new_branch(c: Context, title: str) -> None:
     c.run(f"git checkout -b {branch_name}")
 
 
-def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
-    """Find all Git repositories in the given directories using fd."""
-    git_repos = set()
+def _find_git_repositories_streaming(c: Context, search_dirs: list[Path]) -> Generator[Path, None, None]:
+    """Find Git repositories and yield them as they're discovered.
+
+    This streaming version allows processing to start immediately without waiting
+    for all repositories to be found first.
+
+    Yields:
+        Path: Repository path as it's discovered
+
+    """
+    seen_repos = set()
     for search_dir in search_dirs:
         if not search_dir.exists():
             print_warning(f"Directory does not exist: {search_dir}")
@@ -451,12 +486,12 @@ def _find_git_repositories(c: Context, search_dirs: list[Path]) -> set[Path]:
             lines = run_lines(c, rf"fd -H -t d --no-ignore-vcs '^\.git$' '{search_dir}'", dry=False)
             for line in lines:
                 repo_path = Path(line).parent
-                git_repos.add(repo_path)
+                if repo_path not in seen_repos:
+                    seen_repos.add(repo_path)
+                    yield repo_path
         except Exception as e:  # noqa: BLE001
             print_warning(f"Error searching for Git repos in {search_dir}: {e}")
             continue
-
-    return git_repos
 
 
 def is_valid_git_repository(repo_path: Path) -> bool:
@@ -495,7 +530,7 @@ def _validate_git_repo(repo_path: Path, repo_name: str = "Repository") -> None:
         vanish(f"{repo_name} is not a Git repository: {repo_path}")
 
 
-def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
+def _count_git_changes(status_lines: list[str]) -> GitChanges:
     """Count staged, modified, and untracked files from git status output."""
     modified_count = 0
     untracked_count = 0
@@ -518,28 +553,14 @@ def _count_git_changes(status_lines: list[str]) -> tuple[int, int, int]:
         elif worktree_status == "?":
             untracked_count += 1
 
-    return staged_count, modified_count, untracked_count
+    return GitChanges(staged=staged_count, modified=modified_count, untracked=untracked_count)
 
 
-def _format_git_status_message(staged_count: int, modified_count: int, untracked_count: int) -> str:
-    """Format the git status message for display."""
-    status_parts = []
-    if staged_count > 0:
-        status_parts.append(f"{staged_count} staged")
-    if modified_count > 0:
-        status_parts.append(f"{modified_count} modified")
-    if untracked_count > 0:
-        status_parts.append(f"{untracked_count} untracked")
-
-    return ", ".join(status_parts) + " files"
-
-
-def _is_repo_dirty(c: Context, repo_path: Path) -> list[str]:
-    """Check if a single repository is dirty and print warning if so.
+def _is_repo_dirty(c: Context, repo_path: Path) -> RepoDirtyStatus | None:
+    """Check if a single repository is dirty.
 
     Returns:
-        List of reasons why the repository is dirty. Empty list if clean or invalid.
-        Possible reasons: "staged files", "modified files", "untracked files", "stashed code"
+        RepoDirtyStatus if dirty, None if clean or invalid.
 
     """
     try:
@@ -547,40 +568,33 @@ def _is_repo_dirty(c: Context, repo_path: Path) -> list[str]:
         with c.cd(str(repo_path)):
             # First verify this is a valid git repository
             if not is_valid_git_repository(repo_path):
-                return []
-
-            reasons = []
+                return None
 
             # Use git status --porcelain for machine-readable output
             status_lines = run_lines(c, "git status --porcelain", dry=False)
 
-            if status_lines:
-                # Count different types of changes
-                staged_count, modified_count, untracked_count = _count_git_changes(status_lines)
-
-                if staged_count > 0:
-                    reasons.append(f"staged files: {staged_count}")
-                if modified_count > 0:
-                    reasons.append(f"modified files: {modified_count}")
-                if untracked_count > 0:
-                    reasons.append(f"untracked files: {untracked_count}")
+            # Count different types of changes
+            changes = _count_git_changes(status_lines)
 
             # Check for stashed code
             stash_count = int(run_stdout(c, "git stash list | wc -l", dry=False))
-            if stash_count:
-                reasons.append(f"stashes: {stash_count}")
 
-            # Print warning if repository is dirty
-            if reasons:
-                status_message = ", ".join(reasons)
-                print_warning(f"Git repo is dirty: {repo_path}, {status_message}")
+            # Return data if repository is dirty
+            if changes.staged > 0 or changes.modified > 0 or changes.untracked > 0 or stash_count > 0:
+                return RepoDirtyStatus(
+                    repo_path=repo_path,
+                    staged=changes.staged,
+                    modified=changes.modified,
+                    untracked=changes.untracked,
+                    stashes=stash_count,
+                )
 
-            return reasons
+            return None
 
     except Exception:  # noqa: BLE001
         # Skip directories that aren't actually git repositories
         # (this can happen if fd finds directories with .git in the name)
-        return []
+        return None
 
 
 @task(
@@ -599,21 +613,55 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
     # Convert to Path objects and expand user paths
     search_dirs = [Path(d).expanduser().resolve() for d in dir_]
 
-    # Find all Git repositories using fd
-    git_repos = _find_git_repositories(c, search_dirs)
+    # Collect repositories as they're found and check them immediately
+    dirty_repos_data = []
+    all_repos = []
 
-    if not git_repos:
+    # Use streaming approach: process repos as they're discovered
+    # This makes the progress bar appear immediately
+    with tqdm(desc="Finding dirty repositories", unit=" repos") as pbar:
+        for repo_path in _find_git_repositories_streaming(c, search_dirs):
+            all_repos.append(repo_path)
+            pbar.set_postfix_str(str(repo_path))
+            repo_data = _is_repo_dirty(c, repo_path)
+            if repo_data:
+                dirty_repos_data.append(repo_data)
+            pbar.update(1)
+
+    if not all_repos:
         print_warning("No Git repositories found")
         return False
 
-    # Check each repository for dirty status
-    dirty_repos_found = False
-    for repo_path in sorted(git_repos):
-        reasons = _is_repo_dirty(c, repo_path)
-        if reasons:
-            dirty_repos_found = True
+    if not dirty_repos_data:
+        print_warning("No dirty repositories found")
+        return False
 
-    return dirty_repos_found
+    # Create and display Rich table
+    table = Table(title="Dirty Git Repositories", show_header=True, header_style="bold magenta")
+    table.add_column("Repository", style="cyan", no_wrap=False)
+    table.add_column("Staged", justify="right")
+    table.add_column("Modified", justify="right")
+    table.add_column("Untracked", justify="right")
+    table.add_column("Stashes", justify="right")
+
+    for repo_status in dirty_repos_data:
+        # Helper function to format counts (empty string for zero)
+        def format_count(count: int) -> str:
+            return str(count) if count > 0 else ""
+
+        table.add_row(
+            str(repo_status.repo_path),
+            format_count(repo_status.staged),
+            format_count(repo_status.modified),
+            format_count(repo_status.untracked),
+            format_count(repo_status.stashes),
+        )
+
+    # Print the table using rich
+    console = Console()
+    console.print(table)
+
+    return True
 
 
 def _handle_rollback(c: Context, target_path: Path) -> None:
