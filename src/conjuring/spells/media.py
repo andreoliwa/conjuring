@@ -32,7 +32,7 @@ from conjuring.grimoire import (
 
 SHOULD_PREFIX = True
 
-AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma"}
+AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma", "opus"}
 MAX_COUNT = 1000
 MAX_SIZE = 1_000_000_000  # 1 GB
 
