@@ -8,7 +8,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/andreoliwa/nitpick
-    rev: v0.38.0
+    rev: v0.38.1
     hooks:
       - id: nitpick-suggest
       - id: nitpick
@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: keep-sorted
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.1
+    rev: v0.14.14
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -34,11 +34,11 @@ repos:
         stages:
           - pre-commit
   - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
-    rev: v0.45.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.12.0
+    rev: 26.1.0
     hooks:
       - id: black
         args: [--safe, --quiet]
@@ -56,7 +56,7 @@ repos:
       - id: python-no-log-warn
       - id: rst-backticks
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
       - id: mypy
         # https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-show-error-codes
@@ -69,7 +69,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.9.1
+    rev: v4.12.1
     hooks:
       - id: commitizen
         stages: [commit-msg]
