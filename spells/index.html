@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -4348,7 +4348,7 @@ that are included in the Conjuring package.</p>
 </span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 </span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a>    <span class="n">print_success</span><span class="p">(</span><span class="s2">&quot;Scanning repos:&quot;</span><span class="p">)</span>
 </span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="n">files_to_append</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run_lines</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;fd -u -t d --max-depth 2 </span><span class="si">{</span><span class="n">DOT_GIT</span><span class="si">}</span><span class="s2">$ </span><span class="si">{</span><span class="n">CODE_DIR</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">WOLT_DIR</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run_lines</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;fd -u -t d --max-depth 2 </span><span class="si">{</span><span class="n">DOT_GIT</span><span class="si">}</span><span class="s2">$ </span><span class="si">{</span><span class="n">DEV_DIR</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">CODE_DIR</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">WOLT_DIR</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
 </span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="n">repo</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
 </span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid_git_repository</span><span class="p">(</span><span class="n">repo</span><span class="p">):</span>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>            <span class="k">continue</span>
