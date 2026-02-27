@@ -7,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from invoke import Context, task
 from my_den.utils import WOLT_DIR
 
-from conjuring.constants import CODE_DIR
+from conjuring.constants import CODE_DIR, DEV_DIR
 from conjuring.grimoire import print_success, print_warning, run_command, run_lines, run_with_fzf
 from conjuring.spells.git import DOT_GIT, is_valid_git_repository
 
@@ -33,7 +33,7 @@ def backup(c: Context) -> None:
 
     print_success("Scanning repos:")
     files_to_append = []
-    for line in run_lines(c, f"fd -u -t d --max-depth 2 {DOT_GIT}$ {CODE_DIR} {WOLT_DIR}"):
+    for line in run_lines(c, f"fd -u -t d --max-depth 2 {DOT_GIT}$ {DEV_DIR} {CODE_DIR} {WOLT_DIR}"):
         repo = Path(line).parent
         if not is_valid_git_repository(repo):
             continue
