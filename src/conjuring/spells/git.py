@@ -40,6 +40,7 @@ from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 # keep-sorted start
 DOT_GIT = ".git"
+GIT_EXCLUDE_FILE = ".git/info/exclude"
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 GLOBAL_GITIGNORE = "~/.gitignore_global"
 IMPORT_REPOS_TAG_PREFIX = "before-import-repos"
@@ -152,6 +153,22 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
         c.run(f"git remote set-url {remote} {repo}")
 
     c.run("git remote -v")
+
+
+@task(
+    help={"files": "File(s) or director(ies) to add to the local Git exclude list"},
+    iterable=["files"],
+)
+def exclude(c: Context, files: list[str]) -> None:
+    """Add files or directories to the local Git exclude file (.git/info/exclude), skipping duplicates."""
+    exclude_path = Path(GIT_EXCLUDE_FILE)
+    existing = set(exclude_path.read_text().splitlines()) if exclude_path.exists() else set()
+    for file in files:
+        if file in existing:
+            print_warning(f"Already excluded: {file}")
+        else:
+            c.run(f"echo {file!r} >> {GIT_EXCLUDE_FILE}")
+            print_success(f"Added to {GIT_EXCLUDE_FILE}: {file}")
 
 
 @task(
