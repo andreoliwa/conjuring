@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from collections import defaultdict
 from dataclasses import dataclass
@@ -14,7 +15,7 @@ from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from shutil import which
-from typing import TYPE_CHECKING, Callable, NoReturn
+from typing import TYPE_CHECKING, Literal, NoReturn, overload
 
 import typer
 from invoke import Collection, Context, Exit, Result, Task
@@ -143,6 +144,51 @@ def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> bool:
 
 
 # TODO: Use iterfzf or create Fzf class with multi() and single() methods (with different return types
+@overload
+def run_with_fzf(
+    c: Context,
+    *pieces: str,
+    multi: Literal[True],
+    query: str = ...,
+    header: str = ...,
+    options: str = ...,
+    preview: str = ...,
+    unicode: bool = ...,
+    info: str = ...,
+    **kwargs: str | bool,
+) -> list[str]: ...
+
+
+@overload
+def run_with_fzf(
+    c: Context,
+    *pieces: str,
+    multi: Literal[False] = ...,
+    query: str = ...,
+    header: str = ...,
+    options: str = ...,
+    preview: str = ...,
+    unicode: bool = ...,
+    info: str = ...,
+    **kwargs: str | bool,
+) -> str: ...
+
+
+@overload
+def run_with_fzf(
+    c: Context,
+    *pieces: str,
+    multi: bool,
+    query: str = ...,
+    header: str = ...,
+    options: str = ...,
+    preview: str = ...,
+    unicode: bool = ...,
+    info: str = ...,
+    **kwargs: str | bool,
+) -> str | list[str]: ...
+
+
 def run_with_fzf(  # noqa: PLR0913
     c: Context,
     *pieces: str,
@@ -154,8 +200,8 @@ def run_with_fzf(  # noqa: PLR0913
     unicode: bool = False,
     info: str = "default",
     **kwargs: str | bool,
-) -> str:
-    """Run a command with fzf and return the chosen entry.
+) -> str | list[str]:
+    """Run a command with fzf and return the chosen entry (or list of entries when multi=True).
 
     Args:
         c: Invoke context
@@ -178,16 +224,25 @@ def run_with_fzf(  # noqa: PLR0913
         fzf_pieces.append(f"--header='{header}'")
     if multi:
         fzf_pieces.append("--multi")
-        which_function: Callable = run_lines
-    else:
-        which_function = run_stdout
     if options:
         fzf_pieces.append(options)
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
-    kwargs.setdefault("hide", False)
-    kwargs.setdefault("pty", False)
-    return which_function(c, *pieces, *fzf_pieces, **kwargs)
+
+    # fzf needs a real TTY for interactive UI but stdout must be captured.
+    # Redirect fzf output to a temp file; run with pty=True so the UI renders.
+    _, out_file = tempfile.mkstemp()
+    out_path = Path(out_file)
+    try:
+        kwargs.setdefault("hide", False)
+        run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)  # type: ignore[arg-type]
+        result = out_path.read_text().strip()
+    finally:
+        out_path.unlink(missing_ok=True)
+
+    if multi:
+        return [line for line in result.splitlines() if line]
+    return result
 
 
 def ignore_module(module_name: str) -> bool:

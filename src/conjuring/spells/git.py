@@ -156,19 +156,60 @@ def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> No
 
 
 @task(
-    help={"files": "File(s) or director(ies) to add to the local Git exclude list"},
-    iterable=["files"],
+    help={"file": "File(s) or director(ies) to add to the local Git exclude list"},
+    iterable=["file"],
 )
-def exclude(c: Context, files: list[str]) -> None:
+def exclude(c: Context, file: list[str]) -> None:
     """Add files or directories to the local Git exclude file (.git/info/exclude), skipping duplicates."""
     exclude_path = Path(GIT_EXCLUDE_FILE)
     existing = set(exclude_path.read_text().splitlines()) if exclude_path.exists() else set()
-    for file in files:
-        if file in existing:
-            print_warning(f"Already excluded: {file}")
+    query = " ".join(file)
+    chosen = run_with_fzf(
+        c,
+        "{ git ls-files --others --cached --exclude-standard -z | tr '\\0' '\\n';"
+        " fd --hidden --exclude .git; } | sort -u",
+        query=query,
+        header="Select file(s) to exclude (TAB for multiple)",
+        multi=True,
+        dry=False,
+    )
+    entries = chosen if isinstance(chosen, list) else ([chosen] if chosen else [])
+    for entry in entries:
+        if entry in existing:
+            print_warning(f"Already excluded: {entry}")
         else:
-            c.run(f"echo {file!r} >> {GIT_EXCLUDE_FILE}")
-            print_success(f"Added to {GIT_EXCLUDE_FILE}: {file}")
+            c.run(f"echo {entry!r} >> {GIT_EXCLUDE_FILE}")
+            print_success(f"Added to {GIT_EXCLUDE_FILE}: {entry}")
+
+
+@task(
+    help={"file": "Partial name to search for in the Git exclude list"},
+    iterable=["file"],
+)
+def reinclude(c: Context, file: list[str]) -> None:
+    """Remove files from the local Git exclude file (.git/info/exclude), reincluding them in Git tracking."""
+    exclude_path = Path(GIT_EXCLUDE_FILE)
+    if not exclude_path.exists():
+        print_warning(f"{GIT_EXCLUDE_FILE} does not exist")
+        return
+    query = file[0] if file else ""
+    chosen = run_with_fzf(
+        c,
+        f"grep -v '^#' {GIT_EXCLUDE_FILE}",
+        query=query,
+        header="Select file(s) to reinclude (TAB to select multiple)",
+        multi=True,
+        dry=False,
+    )
+    if not chosen:
+        print_warning("No files selected")
+        return
+    to_remove = set(chosen) if isinstance(chosen, list) else {chosen}
+    lines = exclude_path.read_text().splitlines(keepends=True)
+    new_lines = [line for line in lines if line.rstrip("\n") not in to_remove]
+    exclude_path.write_text("".join(new_lines))
+    for entry in sorted(to_remove):
+        print_success(f"Removed from {GIT_EXCLUDE_FILE}: {entry}")
 
 
 @task(
