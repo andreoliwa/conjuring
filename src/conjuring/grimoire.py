@@ -229,16 +229,22 @@ def run_with_fzf(  # noqa: PLR0913
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
 
-    # fzf needs a real TTY for interactive UI but stdout must be captured.
-    # Redirect fzf output to a temp file; run with pty=True so the UI renders.
-    _, out_file = tempfile.mkstemp()
-    out_path = Path(out_file)
-    try:
-        kwargs.setdefault("hide", False)
-        run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)  # type: ignore[arg-type]
-        result = out_path.read_text().strip()
-    finally:
-        out_path.unlink(missing_ok=True)
+    use_pty = kwargs.pop("pty", False)  # type: ignore[assignment]
+    kwargs.setdefault("hide", False)
+    if use_pty:
+        # fzf needs a real TTY for interactive UI but stdout must be captured.
+        # Redirect fzf output to a temp file; run with pty=True so the UI renders.
+        _, out_file = tempfile.mkstemp()
+        out_path = Path(out_file)
+        try:
+            run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)  # type: ignore[arg-type]
+            result = out_path.read_text().strip()
+        finally:
+            out_path.unlink(missing_ok=True)
+    elif multi:
+        result = "\n".join(run_lines(c, *pieces, *fzf_pieces, **kwargs))  # type: ignore[arg-type]
+    else:
+        result = run_stdout(c, *pieces, *fzf_pieces, **kwargs)  # type: ignore[arg-type]
 
     if multi:
         return [line for line in result.splitlines() if line]

@@ -171,6 +171,7 @@ def exclude(c: Context, file: list[str]) -> None:
         query=query,
         header="Select file(s) to exclude (TAB for multiple)",
         multi=True,
+        pty=True,
         dry=False,
     )
     entries = chosen if isinstance(chosen, list) else ([chosen] if chosen else [])
@@ -199,6 +200,7 @@ def reinclude(c: Context, file: list[str]) -> None:
         query=query,
         header="Select file(s) to reinclude (TAB to select multiple)",
         multi=True,
+        pty=True,
         dry=False,
     )
     if not chosen:
