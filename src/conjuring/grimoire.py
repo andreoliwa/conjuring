@@ -15,7 +15,7 @@ from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from shutil import which
-from typing import TYPE_CHECKING, Literal, NoReturn, overload
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 import typer
 from invoke import Collection, Context, Exit, Result, Task
@@ -44,7 +44,7 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool | None) -> Result:
+def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any) -> Result:  # noqa: ANN401
     """Build command from pieces, ignoring empty strings."""
     if dry is not None:
         kwargs.setdefault("dry", dry)
@@ -53,24 +53,24 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str
     return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: str | bool | None) -> str:
+def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any) -> str:  # noqa: ANN401
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
     kwargs["warn"] = True
     if dry is not None:
         kwargs.setdefault("dry", dry)
-    result = run_command(c, *pieces, **kwargs)  # type: ignore[arg-type]
+    result = run_command(c, *pieces, **kwargs)
     if result.failed:
         print_error(result.command, f"\n{result}")
         return ""
-    return result.stdout.strip()  # type: ignore[arg-type]
+    return str(result.stdout).strip()
 
 
-def run_lines(c: Context, *pieces: str, **kwargs: str | bool | None) -> list[str]:
+def run_lines(c: Context, *pieces: str, **kwargs: Any) -> list[str]:  # noqa: ANN401
     """Run a (hidden) command and return the result as lines."""
     kwargs.setdefault("dry", None)
-    return run_stdout(c, *pieces, **kwargs).splitlines()  # type: ignore[arg-type]
+    return run_stdout(c, *pieces, **kwargs).splitlines()
 
 
 def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
@@ -155,7 +155,7 @@ def run_with_fzf(
     preview: str = ...,
     unicode: bool = ...,
     info: str = ...,
-    **kwargs: str | bool,
+    **kwargs: Any,  # noqa: ANN401
 ) -> list[str]: ...
 
 
@@ -170,7 +170,7 @@ def run_with_fzf(
     preview: str = ...,
     unicode: bool = ...,
     info: str = ...,
-    **kwargs: str | bool,
+    **kwargs: Any,  # noqa: ANN401
 ) -> str: ...
 
 
@@ -185,7 +185,7 @@ def run_with_fzf(
     preview: str = ...,
     unicode: bool = ...,
     info: str = ...,
-    **kwargs: str | bool,
+    **kwargs: Any,  # noqa: ANN401
 ) -> str | list[str]: ...
 
 
@@ -199,7 +199,7 @@ def run_with_fzf(  # noqa: PLR0913
     preview: str = "",
     unicode: bool = False,
     info: str = "default",
-    **kwargs: str | bool,
+    **kwargs: Any,
 ) -> str | list[str]:
     """Run a command with fzf and return the chosen entry (or list of entries when multi=True).
 
@@ -229,7 +229,7 @@ def run_with_fzf(  # noqa: PLR0913
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
 
-    use_pty = kwargs.pop("pty", False)  # type: ignore[assignment]
+    use_pty = kwargs.pop("pty", False)
     kwargs.setdefault("hide", False)
     if use_pty:
         # fzf needs a real TTY for interactive UI but stdout must be captured.
@@ -237,14 +237,14 @@ def run_with_fzf(  # noqa: PLR0913
         _, out_file = tempfile.mkstemp()
         out_path = Path(out_file)
         try:
-            run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)  # type: ignore[arg-type]
+            run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)
             result = out_path.read_text().strip()
         finally:
             out_path.unlink(missing_ok=True)
     elif multi:
-        result = "\n".join(run_lines(c, *pieces, *fzf_pieces, **kwargs))  # type: ignore[arg-type]
+        result = "\n".join(run_lines(c, *pieces, *fzf_pieces, **kwargs))
     else:
-        result = run_stdout(c, *pieces, *fzf_pieces, **kwargs)  # type: ignore[arg-type]
+        result = run_stdout(c, *pieces, *fzf_pieces, **kwargs)
 
     if multi:
         return [line for line in result.splitlines() if line]
