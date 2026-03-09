@@ -67,7 +67,7 @@ class Poetry:
     @staticmethod
     def parse_python_version(venv: str) -> str:
         """For now, assuming we only have Poetry venvs."""
-        return venv.split(" ")[0].split("-py")[1]
+        return venv.split(" ", maxsplit=1)[0].split("-py")[1]
 
     def remove_venv(self, python_version: str) -> Result:
         """Remove a Poetry venv."""
