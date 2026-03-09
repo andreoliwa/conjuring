@@ -10,6 +10,8 @@ AWS_CONFIG = Path("~/.aws/config").expanduser()
 CODE_DIR = Path("~/Code").expanduser()
 CONJURING_INIT = "conjuring_init"
 CONJURING_SPELLS_DIR = Path(__file__).parent / "spells"
+# conjuring.toml is placed at the project root; all conjuring-specific config lives here
+CONJURING_TOML = "conjuring.toml"
 DESKTOP_DIR = Path("~/Desktop").expanduser()
 DEV_DIR = Path.home() / "dev"
 DEV_ME_DIR = DEV_DIR / "me"
