@@ -5,7 +5,6 @@ from string import Template
 from tempfile import NamedTemporaryFile
 
 from invoke import Context, task
-from my_den.utils import WOLT_DIR
 
 from conjuring.constants import CODE_DIR, DEV_DIR
 from conjuring.grimoire import print_success, print_warning, run_command, run_lines, run_with_fzf
@@ -22,8 +21,11 @@ def print_hostname(c: Context) -> str:
     return host
 
 
-@task
-def backup(c: Context) -> None:
+@task(
+    help={"repo_root": "Optional root directory of the repositories to backup. Can be used multiple times."},
+    iterable=["repo_root"],
+)
+def backup(c: Context, repo_root: list[str]) -> None:
     """Backup files with Duplicity."""
     host = print_hostname(c)
     backup_dir = f"file://{BACKUP_DIR}/{host}/duplicity/"
@@ -33,7 +35,8 @@ def backup(c: Context) -> None:
 
     print_success("Scanning repos:")
     files_to_append = []
-    for line in run_lines(c, f"fd -u -t d --max-depth 2 {DOT_GIT}$ {DEV_DIR} {CODE_DIR} {WOLT_DIR}"):
+    joined_repo_roots = " ".join([str(one_root) for one_root in repo_root])
+    for line in run_lines(c, f"fd -u -t d --max-depth 2 {DOT_GIT}$ {DEV_DIR} {CODE_DIR} {joined_repo_roots}"):
         repo = Path(line).parent
         if not is_valid_git_repository(repo):
             continue
