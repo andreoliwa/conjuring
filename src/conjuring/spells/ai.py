@@ -9,7 +9,7 @@ from pathlib import Path
 import typer
 from invoke import Context, task
 
-from conjuring.grimoire import ask_user_prompt, print_error, print_success, print_warning, run_command, run_stdout
+from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout
 from conjuring.spells.git import Git
 
 SHOULD_PREFIX = True
@@ -70,13 +70,6 @@ def iteration(c: Context) -> None:
         print_error("There are no changes to commit")
         sys.exit(1)
 
-    print(status)
-    # Ask for commit message
-    commit_message = ask_user_prompt("Commit message:")
-    if not commit_message.strip():
-        print_error("Commit message cannot be empty")
-        sys.exit(1)
-
     # Determine the base branch via git-extras config, falling back to master
     base_branch = git.default_branch() or "master"
 
@@ -91,21 +84,31 @@ def iteration(c: Context) -> None:
             break
 
     next_number = last_number + 1
+    prefix = f"chore(ai): #{next_number} "
 
     # Stage all changes
     run_command(c, "git add --all")
 
-    # Attempt commit
-    full_message = f"chore(ai): #{next_number} {commit_message}"
-    result = c.run(f'git commit -m "{full_message}"', warn=True)
+    # Let git open the editor pre-populated with the prefix; it appends the
+    # "# Changes to be committed" block and strips comment lines on save.
+    # Non-zero exit = user aborted the editor OR pre-commit hooks failed.
+    # pty=True is required for the interactive editor; we capture stderr separately.
+    result = c.run(f'git commit --edit -m "{prefix}"', warn=True, pty=True)
 
     if result.failed:
-        # Pre-commit hooks failed — ask user whether to commit anyway
+        # Distinguish "user aborted editor" from "pre-commit hooks rejected commit".
+        # Git prints "Aborting commit" when the editor is quit without saving.
+        combined = (result.stdout or "") + (result.stderr or "")
+        if "Aborting commit" in combined:
+            print_warning("Commit aborted.")
+            return
+        # Pre-commit hooks fired and rejected the commit
         try:
             typer.confirm("The commit has failed due to pre-commit hooks. Commit anyway?", default=True, abort=True)
         except typer.Abort:
             print_warning("Commit aborted.")
             return
-        run_command(c, f'git commit --no-verify -m "{full_message}"')
+        run_command(c, f'git commit --no-verify --edit -m "{prefix}"', pty=True)
 
-    print_success(f"Committed: {full_message}")
+    print_success(f"Iteration #{next_number} committed!")
+    c.run("git log -1")
