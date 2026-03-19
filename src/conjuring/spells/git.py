@@ -39,6 +39,8 @@ from conjuring.grimoire import (
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 # keep-sorted start
+DEFAULT_BRANCHES = ("master", "main")
+DEFAULT_BRANCH_FALLBACK = "master"
 DOT_GIT = ".git"
 GIT_EXCLUDE_FILE = ".git/info/exclude"
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
@@ -76,6 +78,16 @@ class Git:
     def default_branch(self) -> str:
         """Return the default branch nam as configured in git-extras.default-branch, if available."""
         return run_stdout(self.context, Git.READ_DEFAULT_BRANCH, warn=True, dry=False)
+
+    def resolve_base_ref(self) -> str:
+        """Resolve the base branch ref, preferring local, falling back to origin/."""
+        base_branch = self.default_branch() or DEFAULT_BRANCH_FALLBACK
+        if run_command(self.context, f"git rev-parse --verify {base_branch}", hide=True, warn=True).ok:
+            return base_branch
+        if run_command(self.context, f"git rev-parse --verify origin/{base_branch}", hide=True, warn=True).ok:
+            return f"origin/{base_branch}"
+        msg = f"Base branch '{base_branch}' not found locally or on origin"
+        raise RuntimeError(msg)
 
     def checkout(self, *branches: str) -> str:
         """Try checking out the specified branches in order."""

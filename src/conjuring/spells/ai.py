@@ -10,7 +10,7 @@ import typer
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout
-from conjuring.spells.git import Git
+from conjuring.spells.git import DEFAULT_BRANCHES, Git
 
 SHOULD_PREFIX = True
 
@@ -55,12 +55,12 @@ def claude_patch(c: Context) -> None:
 
 
 @task
-def iteration(c: Context) -> None:
-    """Commit all changes as a numbered AI iteration (e.g. chore(ai): #3 <message>)."""
+def iteration(c: Context, message: str = "", push: bool = False) -> None:
+    """Commit all changes as a numbered AI iteration (e.g. chore(ai): 3. <message>)."""
     # Guard: must not be on master or main
     git = Git(c)
     current_branch = git.current_branch()
-    if current_branch in ("master", "main"):
+    if current_branch in DEFAULT_BRANCHES:
         print_error("You should create a branch to use inv ai.iteration")
         sys.exit(1)
 
@@ -70,30 +70,33 @@ def iteration(c: Context) -> None:
         print_error("There are no changes to commit")
         sys.exit(1)
 
-    # Determine the base branch via git-extras config, falling back to master
-    base_branch = git.default_branch() or "master"
+    try:
+        base_branch = git.resolve_base_ref()
+    except RuntimeError as exc:
+        print_error(str(exc))
+        sys.exit(1)
 
-    # Find the last "chore(ai): #<number>" commit on this branch
-    log_lines = run_stdout(c, f"git log ...{base_branch} --oneline --no-merges").splitlines()
+    # Find the highest "chore(ai): <number>" across all branch commits.
+    # Use two-dot range (base..HEAD) to only get commits on *this* branch,
+    # excluding commits merged/rebased from the base branch.
+    log_lines = run_stdout(c, f"git log {base_branch}..HEAD --oneline --no-merges").splitlines()
     last_number = 0
-    pattern = re.compile(r"chore\(ai\):\s+#(\d+)")
+    pattern = re.compile(r"chore\(ai\):\s+(\d+)")
     for line in log_lines:
         match = pattern.search(line)
         if match:
-            last_number = int(match.group(1))
-            break
+            last_number = max(last_number, int(match.group(1)))
 
     next_number = last_number + 1
-    prefix = f"chore(ai): #{next_number} "
+    commit_msg = f"chore(ai): {next_number}. {message}" if message else f"chore(ai): {next_number}. "
 
     # Stage all changes
     run_command(c, "git add --all")
 
-    # Let git open the editor pre-populated with the prefix; it appends the
-    # "# Changes to be committed" block and strips comment lines on save.
-    # Non-zero exit = user aborted the editor OR pre-commit hooks failed.
-    # pty=True is required for the interactive editor; we capture stderr separately.
-    result = c.run(f'git commit --edit -m "{prefix}"', warn=True, pty=True)
+    # Open editor when no message is provided, so the user can describe the iteration.
+    # When a message is given, commit directly without the editor.
+    edit_flag = "" if message else "--edit"
+    result = c.run(f'git commit {edit_flag} -m "{commit_msg}"', warn=True, pty=True)
 
     if result.failed:
         # Distinguish "user aborted editor" from "pre-commit hooks rejected commit".
@@ -108,7 +111,10 @@ def iteration(c: Context) -> None:
         except typer.Abort:
             print_warning("Commit aborted.")
             return
-        run_command(c, f'git commit --no-verify --edit -m "{prefix}"', pty=True)
+        run_command(c, f'git commit --no-verify {edit_flag} -m "{commit_msg}"', pty=True)
 
     print_success(f"Iteration #{next_number} committed!")
     c.run("git log -1")
+
+    if push:
+        run_command(c, "git push")

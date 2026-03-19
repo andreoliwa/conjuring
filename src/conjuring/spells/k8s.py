@@ -9,6 +9,7 @@ from typing import cast
 from invoke import Context, Result, task
 
 from conjuring.grimoire import run_command, run_lines, run_with_fzf
+from conjuring.spells.git import Git
 
 SHOULD_PREFIX = True
 
@@ -59,11 +60,11 @@ class Kubectl:
 
 @task()
 def validate_score(c: Context) -> None:
-    """Validate and score files that were changed from the master branch."""
-    # TODO: handle branches named "main"
+    """Validate and score files that were changed from the base branch."""
+    base_ref = Git(c).resolve_base_ref()
     # Continue even if there are errors
-    c.run("git diff master.. --name-only | xargs kubeval", warn=True)
-    c.run("git diff master.. --name-only | xargs kubectl score")
+    c.run(f"git diff {base_ref}.. --name-only | xargs kubeval", warn=True)
+    c.run(f"git diff {base_ref}.. --name-only | xargs kubectl score")
 
 
 @task(help={"rg": "Filter results with rg"})
