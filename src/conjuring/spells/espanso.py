@@ -6,11 +6,12 @@ from pathlib import Path
 
 from invoke import Context, task
 
-from conjuring.grimoire import ask_yes_no, print_error, print_normal, print_success, print_warning
+from conjuring.grimoire import ask_yes_no, print_error, print_normal, print_success, print_warning, run_command
 
 SHOULD_PREFIX = True
 
 ESPANSO_MATCH_DIR = Path.home() / "Library/Application Support/espanso/match"
+ESPANSO_PLIST = Path.home() / "Library/LaunchAgents/com.federicoterzi.espanso.plist"
 
 
 def extract_macos_replacements() -> list[tuple[str, str]]:
@@ -146,6 +147,43 @@ def write_imported_yml(match_dir: Path, new_replacements: list[tuple[str, str]])
     with imported_file.open("w") as f:
         f.write("# Imported from macOS text replacements\n\n")
         yaml.dump({"matches": all_matches}, f)
+
+
+@task
+def fix(c: Context) -> None:
+    """Fix espanso service when it won't start (launchctl exit code 3).
+
+    First tries ``espanso restart``. If that fails, falls back to the nuclear option: remove the
+    stale launchd plist, re-register the service, kill zombie processes, and start fresh. This
+    recovers from a stale launchd registration where the plist is loaded but the espanso process
+    is dead — a state that neither ``launchctl unload`` nor ``launchctl bootout`` can fix.
+    """
+    print_normal("Trying espanso restart...")
+    result = run_command(c, "espanso restart", warn=True)
+    if result.ok:
+        print_success("Espanso restarted successfully")
+        return
+
+    print_warning("Restart failed, applying nuclear fix...")
+
+    if not ESPANSO_PLIST.exists():
+        print_warning(f"Espanso plist not found: {ESPANSO_PLIST}")
+        print_normal("Try: espanso service register")
+        return
+
+    print_normal(f"Removing stale plist: {ESPANSO_PLIST}")
+    ESPANSO_PLIST.unlink()
+
+    print_normal("Re-registering espanso service...")
+    run_command(c, "espanso service register")
+
+    print_normal("Killing any leftover espanso processes...")
+    run_command(c, "pkill -9 espanso", warn=True)
+
+    print_normal("Starting espanso service...")
+    run_command(c, "espanso service start")
+
+    print_success("Espanso service fixed and started")
 
 
 @task(name="import")
