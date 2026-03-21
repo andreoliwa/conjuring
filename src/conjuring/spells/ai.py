@@ -10,9 +10,27 @@ import typer
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout
-from conjuring.spells.git import DEFAULT_BRANCHES, Git
+from conjuring.spells.git import Git
 
 SHOULD_PREFIX = True
+
+CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
+
+
+def _ai_log_lines(c: Context, base_branch: str) -> list[str]:
+    """Return commit log lines for the current branch since base_branch."""
+    return run_stdout(c, f"git log {base_branch}..HEAD --oneline --no-merges").splitlines()
+
+
+def _count_ai_iterations(log_lines: list[str]) -> int:
+    """Return the highest chore(ai) iteration number found in log lines."""
+    last_number = 0
+    for line in log_lines:
+        match = CHORE_AI_PATTERN.search(line)
+        if match:
+            last_number = max(last_number, int(match.group(1)))
+    return last_number
+
 
 OLD_STRING = (
     "    # Find all hookify.*.local.md files\n"
@@ -57,37 +75,18 @@ def claude_patch(c: Context) -> None:
 @task
 def iteration(c: Context, message: str = "", push: bool = False) -> None:
     """Commit all changes as a numbered AI iteration (e.g. chore(ai): 3. <message>)."""
-    # Guard: must not be on master or main
     git = Git(c)
-    current_branch = git.current_branch()
-    if current_branch in DEFAULT_BRANCHES:
-        print_error("You should create a branch to use inv ai.iteration")
-        sys.exit(1)
+    git.guard_not_default_branch()
 
     # Guard: must have changes to commit
     status = run_stdout(c, "git status --porcelain")
     if not status:
         print_error("There are no changes to commit")
-        sys.exit(1)
+        raise SystemExit(1)
 
-    try:
-        base_branch = git.resolve_base_ref()
-    except RuntimeError as exc:
-        print_error(str(exc))
-        sys.exit(1)
-
-    # Find the highest "chore(ai): <number>" across all branch commits.
-    # Use two-dot range (base..HEAD) to only get commits on *this* branch,
-    # excluding commits merged/rebased from the base branch.
-    log_lines = run_stdout(c, f"git log {base_branch}..HEAD --oneline --no-merges").splitlines()
-    last_number = 0
-    pattern = re.compile(r"chore\(ai\):\s+(\d+)")
-    for line in log_lines:
-        match = pattern.search(line)
-        if match:
-            last_number = max(last_number, int(match.group(1)))
-
-    next_number = last_number + 1
+    base_branch = git.resolve_base_ref(exit_on_failure=True)
+    log_lines = _ai_log_lines(c, base_branch)
+    next_number = _count_ai_iterations(log_lines) + 1
     commit_msg = f"chore(ai): {next_number}. {message}" if message else f"chore(ai): {next_number}. "
 
     # Stage all changes
@@ -111,6 +110,7 @@ def iteration(c: Context, message: str = "", push: bool = False) -> None:
         except typer.Abort:
             print_warning("Commit aborted.")
             return
+        run_command(c, "git add --all")
         run_command(c, f'git commit --no-verify {edit_flag} -m "{commit_msg}"', pty=True)
 
     print_success(f"Iteration #{next_number} committed!")
@@ -118,3 +118,37 @@ def iteration(c: Context, message: str = "", push: bool = False) -> None:
 
     if push:
         run_command(c, "git push")
+
+
+@task
+def soft_reset(c: Context) -> None:
+    """Undo all chore(ai) commits on the current branch with git reset --soft (no code is erased)."""
+    git = Git(c)
+    git.guard_not_default_branch()
+
+    base_branch = git.resolve_base_ref(exit_on_failure=True)
+    log_lines = _ai_log_lines(c, base_branch)
+
+    ai_commits = [line for line in log_lines if CHORE_AI_PATTERN.search(line)]
+    number = len(ai_commits)
+    if not number:
+        print_error("No chore(ai) commits found on this branch")
+        raise SystemExit(1)
+
+    c.run(f"git log -{number}")
+
+    try:
+        typer.confirm(
+            f"\nThis will undo {number} commit(s). No code will be erased, only the commits. Are you sure?",
+            abort=True,
+        )
+    except typer.Abort:
+        print_warning("Soft reset aborted.")
+        return
+
+    # Find the hash of the oldest chore(ai) commit, then reset to its parent.
+    # This is robust against interleaved merge/non-AI commits: instead of counting
+    # HEAD~N (which would include unrelated commits), we pinpoint the exact commit.
+    oldest_ai_hash = ai_commits[-1].split()[0]
+    run_command(c, f"git reset --soft {oldest_ai_hash}~1")
+    print_success(f"Soft reset done: {number} commit(s) undone, all changes are staged.")

@@ -79,15 +79,31 @@ class Git:
         """Return the default branch nam as configured in git-extras.default-branch, if available."""
         return run_stdout(self.context, Git.READ_DEFAULT_BRANCH, warn=True, dry=False)
 
-    def resolve_base_ref(self) -> str:
-        """Resolve the base branch ref, preferring local, falling back to origin/."""
+    def resolve_base_ref(self, *, exit_on_failure: bool = False) -> str:
+        """Resolve the base branch ref, preferring local, falling back to origin/.
+
+        Args:
+            exit_on_failure: If True, print the error and call sys.exit(1) instead of raising.
+
+        """
         base_branch = self.default_branch() or DEFAULT_BRANCH_FALLBACK
         if run_command(self.context, f"git rev-parse --verify {base_branch}", hide=True, warn=True).ok:
             return base_branch
         if run_command(self.context, f"git rev-parse --verify origin/{base_branch}", hide=True, warn=True).ok:
             return f"origin/{base_branch}"
         msg = f"Base branch '{base_branch}' not found locally or on origin"
+        if exit_on_failure:
+            print_error(msg)
+            raise SystemExit(1)
         raise RuntimeError(msg)
+
+    def guard_not_default_branch(self) -> str:
+        """Exit with an error if on a default branch. Returns the current branch name."""
+        current_branch = self.current_branch()
+        if current_branch in DEFAULT_BRANCHES:
+            print_error("You should create a branch to use this command")
+            raise SystemExit(1)
+        return current_branch
 
     def checkout(self, *branches: str) -> str:
         """Try checking out the specified branches in order."""
