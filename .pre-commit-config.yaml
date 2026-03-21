@@ -4,11 +4,11 @@
 
 # https://pre-commit.com/#top_level-default_language_version
 default_language_version:
-  python: python3.11
+  python: python3.13
 
 repos:
   - repo: https://github.com/andreoliwa/nitpick
-    rev: v0.38.0
+    rev: v0.38.1
     hooks:
       - id: nitpick-suggest
       - id: nitpick
@@ -19,7 +19,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/google/keep-sorted
-    rev: v0.7.1
+    rev: v0.8.0
     hooks:
       - id: keep-sorted
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -34,11 +34,11 @@ repos:
         stages:
           - pre-commit
   - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
-    rev: v0.45.0
+    rev: v0.48.0
     hooks:
       - id: markdownlint-fix
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.12.0
+    rev: 26.3.1
     hooks:
       - id: black
         args: [--safe, --quiet]
@@ -69,7 +69,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.9.1
+    rev: v4.13.9
     hooks:
       - id: commitizen
         stages: [commit-msg]
