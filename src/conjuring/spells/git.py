@@ -395,7 +395,8 @@ def rewrite(c: Context, commit: str = "--root", gpg: bool = True, author: bool =
 @task
 def tidy_up(c: Context) -> None:
     """Prune remotes, update all branches of the repo, delete merged/squashed branches."""
-    c.run("gitup .")
+    c.run("git pull --no-tags", warn=True)
+
     c.run("git delete-merged-branches")
 
     # warn=True is needed; apparently, this command fails when there is no branch, and execution is stopped
@@ -408,23 +409,25 @@ def tidy_up(c: Context) -> None:
 @task(
     help={
         "remote": "List remote branches (default: False)",
-        "update": "Update the repo before merging (default: True)",
-        "push": "Push the merge to the remote (default: True)",
+        "pull": "Pull the current branch before merging (default: False); by default only fetches the default branch",
+        "push": "Push after merging (default: True)",
         "rebase": "Rebase the default branch before merging (default: False)",
     },
 )
 def merge_default(
     c: Context,
     remote: bool = False,
-    update: bool = True,
+    pull: bool = False,
     push: bool = True,
     rebase: bool = False,
 ) -> None:
-    """Merge the default branch of the repo. Also set it with "git config", if not already set."""
+    """Fetch the default branch and merge it into the current branch, then push to trigger CI."""
     default_branch = set_default_branch(c, remote)
 
-    if update:
-        c.run("git pull")
+    if pull:
+        c.run("git pull --no-tags")
+    else:
+        c.run(f"git fetch --no-tags origin {default_branch}")
     which_verb = "rebase" if rebase else "merge"
     run_command(c, f"git {which_verb}", f"origin/{default_branch}")
     if push:
