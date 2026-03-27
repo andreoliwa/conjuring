@@ -199,6 +199,7 @@ def run_with_fzf(  # noqa: PLR0913
     preview: str = "",
     unicode: bool = False,
     info: str = "default",
+    select_one: bool = True,
     **kwargs: Any,
 ) -> str | list[str]:
     """Run a command with fzf and return the chosen entry (or list of entries when multi=True).
@@ -213,11 +214,13 @@ def run_with_fzf(  # noqa: PLR0913
         preview: Preview command
         unicode: Enable Unicode support (default: False, uses --no-unicode)
         info: Info line style (default|right|hidden|inline[-right]) (default: "default")
+        select_one: Enable --select-1 (auto-selection when only one item matches)
         **kwargs: Additional arguments passed to run command
 
     """
     unicode_flag = "" if unicode else "--no-unicode"
-    fzf_pieces = [f"| fzf --reverse --select-1 --height=~40% --cycle {unicode_flag} --no-separator --info={info}"]
+    select_1 = "--select-1" if select_one else ""
+    fzf_pieces = [f"| fzf --reverse {select_1} --height=~40% --cycle {unicode_flag} --no-separator --info={info}"]
     if query:
         fzf_pieces.append(f"-q '{query}'")
     if header:
