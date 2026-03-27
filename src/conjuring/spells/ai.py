@@ -3,23 +3,59 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from pathlib import Path
 
 import typer
 from invoke import Context, task
 
-from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout
+from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout, run_with_fzf
 from conjuring.spells.git import Git
 
 SHOULD_PREFIX = True
 
 CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
+CO_AUTHORED_BY_CLAUDE_PATTERN = re.compile(r"co-authored-by:\s+claude", re.IGNORECASE)
+_LOG_RECORD_SEP = "|||END|||"
+_LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
+
+
+class _CommitInfo:
+    """Parsed commit info: hash, subject, and whether it's co-authored by Claude."""
+
+    def __init__(self, hash_: str, subject: str, body: str) -> None:
+        self.hash_ = hash_
+        self.subject = subject
+        self.body = body
+        self.is_claude = bool(CO_AUTHORED_BY_CLAUDE_PATTERN.search(body))
+
+    @property
+    def oneline(self) -> str:
+        return f"{self.hash_} {self.subject}"
+
+
+def _ai_log_commits(c: Context, base_branch: str) -> list[_CommitInfo]:
+    """Return parsed commit info for the current branch since base_branch."""
+    raw = run_stdout(c, f"git log {base_branch}..HEAD --no-merges --format='{_LOG_FORMAT}'")
+    commits = []
+    for raw_record in raw.split(_LOG_RECORD_SEP):
+        record = raw_record.strip()
+        if not record:
+            continue
+        # Each record is: hash|subject|body  (body may be empty)
+        parts = record.split("|", 2)
+        hash_ = parts[0] if parts else ""
+        subject = parts[1] if len(parts) > 1 else ""
+        body = parts[2] if len(parts) > 2 else ""  # noqa: PLR2004
+        if hash_:
+            commits.append(_CommitInfo(hash_, subject, body))
+    return commits
 
 
 def _ai_log_lines(c: Context, base_branch: str) -> list[str]:
-    """Return commit log lines for the current branch since base_branch."""
-    return run_stdout(c, f"git log {base_branch}..HEAD --oneline --no-merges").splitlines()
+    """Return commit log lines (hash + subject) for the current branch since base_branch."""
+    return [commit.oneline for commit in _ai_log_commits(c, base_branch)]
 
 
 def _count_ai_iterations(log_lines: list[str]) -> int:
@@ -122,33 +158,46 @@ def iteration(c: Context, message: str = "", push: bool = False) -> None:
 
 @task
 def soft_reset(c: Context) -> None:
-    """Undo all chore(ai) commits on the current branch with git reset --soft (no code is erased)."""
+    """Undo all chore(ai) or Claude co-authored commits on the current branch with git reset --soft."""
     git = Git(c)
     git.guard_not_default_branch()
 
     base_branch = git.resolve_base_ref(exit_on_failure=True)
-    log_lines = _ai_log_lines(c, base_branch)
+    all_commits = _ai_log_commits(c, base_branch)
 
-    ai_commits = [line for line in log_lines if CHORE_AI_PATTERN.search(line)]
-    number = len(ai_commits)
-    if not number:
-        print_error("No chore(ai) commits found on this branch")
+    ai_commits = [commit for commit in all_commits if CHORE_AI_PATTERN.search(commit.subject) or commit.is_claude]
+    if not ai_commits:
+        print_error("No chore(ai) or Claude co-authored commits found on this branch")
         raise SystemExit(1)
 
-    c.run(f"git log -{number}")
-
-    try:
-        typer.confirm(
-            f"\nThis will undo {number} commit(s). No code will be erased, only the commits. Are you sure?",
-            abort=True,
-        )
-    except typer.Abort:
+    # Format: "hash\tsubject" — hash is hidden via --with-nth but used in preview and recovered after selection
+    lines = "\n".join(f"{commit.hash_}\t{commit.subject}" for commit in ai_commits)
+    chosen = run_with_fzf(
+        c,
+        f"printf {shlex.quote(lines)}",
+        header="Select the oldest commit to reset back to — it and all newer commits will be undone",
+        preview="git show --stat --color {1}",
+        options="--with-nth=2.. --delimiter='\t'",
+        select_one=False,
+    )
+    if not chosen:
         print_warning("Soft reset aborted.")
         return
 
-    # Find the hash of the oldest chore(ai) commit, then reset to its parent.
-    # This is robust against interleaved merge/non-AI commits: instead of counting
-    # HEAD~N (which would include unrelated commits), we pinpoint the exact commit.
-    oldest_ai_hash = ai_commits[-1].split()[0]
-    run_command(c, f"git reset --soft {oldest_ai_hash}~1")
+    chosen_hash = chosen.split("\t")[0]
+
+    # ai_commits is newest-first; reset_commits = chosen commit + all newer ones above it
+    chosen_idx = next(i for i, commit in enumerate(ai_commits) if commit.hash_ == chosen_hash)
+    reset_commits = ai_commits[: chosen_idx + 1]
+    number = len(reset_commits)
+
+    run_command(c, f"git reset --soft {chosen_hash}~1")
     print_success(f"Soft reset done: {number} commit(s) undone, all changes are staged.")
+
+    print("\nCommits undone:")
+    for commit in reset_commits:
+        full_message = commit.subject
+        body = commit.body.strip()
+        if body:
+            full_message += "\n" + "\n".join(f"  {line}" for line in body.splitlines())
+        print(f"- {full_message}")
