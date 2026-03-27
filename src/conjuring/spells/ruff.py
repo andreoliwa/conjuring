@@ -14,6 +14,7 @@ from tomlkit.exceptions import NonExistentKey
 
 from conjuring.constants import PYPROJECT_TOML
 from conjuring.grimoire import print_normal, print_success, print_warning, run_lines
+from conjuring.spells.git import GIT_REMOTE
 from conjuring.visibility import ShouldDisplayTasks, has_pyproject_toml
 
 SHOULD_PREFIX = True
@@ -91,7 +92,7 @@ def reminder(c: Context, delete: bool = False) -> None:
     """Remind you of ignored warning that should be fixed on the files you changed on your branch."""
     files = run_lines(
         c,
-        "( git whatchanged --name-only --pretty='' origin..HEAD; git status --porcelain | cut -b 4- ) | sort -u",
+        f"( git whatchanged --name-only --pretty='' {GIT_REMOTE}..HEAD; git status --porcelain | cut -b 4- ) | sort -u",
     )
     if not files:
         print_normal("No files changed on your branch.")

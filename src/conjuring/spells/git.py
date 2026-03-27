@@ -43,6 +43,7 @@ DEFAULT_BRANCHES = ("master", "main")
 DEFAULT_BRANCH_FALLBACK = "master"
 DOT_GIT = ".git"
 GIT_EXCLUDE_FILE = ".git/info/exclude"
+GIT_REMOTE = "origin"
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 GLOBAL_GITIGNORE = "~/.gitignore_global"
 IMPORT_REPOS_TAG_PREFIX = "before-import-repos"
@@ -80,18 +81,23 @@ class Git:
         return run_stdout(self.context, Git.READ_DEFAULT_BRANCH, warn=True, dry=False)
 
     def resolve_base_ref(self, *, exit_on_failure: bool = False) -> str:
-        """Resolve the base branch ref, preferring local, falling back to origin/.
+        """Resolve the base branch ref, preferring the remote tracking branch over local.
+
+        Prefer remote over local because the local branch may be stale (not fetched recently),
+        which would cause git log range queries to include far more commits than expected.
+        Fall back to local only for repos with no remote configured.
 
         Args:
             exit_on_failure: If True, print the error and call sys.exit(1) instead of raising.
 
         """
         base_branch = self.default_branch() or DEFAULT_BRANCH_FALLBACK
+        if run_command(self.context, f"git rev-parse --verify {GIT_REMOTE}/{base_branch}", hide=True, warn=True).ok:
+            return f"{GIT_REMOTE}/{base_branch}"
+        # Fallback for repos with no remote configured
         if run_command(self.context, f"git rev-parse --verify {base_branch}", hide=True, warn=True).ok:
             return base_branch
-        if run_command(self.context, f"git rev-parse --verify origin/{base_branch}", hide=True, warn=True).ok:
-            return f"origin/{base_branch}"
-        msg = f"Base branch '{base_branch}' not found locally or on origin"
+        msg = f"Base branch '{base_branch}' not found locally or on {GIT_REMOTE}"
         if exit_on_failure:
             print_error(msg)
             raise SystemExit(1)
@@ -165,7 +171,7 @@ def update_all(c: Context, group: str = "") -> None:
 
 
 @task
-def switch_url_to(c: Context, remote: str = "origin", https: bool = False) -> None:
+def switch_url_to(c: Context, remote: str = GIT_REMOTE, https: bool = False) -> None:
     """Set an SSH or HTTPS URL for a remote."""
     regex = r"'git@(.+\.com):(.+/.+)\.git\s'" if https else r"'/([^/]+\.com)/([^/]+/.+)\s\('"
     replace = "'$1/$2'" if https else "'$1:$2'"
@@ -273,7 +279,7 @@ def extract_subtree(c: Context, new_project_dir: str, reset: bool = False) -> No
         c.run(f"rm -rf {new_project_path}")
 
     if not new_project_path.exists():
-        origin_url = run_stdout(c, "git remote get-url origin")
+        origin_url = run_stdout(c, f"git remote get-url {GIT_REMOTE}")
         c.run(f"git clone {origin_url} {new_project_path}")
 
     files_and_dirs = set(run_lines(c, Git.SHOW_ALL_FILE_HISTORY, dry=False))
@@ -427,9 +433,9 @@ def merge_default(
     if pull:
         c.run("git pull --no-tags")
     else:
-        c.run(f"git fetch --no-tags origin {default_branch}")
+        c.run(f"git fetch --no-tags {GIT_REMOTE} {default_branch}")
     which_verb = "rebase" if rebase else "merge"
-    run_command(c, f"git {which_verb}", f"origin/{default_branch}")
+    run_command(c, f"git {which_verb}", f"{GIT_REMOTE}/{default_branch}")
     if push:
         force_option = "--force-with-lease" if rebase else ""
         run_command(c, "git push", force_option)
@@ -472,7 +478,7 @@ def changes_since_tag(
         which_tag = tag or run_stdout(c, "git tag --list --sort -creatordate | head -1", hide=False, dry=False)
         default_branch = set_default_branch(c)
         option = "" if verbose else " --name-only"
-        c.run(f"git diff --stat {which_tag} origin/{default_branch}{option}")
+        c.run(f"git diff --stat {which_tag} {GIT_REMOTE}/{default_branch}{option}")
     else:
         which_tag = tag or "$(git describe --tags --abbrev=0)"
         option = " --format='%aN|%s' | sort -u" if by_author else "" if verbose else " --oneline"
