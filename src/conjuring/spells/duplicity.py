@@ -47,7 +47,8 @@ def backup(c: Context, repo_root: list[str]) -> None:
                 abs_path = (repo / relative_path).absolute()
                 end_slash = "/" if abs_path.is_dir() else ""
 
-                keep_file_path = f"{abs_path}{end_slash}"
+                # No trailing slash: duplicity recurses into dirs only without it
+                keep_file_path = str(abs_path)
                 files_to_append.append(keep_file_path)
 
                 print_func = print_warning if end_slash else print
@@ -68,9 +69,11 @@ def backup(c: Context, repo_root: list[str]) -> None:
             "duplicity",
             f"--name='{host}-backup'",
             "-v info",
+            "--dry-run" if c.config.run.dry else "",
             f"--include-filelist={temp_file.name}",
             "--exclude='**' $HOME/",
             backup_dir,
+            dry=False,
         )
 
 
