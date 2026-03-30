@@ -496,6 +496,17 @@ def changes_since_tag(
             c.run(cmd)
 
 
+@task(help={"ref": "Git ref to log from (tag, branch, commit). Default: base branch (e.g. origin/master)"})
+def log_since(c: Context, ref: str = "") -> None:
+    """Display commits since a ref (tag, branch, commit). Defaults to the base branch."""
+    if ref:
+        base_ref = ref
+    else:
+        base_ref = Git(c).resolve_base_ref(exit_on_failure=True)
+        print_success(f"Logs since default branch '{base_ref}'")
+    c.run(f"git log {base_ref}..HEAD --oneline")
+
+
 @task()
 def watch(c: Context) -> None:
     """Watch a build on GitHub Actions, then open a pull request or repo after the build is over."""

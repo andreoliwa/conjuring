@@ -12,7 +12,7 @@ import typer
 from invoke import Context, task
 
 from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout, run_with_fzf
-from conjuring.spells.git import Git
+from conjuring.spells.git import Git, log_since
 
 SHOULD_PREFIX = True
 
@@ -142,7 +142,7 @@ def iteration(c: Context, message: str = "", push: bool = False) -> None:
         run_command(c, f'git commit --no-verify -m "{commit_msg}"', pty=True)
 
     print_success(f"Iteration #{next_number} committed!")
-    c.run(f"git log {base_branch}..HEAD")
+    log_since(c, base_branch)
 
     if push:
         run_command(c, "git push")
