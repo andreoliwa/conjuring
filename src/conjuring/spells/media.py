@@ -6,7 +6,6 @@ import os
 from enum import Enum
 from pathlib import Path
 
-import typer
 from humanize import naturalsize
 from invoke import Context, task
 from tqdm import tqdm
@@ -110,7 +109,7 @@ def cleanup(c: Context, browse: bool = False) -> None:
         copy_dirs.add(Path(line).parent)
 
     for dir_ in sorted(copy_dirs):
-        typer.echo(dir_)
+        print(dir_)
 
 
 @task

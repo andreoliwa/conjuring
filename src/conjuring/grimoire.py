@@ -17,7 +17,6 @@ from shlex import quote
 from shutil import which
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
-import typer
 from invoke import Collection, Context, Exit, Result, Task
 from tqdm import tqdm
 
@@ -82,10 +81,10 @@ def run_multiple(c: Context, *commands: str, **kwargs: str | bool) -> None:
 def print_color(color: Color, *message: str, join_nl: bool = False, dry: bool = False, nl: bool = True) -> None:
     """Print a colored message."""
     if dry:
-        typer.echo(f"{Color.PURPLE.value}[DRY-RUN]{Color.NONE.value} ", nl=False)
+        print(f"{Color.PURPLE.value}[DRY-RUN]{Color.NONE.value} ", end="")
 
     joined_messages = ("\n" if join_nl else " ").join(message)
-    typer.echo(f"{color.value}{joined_messages}{Color.NONE.value}", nl=nl)
+    print(f"{color.value}{joined_messages}{Color.NONE.value}", end="" if not nl else "\n")
 
 
 def print_normal(*message: str, join_nl: bool = False, dry: bool = False) -> None:
@@ -121,7 +120,7 @@ def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys
     prefix = f"Type {options} +" if allowed_keys else "Press"
 
     while True:
-        typer.echo()
+        print()
         print_color(color, *message)
         time.sleep(0.2)
 
@@ -136,11 +135,8 @@ def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys
 
 def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> bool:
     """Ask a yes/no question and exit if the user answers no."""
-    try:
-        typer.confirm(f"{color.value}{' '.join(message)}{Color.NONE.value}", abort=True)
-    except typer.Abort:
-        return False
-    return True
+    answer = input(f"{color.value}{' '.join(message)}{Color.NONE.value} [y/N]: ").strip().lower()
+    return answer in ("y", "yes")
 
 
 # TODO: Use iterfzf or create Fzf class with multi() and single() methods (with different return types

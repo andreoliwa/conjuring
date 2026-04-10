@@ -85,7 +85,7 @@ def init(
 
     output = generate_conjuring_init(CONJURING_INIT_PY_PATH, mode, dir_, spells, force)
     if output:
-        typer.echo(output)
+        print(output)
 
 
 def patch_invoke_yaml(config_file: Path) -> bool:
@@ -160,7 +160,7 @@ def generate_conjuring_init(
 
         # If nothing still chosen with fzf, quit
         if not chosen:
-            raise typer.Abort
+            raise SystemExit(1)
 
         with_stars = sorted(f'    "{spell}*",' for spell in chosen)
         contents = template.substitute(

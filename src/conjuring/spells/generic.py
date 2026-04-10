@@ -7,7 +7,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from shlex import quote
 
-import typer
 from invoke import Context, task
 from more_itertools import always_iterable
 
@@ -117,7 +116,7 @@ def todo(  # noqa: C901,PLR0913,PLR0912
         if short:
             continue
         for loc in locations:  # type: Location
-            typer.echo(f"   {loc.path}:{loc.line} {loc.comment}")
+            print(f"   {loc.path}:{loc.line} {loc.comment}")
 
 
 def _print_todos_as_markdown(all_todos: dict[ToDoItem, list[Location]], short: bool) -> None:

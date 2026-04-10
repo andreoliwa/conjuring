@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
 
-import typer
 from invoke import Context, task
 
 from conjuring.grimoire import run_stdout, run_with_fzf
@@ -78,4 +77,4 @@ def grep(c: Context, search_text: str, config: str = "", echo: bool = False) -> 
             "| rg --color=never 'mr grep: (.+)$' --replace '$1'",
             echo=echo,
         )
-        typer.echo(output_without_linefeed)
+        print(output_without_linefeed)

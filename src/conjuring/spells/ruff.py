@@ -8,7 +8,6 @@ from pathlib import Path
 from textwrap import dedent
 
 import tomlkit
-import typer
 from invoke import Context, task
 from tomlkit.exceptions import NonExistentKey
 
@@ -32,7 +31,7 @@ def config(c: Context, url: bool = False) -> None:
     per_file_ignores: dict[str, set[str]] = defaultdict(set)
     for line in run_lines(c, "pre-commit run --all-files ruff", warn=True):
         if line.startswith("warning:"):
-            typer.echo(line)
+            print(line)
             continue
 
         match = REGEX_RUFF_LINE.match(line)
@@ -56,9 +55,9 @@ def config(c: Context, url: bool = False) -> None:
                 # Ignores to keep
                 # TODO: Ignores to fix
         """
-        typer.echo(dedent(header).strip())
+        print(dedent(header).strip())
         _print_ruff_codes(True, ignore, url)
-        typer.echo("]\n")
+        print("]\n")
 
     if per_file_ignores:
         header = """
@@ -67,24 +66,24 @@ def config(c: Context, url: bool = False) -> None:
             # Ignores to keep
             # TODO: Ignores to fix
         """
-        typer.echo(dedent(header).strip())
+        print(dedent(header).strip())
         _print_ruff_codes(False, ignore, url)
         for file, codes in sorted(per_file_ignores.items()):
             sorted_codes = '", "'.join(sorted(codes))
-            typer.echo(f'"{file}" = ["{sorted_codes}"]')
+            print(f'"{file}" = ["{sorted_codes}"]')
 
 
 def _print_ruff_codes(ignore_section: bool, ignore: dict, url: bool) -> None:
     for _code, messages in sorted(ignore.items()):
         joined_messages = ",".join(sorted(messages))
         if ignore_section:
-            typer.echo(f'    "{_code}", # {joined_messages}', nl=False)
+            print(f'    "{_code}", # {joined_messages}', end="")
         else:
-            typer.echo(f"# {_code} {joined_messages}", nl=False)
+            print(f"# {_code} {joined_messages}", end="")
         if url:
-            typer.echo(f" https://docs.astral.sh/ruff/rules/?q={_code}")
+            print(f" https://docs.astral.sh/ruff/rules/?q={_code}")
         else:
-            typer.echo()
+            print()
 
 
 @task(help={"delete": "Delete the suppressed warnings for the changed files"})

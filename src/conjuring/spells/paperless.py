@@ -10,8 +10,6 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-import requests
-import typer
 from invoke import Context, task
 
 from conjuring.constants import DOT_DS_STORE, DOWNLOADS_DIR
@@ -326,11 +324,11 @@ def _handle_items(  # noqa: PLR0913
     dest_dir = DOWNLOAD_DESTINATION_DIR / title
     for item in collection:
         if not isinstance(item, OrphanFile):
-            typer.echo(str(item))
+            print(str(item))
             continue
 
         if not fix:
-            typer.echo(str(item.source))
+            print(str(item.source))
             continue
 
         if not item.source.exists():
@@ -370,7 +368,7 @@ def _display_documents_with_error_counts(  # noqa: C901
 
     display_count()
     if error_counts:
-        typer.echo("Error breakdown:")
+        print("Error breakdown:")
         for error, count in sorted(error_counts.items()):
             display_error = False
             if error_list:
@@ -384,12 +382,14 @@ def _display_documents_with_error_counts(  # noqa: C901
 
             if show_details and display_error:
                 for doc in docs_by_error[error]:
-                    typer.echo(f"  - {doc}")
+                    print(f"  - {doc}")
 
 
 @task
 def delete_failed_duplicates(c: Context, max_delete: int = 100) -> None:
     """Delete records marked as duplicate but that cannot be downloaded. So the PDF files can be reimported."""
+    import requests
+
     session = requests.Session()
     session.headers.update({"authorization": f"token {paperless_token()}"})
 
