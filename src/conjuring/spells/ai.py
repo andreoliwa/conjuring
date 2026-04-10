@@ -8,22 +8,34 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import typer
 from invoke import Context, task
 
-from conjuring.grimoire import print_error, print_success, print_warning, run_command, run_stdout, run_with_fzf
+from conjuring.grimoire import (
+    ask_yes_no,
+    print_error,
+    print_success,
+    print_warning,
+    run_command,
+    run_stdout,
+    run_with_fzf,
+)
 from conjuring.spells.git import Git, log_since
 
-SHOULD_PREFIX = True
-
+# keep-sorted start
 AI_COMMITS_FILE_PREFIX = "ai-commits-"
 CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
+SHOULD_PREFIX = True
+_DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
+_FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 _LOG_RECORD_SEP = "|||END|||"
+_MISSING = "[bold red]MISSING[/bold red]"
+# keep-sorted end
+
 _LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
 
 
 class _CommitInfo:
-    """Parsed commit info: hash, subject, and whether it's co-authored by Claude."""
+    """Parsed commit info: hash, subject, and body."""
 
     def __init__(self, hash_: str, subject: str, body: str) -> None:
         self.hash_ = hash_
@@ -133,9 +145,7 @@ def iteration(c: Context, message: str = "", push: bool = False) -> None:
 
     if result.failed:
         # Pre-commit hooks fired and rejected the commit
-        try:
-            typer.confirm("The commit has failed due to pre-commit hooks. Commit anyway?", default=True, abort=True)
-        except typer.Abort:
+        if not ask_yes_no("The commit has failed due to pre-commit hooks. Commit anyway?"):
             print_warning("Commit aborted.")
             return
         run_command(c, git_add)
@@ -197,3 +207,87 @@ def soft_reset(c: Context) -> None:
     Path(filename).write_text("\n".join(lines_md))
     print_success(f"Undone commits saved to {filename}")
     c.run(f"cat {filename}")
+
+
+def _plan_columns(all_fm: dict[Path, dict[str, str]], dynamic: bool) -> list[str]:
+    """Return column names for the plans table."""
+    if not dynamic:
+        return ["status", "last_updated"]
+    seen: dict[str, None] = {}
+    for fm in all_fm.values():
+        seen.update(dict.fromkeys(fm))
+    return list(seen)
+
+
+def _parse_all_frontmatter(path: Path) -> dict[str, str]:
+    """Return all key-value pairs from a Markdown file's YAML frontmatter."""
+    text = path.read_text()
+    fm_match = _FRONTMATTER_BLOCK.match(text)
+    if not fm_match:
+        return {}
+    result = {}
+    for line in fm_match.group(1).splitlines():
+        if ":" in line:
+            key, _, value = line.partition(":")
+            result[key.strip()] = value.strip()
+    return result
+
+
+@task(
+    help={
+        "dirs": f"Directories to scan for plan/spec Markdown files (relative to repo root). "
+        f"Default: {', '.join(_DEFAULT_PLAN_DIRS)}",
+        "dynamic": "Discover columns dynamically from all frontmatter keys found "
+        "(default: fixed status + last_updated)",
+        "all_": "Show all plans including completed ones (default: hide status=complete)",
+    },
+    iterable=["dirs"],
+)
+def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False) -> None:
+    """Display plans and specs with their frontmatter status and last_updated date."""
+    _repo_root = Git(c).repo_root()
+    if not _repo_root:
+        print_error("Not inside a Git repository")
+        raise SystemExit(1)
+    repo_root: Path = _repo_root
+
+    search_dirs = [repo_root / d for d in (dirs or _DEFAULT_PLAN_DIRS)]
+
+    md_files = sorted(path for search_dir in search_dirs if search_dir.is_dir() for path in search_dir.rglob("*.md"))
+
+    if not md_files:
+        print_warning("No Markdown files found in: " + ", ".join(str(d) for d in search_dirs))
+        return
+
+    # Parse frontmatter for all files upfront
+    all_fm = {path: _parse_all_frontmatter(path) for path in md_files}
+    columns = _plan_columns(all_fm, dynamic)
+
+    rows: list[tuple[str, list[str]]] = []
+    for path in md_files:
+        fm = all_fm[path]
+        if not all_ and fm.get("status") == "complete":
+            continue
+        rel = path.relative_to(repo_root)
+        rows.append((str(rel), [fm.get(col) or _MISSING for col in columns]))
+
+    if not rows:
+        if not md_files:
+            print_warning("This repo has no AI plans")
+        else:
+            print_success("All AI plans are completed")
+        return
+
+    from rich.console import Console
+    from rich.table import Table
+
+    title = ("All" if all_ else "Incomplete/Missing") + " AI Plans & Specs"
+    table = Table(title=title, show_header=True, header_style="bold magenta")
+    table.add_column("File", style="cyan", no_wrap=False)
+    for col in columns:
+        table.add_column(col.replace("_", " ").title())
+
+    for file_path, row in rows:
+        table.add_row(file_path, *row)
+
+    Console().print(table)
