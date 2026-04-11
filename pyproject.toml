@@ -56,9 +56,6 @@ lint = ["pylint"]
 [project.scripts]
 conjuring = "conjuring.cli:app"
 
-[tool.black]
-line-length = 120
-
 [tool.commitizen]
 # https://commitizen-tools.github.io/commitizen/changelog/#configuration
 changelog_file = "docs/CHANGELOG.md"
@@ -87,6 +84,7 @@ ignore_styles = [
   "py://nitpick/resources/python/39",
   "py://nitpick/resources/python/autoflake",
   "py://nitpick/resources/python/bandit",
+  "py://nitpick/resources/python/black",
   "py://nitpick/resources/python/flake8",
   "py://nitpick/resources/python/github-workflow",
   "py://nitpick/resources/python/ipython",
@@ -111,7 +109,6 @@ style = [
   "py://nitpick/resources/any/prettier",
   "py://nitpick/resources/markdown/markdownlint",
   "py://nitpick/resources/python/absent",
-  "py://nitpick/resources/python/black",
   "py://nitpick/resources/python/mypy",
   "py://nitpick/resources/python/pre-commit-hooks",
   "py://nitpick/resources/python/readthedocs",

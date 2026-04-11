@@ -29,11 +29,13 @@ from conjuring.grimoire import (
     unique_file_name,
 )
 
-SHOULD_PREFIX = True
-
+# keep-sorted start
 AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma", "opus"}
 MAX_COUNT = 1000
 MAX_SIZE = 1_000_000_000  # 1 GB
+SHOULD_PREFIX = True
+VIDEO_EXTENSIONS = {"avi", "mp4", "mkv", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg"}
+# keep-sorted end
 
 
 @task(
@@ -414,6 +416,39 @@ def invidious(c: Context) -> None:
     instances = run_lines(c, "curl -s https://api.invidious.io/instances.json | jq -rs '.[].[][1].uri'")
     filtered = ",".join([i for i in instances if not i.endswith(".onion") and not i.endswith(".i2p")])
     run_command(c, f"echo {filtered} | pbcopy")
+
+
+@task(
+    help={"file": "Video file stem(s) to fix (without extension), supports wildcards"},
+    iterable=["file"],
+)
+def fix_video(c: Context, file: list[str]) -> None:
+    """Fix video files by re-encoding audio to MP3 192k while copying the video stream."""
+    if not file:
+        print_error("Provide at least one --file argument")
+        return
+
+    matched: list[Path] = []
+    for raw_pattern in file:
+        clean = raw_pattern.replace("\\ ", " ").replace("\\", "")
+        for ext in VIDEO_EXTENSIONS:
+            matched.extend(
+                p for p in sorted(Path.cwd().glob(f"{clean}.{ext}")) if p.is_file() and "-FIXED" not in p.stem
+            )
+
+    if not matched:
+        print_error("No matching files found")
+        return
+
+    for old_file in matched:
+        extension = old_file.suffix.lstrip(".")
+        new_file = old_file.with_name(f"{old_file.stem}-FIXED.{extension}")
+        run_command(
+            c,
+            f'ffmpeg -i "{old_file}" -c:v copy -c:a mp3 -b:a 192k',
+            f'-fflags +genpts -avoid_negative_ts make_zero "{new_file}"',
+        )
+        run_command(c, f'touch -r "{old_file}" "{new_file}"')
 
 
 @task

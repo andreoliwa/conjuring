@@ -257,7 +257,8 @@ def a_conditionally_visible_task(c):
 
 Use case:
 
-- you want to group tasks in a module, with a prefix and conditional display of tasks;
+- you want to group tasks in a module, with a prefix and conditional display of
+  tasks;
 - you still want some individual tasks to always be displayed;
 - or you want different conditions to display certain tasks.
 
