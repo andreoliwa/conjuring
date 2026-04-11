@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import shlex
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from invoke import Context, task
@@ -29,6 +29,7 @@ _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "[bold red]MISSING[/bold red]"
+_PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
 # keep-sorted end
 
 _LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
@@ -219,17 +220,28 @@ def _plan_columns(all_fm: dict[Path, dict[str, str]], dynamic: bool) -> list[str
     return list(seen)
 
 
+def _format_phases(phases: list) -> str:
+    """Render a phases list as a compact summary string, e.g. '✓ Phase 1 | … Phase 3'."""
+    parts = []
+    for phase in phases:
+        name = phase.get("name", "?")
+        symbol = _PHASE_STATUS_SYMBOLS.get(phase.get("status", ""), "?")
+        parts.append(f"{symbol} {name}")
+    return "\n".join(parts)
+
+
 def _parse_all_frontmatter(path: Path) -> dict[str, str]:
-    """Return all key-value pairs from a Markdown file's YAML frontmatter."""
+    """Return top-level frontmatter as strings; phases lists are rendered as a compact summary."""
+    from ruamel.yaml import YAML
+
     text = path.read_text()
     fm_match = _FRONTMATTER_BLOCK.match(text)
     if not fm_match:
         return {}
-    result = {}
-    for line in fm_match.group(1).splitlines():
-        if ":" in line:
-            key, _, value = line.partition(":")
-            result[key.strip()] = value.strip()
+    parsed = YAML().load(fm_match.group(1)) or {}
+    result = {k: str(v) for k, v in parsed.items() if isinstance(v, str | int | float | bool | date)}
+    if "phases" in parsed and isinstance(parsed["phases"], list):
+        result["phases"] = _format_phases(parsed["phases"])
     return result
 
 
