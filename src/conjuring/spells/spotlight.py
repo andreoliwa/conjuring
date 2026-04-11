@@ -37,14 +37,14 @@ def settings(c: Context) -> None:
     c.run("open 'x-apple.systempreferences:com.apple.Spotlight-Settings.extension'", warn=True)
 
 
-@task
-def rebuild(c: Context, force: bool = False) -> None:
+@task(help={"yes": "Answer yes to all prompts without asking"})
+def rebuild(c: Context, yes: bool = False) -> None:
     """Rebuild the Spotlight index."""
     print_error("⚠️  WARNING: This will ERASE your entire Spotlight index!")
     print("This will take a while and may slow down your system temporarily")
     print("You will not be able to search for files until indexing completes (30min - several hours)")
 
-    if not force:
+    if not yes:
         response = ask_user_prompt("Are you sure you want to rebuild the Spotlight index?", allowed_keys="yn")
         if response != "y":
             print_warning("Rebuild cancelled.")
