@@ -198,6 +198,7 @@ def switch_url_to(c: Context, remote: str = GIT_REMOTE, https: bool = False) -> 
 def exclude(c: Context, file: list[str]) -> None:
     """Add files or directories to the local Git exclude file (.git/info/exclude), skipping duplicates."""
     exclude_path = Path(GIT_EXCLUDE_FILE)
+    exclude_path.parent.mkdir(parents=True, exist_ok=True)
     existing = set(exclude_path.read_text().splitlines()) if exclude_path.exists() else set()
     query = " ".join(file)
     chosen = run_with_fzf(
