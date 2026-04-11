@@ -496,7 +496,8 @@ def changes_since_tag(
                 for commit in commits:
                     print(f"  {commit}")
         else:
-            c.run(cmd)
+            # pty=False is needed because pagination in git log doesn't work with invoke
+            c.run(cmd, pty=False)
 
 
 @task(help={"ref": "Git ref to log from (tag, branch, commit). Default: base branch (e.g. origin/master)"})
