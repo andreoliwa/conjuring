@@ -133,6 +133,7 @@ target-version = "py39"
 # https://docs.astral.sh/ruff/settings/#ignore
 ignore = [
   "ARG001", # Unused function argument: Invoke tasks require `c: Context` as first arg even when unused
+  "COM812",
   "D105", # Missing docstring in magic method
   "D107", # Missing docstring in ?
   "D203", # 1 blank line required before class docstring

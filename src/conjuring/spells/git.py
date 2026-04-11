@@ -124,9 +124,9 @@ class Git:
         """The GitHub username configured in the global settings."""
         return global_config()["github"]["user"]
 
-    def repo_root(self) -> Path | None:
+    def repo_root(self, quiet: bool = False) -> Path | None:
         """Return the root Path of the current Git repository, or None if not in one."""
-        result = run_stdout(self.context, "git rev-parse --show-toplevel", warn=True, dry=False)
+        result = run_stdout(self.context, "git rev-parse --show-toplevel", dry=False, quiet=quiet)
         return Path(result) if result else None
 
     def choose_local_branch(self, branch: str) -> str:

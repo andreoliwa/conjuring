@@ -52,7 +52,7 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any
     return c.run(join_pieces(*pieces), **kwargs)
 
 
-def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any) -> str:  # noqa: ANN401
+def run_stdout(c: Context, *pieces: str, dry: bool | None = None, quiet: bool = False, **kwargs: Any) -> str:  # noqa: ANN401
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("hide", True)
     kwargs.setdefault("pty", False)
@@ -61,7 +61,8 @@ def run_stdout(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any)
         kwargs.setdefault("dry", dry)
     result = run_command(c, *pieces, **kwargs)
     if result.failed:
-        print_error(result.command, f"\n{result}")
+        if not quiet:
+            print_error(result.command, f"\n{result}")
         return ""
     return str(result.stdout).strip()
 

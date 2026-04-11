@@ -245,10 +245,9 @@ def _parse_all_frontmatter(path: Path) -> dict[str, str]:
 )
 def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False) -> None:
     """Display plans and specs with their frontmatter status and last_updated date."""
-    _repo_root = Git(c).repo_root()
+    _repo_root = Git(c).repo_root(quiet=True)
     if not _repo_root:
-        print_error("Not inside a Git repository")
-        raise SystemExit(1)
+        return
     repo_root: Path = _repo_root
 
     search_dirs = [repo_root / d for d in (dirs or _DEFAULT_PLAN_DIRS)]
