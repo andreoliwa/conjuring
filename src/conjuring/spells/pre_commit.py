@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import re
 from pathlib import Path
 
 from invoke import Context, task
@@ -133,12 +134,27 @@ def uninstall(
         ]
     else:
         installed_hooks = []
-    run_command(
+    result = run_command(
         c,
         "pre-commit" if legacy else "prek",
         "uninstall",
         get_hook_types(commit_msg, installed_hooks) if commit_msg or installed_hooks else "",
+        warn=True,
     )
+    if all_hooks:
+        # prek output is colored, so strip ANSI escape codes before parsing
+        combined = (result.stdout or "") + (result.stderr or "")
+        ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+
+        for line in combined.splitlines():
+            clean = ansi_escape.sub("", line)
+            if "is not managed by prek, skipping" in clean:
+                hook_path = Path(clean.split("`")[1])
+                if hook_path.exists():
+                    # When --all-hooks is used, prek may skip hooks it doesn't manage (e.g. installed by
+                    # plain pre-commit). Parse its output and delete those files ourselves.
+                    hook_path.unlink()
+                    print_success(f"Deleted unmanaged hook: {hook_path}")
 
 
 @task(
