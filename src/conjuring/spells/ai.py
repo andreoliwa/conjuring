@@ -280,7 +280,9 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
         if not all_ and fm.get("status") == "complete":
             continue
         rel = path.relative_to(repo_root)
-        rows.append((str(rel), [fm.get(col) or _MISSING for col in columns]))
+        rows.append(
+            (str(rel), [fm.get(col) or (_MISSING if col in {"status", "last_updated"} else "") for col in columns])
+        )
 
     if not rows:
         if not md_files:
@@ -298,7 +300,16 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
     for col in columns:
         table.add_column(col.replace("_", " ").title())
 
+    _status_colors = {"complete": "green", "partial": "yellow"}
+    path_by_rel = {str(p.relative_to(repo_root)): p for p in md_files}
+
     for file_path, row in rows:
-        table.add_row(file_path, *row)
+        status_val = all_fm[path_by_rel[file_path]].get("status", "")
+        color = _status_colors.get(status_val, "")
+        styled_row = [
+            f"[{color}]{cell}[/{color}]" if color and cell != _MISSING and col in {"status", "last_updated"} else cell
+            for col, cell in zip(columns, row)
+        ]
+        table.add_row(file_path, *styled_row)
 
     Console().print(table)
