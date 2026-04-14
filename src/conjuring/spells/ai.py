@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import re
 import shlex
 import sys
@@ -24,11 +25,13 @@ from conjuring.spells.git import Git, log_since
 # keep-sorted start
 AI_COMMITS_FILE_PREFIX = "ai-commits-"
 CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
+CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
+_HIDDEN_STATUSES = {"complete", "canceled", "superseded"}
 _LOG_RECORD_SEP = "|||END|||"
-_MISSING = "[bold red]MISSING[/bold red]"
+_MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
 # keep-sorted end
 
@@ -245,13 +248,75 @@ def _parse_all_frontmatter(path: Path) -> dict[str, str]:
     return result
 
 
+def _mise_plans_ignore(directory: Path) -> list[str]:
+    """Try loading plans_ignore from [_.conjuring.ai] in mise configs under directory."""
+    import tomllib
+
+    for name in ("mise.local.toml", "mise.toml"):
+        path = directory / name
+        if not path.exists():
+            continue
+        with path.open("rb") as fh:
+            data = tomllib.load(fh)
+        ignore = data.get("_", {}).get("conjuring", {}).get("ai", {}).get("plans_ignore", [])
+        if ignore:
+            return ignore if isinstance(ignore, list) else [ignore]
+    return []
+
+
+def _load_plans_ignore(repo_root: Path) -> list[str]:
+    """Load plans_ignore patterns, checking repo_root and (for worktrees) the main repo root."""
+    ignore = _mise_plans_ignore(repo_root)
+    if ignore:
+        return ignore
+    # In a git worktree, .git is a file pointing to the main repo; check the main root too
+    git_dir = repo_root / ".git"
+    if git_dir.is_file():
+        # .git file content: "gitdir: /path/to/main/.git/worktrees/<name>"
+        gitdir_path = Path(git_dir.read_text().strip().removeprefix("gitdir: "))
+        # Walk up from .git/worktrees/<name> to the main repo root
+        main_root = (gitdir_path / "../../..").resolve()
+        if main_root != repo_root:
+            return _mise_plans_ignore(main_root)
+    return []
+
+
+def _is_ignored(rel_path: str, patterns: list[str]) -> bool:
+    """Check if a relative path matches any of the ignore patterns."""
+    return any(fnmatch.fnmatch(rel_path, pat) for pat in patterns)
+
+
+def _plan_rows(  # noqa: PLR0913
+    md_files: list[Path],
+    all_fm: dict[Path, dict[str, str]],
+    repo_root: Path,
+    columns: list[str],
+    ignore_patterns: list[str],
+    all_: bool,
+) -> list[tuple[str, list[str]]]:
+    """Build table rows for plans, applying status and ignore filters."""
+    rows: list[tuple[str, list[str]]] = []
+    for path in md_files:
+        fm = all_fm[path]
+        rel = str(path.relative_to(repo_root))
+        ignored = _is_ignored(rel, ignore_patterns)
+        if not all_ and (fm.get("status") in _HIDDEN_STATUSES or ignored):
+            continue
+        if ignored:
+            original = fm.get("status") or "missing"
+            fm = {**fm, "status": f"{original} (ignored)"}
+            all_fm[path] = fm
+        rows.append((rel, [fm.get(col) or (_MISSING if col in {"status", "last_updated"} else "") for col in columns]))
+    return rows
+
+
 @task(
     help={
         "dirs": f"Directories to scan for plan/spec Markdown files (relative to repo root). "
         f"Default: {', '.join(_DEFAULT_PLAN_DIRS)}",
         "dynamic": "Discover columns dynamically from all frontmatter keys found "
         "(default: fixed status + last_updated)",
-        "all_": "Show all plans including completed ones (default: hide status=complete)",
+        "all_": "Show all plans including completed/canceled/superseded/ignored ones",
     },
     iterable=["dirs"],
 )
@@ -273,16 +338,9 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
     # Parse frontmatter for all files upfront
     all_fm = {path: _parse_all_frontmatter(path) for path in md_files}
     columns = _plan_columns(all_fm, dynamic)
+    ignore_patterns = _load_plans_ignore(repo_root)
 
-    rows: list[tuple[str, list[str]]] = []
-    for path in md_files:
-        fm = all_fm[path]
-        if not all_ and fm.get("status") == "complete":
-            continue
-        rel = path.relative_to(repo_root)
-        rows.append(
-            (str(rel), [fm.get(col) or (_MISSING if col in {"status", "last_updated"} else "") for col in columns])
-        )
+    rows = _plan_rows(md_files, all_fm, repo_root, columns, ignore_patterns, all_)
 
     if not rows:
         if not md_files:
@@ -300,16 +358,199 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
     for col in columns:
         table.add_column(col.replace("_", " ").title())
 
-    _status_colors = {"complete": "green", "partial": "yellow"}
-    path_by_rel = {str(p.relative_to(repo_root)): p for p in md_files}
-
+    _status_colors = {
+        "approved": "green",
+        "complete": "green",
+        "missing": "red",
+        "partial": "yellow",
+        "canceled": "red",
+        "ignored": "yellow",
+        "superseded": "magenta",
+    }
+    status_idx = columns.index("status") if "status" in columns else -1
     for file_path, row in rows:
-        status_val = all_fm[path_by_rel[file_path]].get("status", "")
-        color = _status_colors.get(status_val, "")
+        status_cell = row[status_idx] if status_idx >= 0 else ""
+        # For compound statuses like "complete (ignored)", color by the base status
+        base_status = status_cell.split(" (")[0] if " (" in status_cell else status_cell
+        color = _status_colors.get(base_status, "")
         styled_row = [
-            f"[{color}]{cell}[/{color}]" if color and cell != _MISSING and col in {"status", "last_updated"} else cell
+            f"[{color}]{cell}[/{color}]" if color and col in {"status", "last_updated"} else cell
             for col, cell in zip(columns, row)
         ]
         table.add_row(file_path, *styled_row)
+
+    Console().print(table)
+
+
+def _decode_project_dir(encoded: str) -> str:
+    """Decode a Claude project directory name back to a readable path.
+
+    The encoding joins path segments with '-', so '-Users-aa-dev-me-my-den' could be
+    /Users/aa/dev/me/my-den or /Users/aa/dev/me/my/den.  We walk the filesystem to
+    greedily resolve the longest existing directory at each level.
+    """
+    if not encoded.startswith("-"):
+        return encoded
+    # Strip worktree suffix (e.g. '--claude-worktrees-fancy-name')
+    base = encoded.split("--", maxsplit=1)[0] if "--" in encoded else encoded
+    parts = base[1:].split("-")  # drop leading '-', split remaining
+    # Greedy reconstruction: try longest segment combos that exist on disk
+    current = Path("/")
+    i = 0
+    while i < len(parts):
+        # Try joining progressively more parts as a single directory name
+        best = None
+        for j in range(len(parts), i, -1):
+            candidate = "-".join(parts[i:j])
+            if (current / candidate).exists():
+                best = (candidate, j)
+                break
+        if best:
+            current = current / best[0]
+            i = best[1]
+        else:
+            # No match on disk; just use the single part
+            current = current / parts[i]
+            i += 1
+    return str(current)
+
+
+def _extract_text(content: str | list) -> str:
+    """Extract searchable text from a message content field.
+
+    Handles: plain strings (user messages), text blocks, and tool_result blocks (which
+    contain file contents, command output, etc. that are often the most searchable parts).
+    """
+    if isinstance(content, str):
+        return content
+    parts = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "text":
+            parts.append(block.get("text", ""))
+        elif block.get("type") == "tool_result":
+            # tool_result content can be a string or a list of content blocks
+            inner = block.get("content", "")
+            if isinstance(inner, str):
+                parts.append(inner)
+            elif isinstance(inner, list):
+                parts.extend(
+                    sub.get("text", "") for sub in inner if isinstance(sub, dict) and sub.get("type") == "text"
+                )
+    return "\n".join(parts)
+
+
+def _search_conversations(query: str, project: str = "") -> list[dict]:
+    """Search JSONL conversation files for a query string, returning match info.
+
+    Returns a list of dicts with keys: project, session_id, timestamp, role, snippet.
+    """
+    import json
+
+    search_dir = CLAUDE_PROJECTS_DIR
+    if project:
+        # Find matching project dir(s)
+        matches = sorted(search_dir.glob(f"*{project}*"))
+        if not matches:
+            print_error(f"No project directory matching '{project}'")
+            return []
+        search_dir = matches[0]
+
+    results = []
+    # Only search JSONL files directly under project dirs (skip subagent subdirs)
+    if search_dir == CLAUDE_PROJECTS_DIR:
+        jsonl_files = sorted(f for d in search_dir.iterdir() if d.is_dir() for f in d.glob("*.jsonl"))
+    else:
+        jsonl_files = sorted(search_dir.glob("*.jsonl"))
+    for jsonl_path in jsonl_files:
+        project_dir = jsonl_path.parent.name
+        session_id = jsonl_path.stem
+        with jsonl_path.open() as fh:
+            for line in fh:
+                if query.lower() not in line.lower():
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if record.get("type") not in ("user", "assistant"):
+                    continue
+                msg = record.get("message", {})
+                text = _extract_text(msg.get("content", ""))
+                if query.lower() not in text.lower():
+                    continue
+                # Build a short snippet around the match
+                lower_text = text.lower()
+                idx = lower_text.find(query.lower())
+                start = max(0, idx - 60)
+                end = min(len(text), idx + len(query) + 60)
+                prefix = "..." if start > 0 else ""
+                suffix = "..." if end < len(text) else ""
+                snippet = prefix + text[start:end].replace("\n", " ") + suffix
+                results.append(
+                    {
+                        "project": project_dir,
+                        "session_id": session_id,
+                        "timestamp": record.get("timestamp", ""),
+                        "role": record.get("type", ""),
+                        "snippet": snippet,
+                    }
+                )
+    return results
+
+
+@task(
+    help={
+        "query": "Text to search for in Claude Code conversations",
+        "project": "Filter to a specific project (partial match on directory name)",
+        "projects_only": "Only list matching project directories, not individual matches",
+    },
+)
+def convos(c: Context, query: str, project: str = "", projects_only: bool = False) -> None:
+    """Search across Claude Code conversations for a topic."""
+    if not CLAUDE_PROJECTS_DIR.is_dir():
+        print_error(f"Claude projects directory not found: {CLAUDE_PROJECTS_DIR}")
+        raise SystemExit(1)
+
+    if projects_only:
+        # Fast path: use rg to find which project dirs contain the query
+        rg_output = run_stdout(c, f"rg -li {shlex.quote(query)} {CLAUDE_PROJECTS_DIR}", quiet=True)
+        if not rg_output:
+            print_warning(f"No conversations found matching '{query}'")
+            return
+        # Only keep direct children of CLAUDE_PROJECTS_DIR (skip subagent subdirs)
+        top_level_dirs = {d.name for d in CLAUDE_PROJECTS_DIR.iterdir() if d.is_dir()}
+        project_dirs = sorted(
+            {Path(line).parent.name for line in rg_output.splitlines() if Path(line).parent.name in top_level_dirs}
+        )
+        from rich.console import Console
+        from rich.table import Table
+
+        table = Table(title=f"Projects discussing '{query}'", show_header=True, header_style="bold magenta")
+        table.add_column("Project Directory", style="cyan")
+        table.add_column("Path", style="dim")
+        for proj_dir in project_dirs:
+            table.add_row(proj_dir, _decode_project_dir(proj_dir))
+        Console().print(table)
+        return
+
+    results = _search_conversations(query, project)
+    if not results:
+        print_warning(f"No conversations found matching '{query}'")
+        return
+
+    from rich.console import Console
+    from rich.table import Table
+
+    table = Table(title=f"Conversations matching '{query}'", show_header=True, header_style="bold magenta")
+    table.add_column("Project", style="cyan", no_wrap=False, max_width=30)
+    table.add_column("Timestamp", style="dim", no_wrap=True)
+    table.add_column("Role", style="green")
+    table.add_column("Snippet", no_wrap=False)
+
+    for r in results:
+        ts = r["timestamp"][:19].replace("T", " ") if r["timestamp"] else ""
+        table.add_row(_decode_project_dir(r["project"]), ts, r["role"], r["snippet"])
 
     Console().print(table)
