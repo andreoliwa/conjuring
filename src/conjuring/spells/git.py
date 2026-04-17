@@ -567,7 +567,7 @@ def reset_repo(c: Context, yes: bool = False) -> None:
 
     Aborts if there are uncommitted changes.
     Fetches from origin, hard-resets the default branch, deletes all other local branches,
-    restricts remote tracking to the default branch only, prunes stale refs, and runs gc.
+    prunes stale remote-tracking refs, and runs gc.
     """
     default_branch = set_default_branch(c)
 
@@ -603,16 +603,13 @@ def reset_repo(c: Context, yes: bool = False) -> None:
         if branch:
             run_command(c, "git branch -D", branch, warn=True)
 
-    # Track ONLY the default branch from origin
-    c.run(f"git remote set-branches {GIT_REMOTE} {default_branch}")
-
     # Prune stale remote-tracking refs
     c.run("git fetch --prune")
 
     # Cleanup loose objects
     c.run("git gc --prune=now")
 
-    print_success(f"Done. Repo now tracks only {GIT_REMOTE}/{default_branch}.")
+    print_success(f"Done. Repo is clean and on {GIT_REMOTE}/{default_branch}.")
 
 
 @task
