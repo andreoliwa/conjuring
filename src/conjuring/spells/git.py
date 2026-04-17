@@ -557,6 +557,64 @@ def body(c: Context, prefix: bool = False, original_order: bool = False) -> None
     print("\n".join(results))
 
 
+@task(
+    help={
+        "yes": "Skip confirmation prompt and proceed automatically",
+    },
+)
+def reset_repo(c: Context, yes: bool = False) -> None:
+    """Reset the repo to only the default branch, deleting all other local branches and pruning remotes.
+
+    Aborts if there are uncommitted changes.
+    Fetches from origin, hard-resets the default branch, deletes all other local branches,
+    restricts remote tracking to the default branch only, prunes stale refs, and runs gc.
+    """
+    default_branch = set_default_branch(c)
+
+    # Abort if uncommitted changes exist
+    if run_stdout(c, "git status --porcelain", dry=False):
+        print_error("You have uncommitted changes. Commit or stash first.")
+        raise SystemExit(1)
+
+    # Ensure the default branch exists on origin
+    c.run(f"git fetch {GIT_REMOTE}")
+    result = run_command(c, f"git show-ref --verify --quiet refs/remotes/{GIT_REMOTE}/{default_branch}", warn=True)
+    if not result.ok:
+        print_error(f"{GIT_REMOTE}/{default_branch} does not exist.")
+        raise SystemExit(1)
+
+    if not yes:
+        ask_yes_no(
+            f"This will hard-reset to {GIT_REMOTE}/{default_branch} and delete all other local branches. Continue?",
+        )
+
+    # Checkout the default branch (create tracking branch if needed)
+    git = Git(c)
+    current = git.current_branch()
+    if current != default_branch:
+        git.checkout(default_branch) or c.run(f"git checkout -b {default_branch} {GIT_REMOTE}/{default_branch}")
+
+    # Hard reset to origin
+    c.run(f"git reset --hard {GIT_REMOTE}/{default_branch}")
+
+    # Delete all other local branches
+    for raw_branch in run_lines(c, f"git branch | grep -v '{default_branch}'", dry=False):
+        branch = raw_branch.strip().lstrip("* ")
+        if branch:
+            run_command(c, "git branch -D", branch, warn=True)
+
+    # Track ONLY the default branch from origin
+    c.run(f"git remote set-branches {GIT_REMOTE} {default_branch}")
+
+    # Prune stale remote-tracking refs
+    c.run("git fetch --prune")
+
+    # Cleanup loose objects
+    c.run("git gc --prune=now")
+
+    print_success(f"Done. Repo now tracks only {GIT_REMOTE}/{default_branch}.")
+
+
 @task
 def new_branch(c: Context, title: str) -> None:
     """Create a new Git branch with a slugified title while keeping the Jira ticket in uppercase."""
