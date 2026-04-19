@@ -31,11 +31,17 @@ from conjuring.grimoire import (
 
 # keep-sorted start
 AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma", "opus"}
+IMAGE_EXTENSIONS = {"bmp", "gif", "heic", "jpeg", "jpg", "png", "tiff", "webp"}
 MAX_COUNT = 1000
 MAX_SIZE = 1_000_000_000  # 1 GB
 SHOULD_PREFIX = True
 VIDEO_EXTENSIONS = {"avi", "mp4", "mkv", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg"}
 # keep-sorted end
+
+
+def extensions_with_dot(extensions: set[str]) -> set[str]:
+    """Return a copy of an extension set with a leading dot on each entry, for use with Path.suffix."""
+    return {f".{ext}" for ext in extensions}
 
 
 @task(
