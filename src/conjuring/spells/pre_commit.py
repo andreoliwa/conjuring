@@ -201,17 +201,24 @@ def run(c: Context, hooks: str, legacy: bool = False, root_only: bool = False) -
         "repo": "Partial name of the repo to autoupdate (fzf will be used to match it)",
         "bleed": "Update to the latest commit instead of the latest tag",
         "legacy": "Use legacy pre-commit instead of prek",
+        "root_only": "Only use root .pre-commit-config.yaml, ignore nested configs (prek only)",
     },
 )
-def auto(c: Context, repo: str = "", bleed: bool = False, legacy: bool = False) -> None:
+def auto(c: Context, repo: str = "", bleed: bool = False, legacy: bool = False, root_only: bool = False) -> None:
     """Autoupdate a Git hook or all hooks with the latest tag, using prek (or legacy pre-commit). Needs fzf and yq."""
+    if root_only and legacy:
+        print_warning("WARNING: --root-only flag is ignored when using --legacy mode")
+        root_only = False
+
     command = ""
     if repo:
         chosen = run_with_fzf(c, "yq e '.repos[].repo' .pre-commit-config.yaml", query=repo, dry=False)
         command = f"--repo {chosen}"
+    config_arg = f"--config {PRE_COMMIT_CONFIG_YAML}" if root_only else ""
     run_command(
         c,
         "pre-commit autoupdate" if legacy else "prek auto-update",
         "--bleeding-edge" if bleed else "",
+        config_arg,
         command,
     )
