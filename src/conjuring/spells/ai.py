@@ -8,6 +8,10 @@ import shlex
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from rich.table import Table
 
 from invoke import Context, task
 
@@ -33,6 +37,15 @@ _HIDDEN_STATUSES = {"complete", "canceled", "superseded"}
 _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
+_STATUS_COLORS = {
+    "approved": "green",
+    "canceled": "red",
+    "complete": "green",
+    "ignored": "yellow",
+    "missing": "red",
+    "partial": "yellow",
+    "superseded": "magenta",
+}
 # keep-sorted end
 
 _LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
@@ -264,12 +277,8 @@ def _mise_plans_ignore(directory: Path) -> list[str]:
     return []
 
 
-def _load_plans_ignore(repo_root: Path) -> list[str]:
-    """Load plans_ignore patterns, checking repo_root and (for worktrees) the main repo root."""
-    ignore = _mise_plans_ignore(repo_root)
-    if ignore:
-        return ignore
-    # In a git worktree, .git is a file pointing to the main repo; check the main root too
+def _main_repo_root(repo_root: Path) -> Path:
+    """Return the main repo root, resolving worktree .git file pointers if needed."""
     git_dir = repo_root / ".git"
     if git_dir.is_file():
         # .git file content: "gitdir: /path/to/main/.git/worktrees/<name>"
@@ -277,8 +286,33 @@ def _load_plans_ignore(repo_root: Path) -> list[str]:
         # Walk up from .git/worktrees/<name> to the main repo root
         main_root = (gitdir_path / "../../..").resolve()
         if main_root != repo_root:
-            return _mise_plans_ignore(main_root)
-    return []
+            return main_root
+    return repo_root
+
+
+def _load_plans_ignore(main_root: Path) -> list[str]:
+    """Load plans_ignore from [_.conjuring.ai] in mise.local.toml at the main repo root."""
+    return _mise_plans_ignore(main_root)
+
+
+def _list_worktrees(main_root: Path) -> list[Path]:
+    """Return all worktree paths for this repo, main worktree first."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "worktree", "list", "--porcelain"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            cwd=main_root,
+            check=False,
+        )
+    except OSError:
+        return [main_root]
+    paths = [
+        Path(line.removeprefix("worktree ")) for line in result.stdout.splitlines() if line.startswith("worktree ")
+    ]
+    return paths or [main_root]
 
 
 def _is_ignored(rel_path: str, patterns: list[str]) -> bool:
@@ -310,6 +344,57 @@ def _plan_rows(  # noqa: PLR0913
     return rows
 
 
+def _worktree_label(wt: Path, main_root: Path) -> str:
+    """Return a display label for a worktree path relative to main_root, or absolute if outside."""
+    try:
+        return "./" + str(wt.relative_to(main_root))
+    except ValueError:
+        return str(wt)
+
+
+def _add_rows_to_table(table: Table, rows: list[tuple[str, list[str]]], columns: list[str], status_idx: int) -> None:
+    """Append styled plan rows to a Rich Table."""
+    for file_path, row in rows:
+        status_cell = row[status_idx] if status_idx >= 0 else ""
+        base_status = status_cell.split(" (")[0] if " (" in status_cell else status_cell
+        color = _STATUS_COLORS.get(base_status, "")
+        styled_row = [
+            f"[{color}]{cell}[/{color}]" if color and col in {"status", "last_updated"} else cell
+            for col, cell in zip(columns, row)
+        ]
+        table.add_row(file_path, *styled_row)
+
+
+def _render_plans_table(
+    worktrees: list[Path],
+    worktree_rows: dict[Path, list[tuple[str, list[str]]]],
+    main_root: Path,
+    columns: list[str],
+    all_: bool,
+) -> None:
+    """Build and print the Rich plans table, grouped by worktree."""
+    from rich.console import Console
+    from rich.table import Table
+
+    title = ("All" if all_ else "Incomplete/Missing") + " AI Plans & Specs"
+    table = Table(title=title, show_header=True, header_style="bold magenta")
+    table.add_column("File", style="cyan", no_wrap=False)
+    for col in columns:
+        table.add_column(col.replace("_", " ").title())
+
+    status_idx = columns.index("status") if "status" in columns else -1
+    _add_rows_to_table(table, worktree_rows[main_root], columns, status_idx)
+
+    for wt in worktrees[1:]:
+        rows = worktree_rows[wt]
+        if not rows:
+            continue
+        table.add_row(f"> {_worktree_label(wt, main_root)}", *[""] * len(columns), style="bold cyan")
+        _add_rows_to_table(table, rows, columns, status_idx)
+
+    Console().print(table)
+
+
 @task(
     help={
         "dirs": f"Directories to scan for plan/spec Markdown files (relative to repo root). "
@@ -325,61 +410,39 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
     _repo_root = Git(c).repo_root(quiet=True)
     if not _repo_root:
         return
-    repo_root: Path = _repo_root
 
-    search_dirs = [repo_root / d for d in (dirs or _DEFAULT_PLAN_DIRS)]
+    main_root = _main_repo_root(_repo_root)
+    worktrees = _list_worktrees(main_root)
+    ignore_patterns = _load_plans_ignore(main_root)
+    plan_dirs = dirs or list(_DEFAULT_PLAN_DIRS)
 
-    md_files = sorted(path for search_dir in search_dirs if search_dir.is_dir() for path in search_dir.rglob("*.md"))
+    # Collect md files and frontmatter across all worktrees
+    worktree_md: dict[Path, list[Path]] = {}
+    all_fm: dict[Path, dict[str, str]] = {}
+    for wt in worktrees:
+        search_dirs = [wt / d for d in plan_dirs]
+        md_files = sorted(path for sd in search_dirs if sd.is_dir() for path in sd.rglob("*.md"))
+        worktree_md[wt] = md_files
+        for path in md_files:
+            all_fm[path] = _parse_all_frontmatter(path)
 
-    if not md_files:
-        print_warning("No Markdown files found in: " + ", ".join(str(d) for d in search_dirs))
+    if not any(worktree_md.values()):
+        print_warning("No Markdown files found in any worktree")
         return
 
-    # Parse frontmatter for all files upfront
-    all_fm = {path: _parse_all_frontmatter(path) for path in md_files}
     columns = _plan_columns(all_fm, dynamic)
-    ignore_patterns = _load_plans_ignore(repo_root)
 
-    rows = _plan_rows(md_files, all_fm, repo_root, columns, ignore_patterns, all_)
+    # Build rows per worktree
+    worktree_rows: dict[Path, list[tuple[str, list[str]]]] = {}
+    for wt, md_files in worktree_md.items():
+        worktree_rows[wt] = _plan_rows(md_files, all_fm, wt, columns, ignore_patterns, all_)
 
-    if not rows:
-        if not md_files:
-            print_warning("This repo has no AI plans")
-        else:
-            print_success("All AI plans are completed")
+    total_rows = sum(len(r) for r in worktree_rows.values())
+    if total_rows == 0:
+        print_success("All AI plans are completed")
         return
 
-    from rich.console import Console
-    from rich.table import Table
-
-    title = ("All" if all_ else "Incomplete/Missing") + " AI Plans & Specs"
-    table = Table(title=title, show_header=True, header_style="bold magenta")
-    table.add_column("File", style="cyan", no_wrap=False)
-    for col in columns:
-        table.add_column(col.replace("_", " ").title())
-
-    _status_colors = {
-        "approved": "green",
-        "complete": "green",
-        "missing": "red",
-        "partial": "yellow",
-        "canceled": "red",
-        "ignored": "yellow",
-        "superseded": "magenta",
-    }
-    status_idx = columns.index("status") if "status" in columns else -1
-    for file_path, row in rows:
-        status_cell = row[status_idx] if status_idx >= 0 else ""
-        # For compound statuses like "complete (ignored)", color by the base status
-        base_status = status_cell.split(" (")[0] if " (" in status_cell else status_cell
-        color = _status_colors.get(base_status, "")
-        styled_row = [
-            f"[{color}]{cell}[/{color}]" if color and col in {"status", "last_updated"} else cell
-            for col, cell in zip(columns, row)
-        ]
-        table.add_row(file_path, *styled_row)
-
-    Console().print(table)
+    _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
 
 
 def _decode_project_dir(encoded: str) -> str:
