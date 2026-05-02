@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  update-changelog:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: orhun/git-cliff-action@v4
+        id: cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGELOG_BODY.md
+          GITHUB_REPO: ${{ github.repository }}
+      - name: Update GitHub Release body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release edit "$RELEASE_TAG" --notes-file CHANGELOG_BODY.md
+
+  comment-on-issues:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: apexskier/github-release-commenter@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          comment-template: |
+            This was released in [${{ '{{' }} release-tag ${{ '}}' }}](${{ '{{' }} release-link ${{ '}}' }}).

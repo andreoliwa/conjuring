@@ -1,0 +1,45 @@
+[changelog]
+body = """
+## What's Changed
+
+{%- set groups = ["Features", "Bug Fixes", "Performance", "Testing", "Documentation", "Refactoring"] %}
+{%- for group in groups %}
+{%- set group_commits = commits | filter(attribute="group", value=group) | sort(attribute="message") %}
+{%- set scoped = group_commits | filter(attribute="scope") | sort(attribute="scope") %}
+{%- set scopeless = group_commits | filter(attribute="scope", value="") %}
+{%- set group_commits = scoped | concat(with=scopeless) %}
+{%- if group_commits %}
+
+### {{ group }}
+{% for commit in group_commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | upper_first }}\
+{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/andreoliwa/conjuring/pull/{{ commit.remote.pr_number }})){% endif %} \
+([{{ commit.id | truncate(length=7, end="") }}](https://github.com/andreoliwa/conjuring/commit/{{ commit.id }}))
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+"""
+footer = ""
+header = ""
+trim = true
+
+[git]
+commit_parsers = [
+  {group = "Bug Fixes", message = "^fix"},
+  {group = "Documentation", message = "^docs"},
+  {group = "Features", message = "^feat"},
+  {group = "Performance", message = "^perf"},
+  {group = "Refactoring", message = "^refactor"},
+  {group = "Testing", message = "^test"},
+  {message = "^bump:", skip = true},
+  {message = "^chore|^build|^ci", skip = true},
+]
+conventional_commits = true
+filter_commits = true
+filter_unconventional = true
+sort_commits = "newest"
+tag_pattern = "v[0-9].*"
+
+[remote.github]
+owner = "andreoliwa"
+repo = "conjuring"

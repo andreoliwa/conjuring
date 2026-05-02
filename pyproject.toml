@@ -57,18 +57,8 @@ lint = ["pylint"]
 conjuring = "conjuring.cli:app"
 
 [tool.commitizen]
-# https://commitizen-tools.github.io/commitizen/changelog/#configuration
-changelog_file = "docs/CHANGELOG.md"
-changelog_incremental = true
-major_version_zero = true
+# https://commitizen-tools.github.io/commitizen/config/option/#name
 name = "cz_conventional_commits"
-tag_format = "v$version"
-update_changelog_on_bump = true
-version = "0.7.0"
-# https://commitizen-tools.github.io/commitizen/bump/#configuration
-version_files = [
-  "pyproject.toml:^version",
-]
 
 [tool.nitpick]
 ignore_styles = [

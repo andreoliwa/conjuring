@@ -2,9 +2,8 @@
 name: Publish documentation
 
 on:
-  push:
-    branches:
-      - master
+  release:
+    types: [published]
 
 jobs:
   publish-documentation:
