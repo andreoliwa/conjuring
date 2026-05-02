@@ -2,7 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "python",
   "packages": {
-    ".": {}
+    ".": {
+      "version-files": ["pyproject.toml"]
+    }
   },
   "changelog-type": "github",
   "include-component-in-tag": false

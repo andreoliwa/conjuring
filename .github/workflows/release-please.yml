@@ -23,6 +23,8 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # Note: the Release PR body uses release-please's built-in changelog, not git-cliff.
+  # git-cliff replaces the GitHub Release body *after* the PR is merged and the release is published.
   update-changelog:
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
