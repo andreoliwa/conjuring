@@ -8,6 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -24,5 +26,6 @@ jobs:
           uv sync --all-extras
       - name: Build
         run: uv build
+        # https://pypi.org/manage/project/conjuring/settings/publishing/
       - name: Publish
-        run: uv publish -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }}
+        run: uv publish
