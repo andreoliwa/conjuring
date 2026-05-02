@@ -22,5 +22,7 @@ jobs:
           python -m pip install -U pip uv
           uv --version
           uv sync --all-extras
+      - name: Build
+        run: uv build
       - name: Publish
         run: uv publish -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }}
