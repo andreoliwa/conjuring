@@ -36,6 +36,8 @@ from conjuring.grimoire import (
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
 
 # keep-sorted start
+AUTORELEASE_PENDING_LABEL = "autorelease: pending"
+CLIFF_CONFIG = "cliff.toml"
 DEFAULT_BRANCHES = ("master", "main")
 DEFAULT_BRANCH_FALLBACK = "master"
 DOT_GIT = ".git"
@@ -44,7 +46,11 @@ GIT_REMOTE = "origin"
 GLOBAL_GITCONFIG_PATH = Path("~/.gitconfig").expanduser()
 GLOBAL_GITIGNORE = "~/.gitignore_global"
 IMPORT_REPOS_TAG_PREFIX = "before-import-repos"
+RELEASE_PLEASE_CONFIG = "release-please-config.json"
+RELEASE_PLEASE_MARKERS = ("release-please-action", "release-please")
+SEMANTIC_RELEASE_MARKERS = ("python-semantic-release", "semantic-release", "semantic_release")
 SHOULD_PREFIX = True
+V0_TAG = "v0.0.0"
 # keep-sorted end
 
 should_display_tasks: ShouldDisplayTasks = is_git_repo
@@ -1063,3 +1069,228 @@ def import_repos(  # noqa: PLR0913
     print(f"  cd {target_path} && git tag -d {safety_tag}")
     print_warning("\nRemember: No changes have been pushed. Run 'git push' when ready.")
     print("\nNote: Source repository was not modified (temporary clone was used).")
+
+
+def _find_release_workflow(c: Context, repo_root: Path | None = None) -> Path | None:
+    """Find a release workflow file under .github/workflows/, prompting with fzf if multiple exist."""
+    root = repo_root or Path.cwd()
+    workflows_dir = root / ".github" / "workflows"
+    if not workflows_dir.is_dir():
+        return None
+    matches = [p for p in workflows_dir.iterdir() if "release" in p.name.lower() and p.suffix in {".yml", ".yaml"}]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    chosen = run_with_fzf(
+        c,
+        f"ls {workflows_dir}",
+        query="release",
+        header="Multiple release workflows found — choose one",
+        dry=False,
+    )
+    return workflows_dir / chosen if chosen else None
+
+
+def _extract_environment_name(c: Context, workflow_path: Path) -> str | None:
+    """Extract the GitHub environment name from a workflow YAML file using yq."""
+    raw = run_stdout(
+        c,
+        f'yq \'.. | select(has("environment")) | .environment'
+        f' | if type == "!!map" then .name else . end\' {workflow_path} | head -1',
+        dry=False,
+    )
+    return raw.strip() or None
+
+
+def _check_github_environment(c: Context, env_name: str) -> bool:
+    """Check if a GitHub Actions environment exists on the current repo.
+
+    Opens the settings page in the browser if the environment is missing.
+    Returns True if the environment exists, False otherwise.
+    """
+    repo = run_stdout(c, "gh repo view --json nameWithOwner -q .nameWithOwner", dry=False)
+    if not repo:
+        print_error("Could not determine GitHub repo name. Is this a GitHub repo with 'gh' configured?")
+        return False
+    api_result = run_command(
+        c,
+        f"gh api repos/{repo}/environments/{env_name}",
+        hide=True,
+        warn=True,
+        dry=False,
+    )
+    if api_result.ok:
+        return True
+    settings_url = f"https://github.com/{repo}/settings/environments"
+    print_error(f"Environment '{env_name}' not found. Opening: {settings_url}")
+    c.run(f"open {settings_url}", warn=True)
+    return False
+
+
+def _uses_semantic_release(workflow_path: Path, repo_root: Path | None = None) -> bool:
+    """Return True if the repo uses semantic-release.
+
+    Checks the workflow YAML, package.json, and pyproject.toml.
+    """
+    root = repo_root or Path.cwd()
+    text = workflow_path.read_text(encoding="utf-8")
+    if any(m in text for m in SEMANTIC_RELEASE_MARKERS):
+        return True
+    for candidate in (root / "package.json", root / "pyproject.toml"):
+        if candidate.exists() and any(m in candidate.read_text(encoding="utf-8") for m in SEMANTIC_RELEASE_MARKERS):
+            return True
+    return False
+
+
+def _uses_release_please(workflow_path: Path, repo_root: Path | None = None) -> bool:
+    """Return True if the repo uses release-please.
+
+    Checks for release-please-config.json at the repo root, or release-please-action in the workflow YAML.
+    release-please manages its own versioning state and does not need a v0.0.0 bootstrap tag.
+    """
+    root = repo_root or Path.cwd()
+    if (root / RELEASE_PLEASE_CONFIG).exists():
+        return True
+    return any(m in workflow_path.read_text(encoding="utf-8") for m in RELEASE_PLEASE_MARKERS)
+
+
+def _bootstrap_v0_tag(c: Context) -> None:
+    """Create an annotated v0.0.0 tag on the first commit, if it doesn't already exist.
+
+    semantic-release requires a baseline tag to compute version bumps.
+    Without it, the tool has no anchor and will release v1.0.0 on the first run.
+    """
+    existing = run_stdout(c, f"git tag -l {V0_TAG}", dry=False)
+    if existing:
+        print_warning(f"Tag {V0_TAG} already exists — skipping bootstrap.")
+        return
+    first_commit = run_stdout(c, "git rev-list --max-parents=0 HEAD", dry=False)
+    if not first_commit:
+        print_error("Could not find the first commit. Is this a git repository?")
+        raise SystemExit(1)
+    c.run(f'git tag -a {V0_TAG} {first_commit} -m "chore: bootstrap semantic-release baseline"')
+    print_success(f"Created annotated tag {V0_TAG} on first commit {first_commit[:8]}.")
+
+
+def _trigger_release_workflow(c: Context, workflow_path: Path) -> None:
+    """Trigger the release workflow. Opens the browser if the workflow has required inputs."""
+    required_inputs = run_stdout(
+        c,
+        f"yq '.on.workflow_dispatch.inputs | to_entries | .[] | select(.value.required == true) | .key'"
+        f" {workflow_path}",
+        dry=False,
+    )
+    if required_inputs.strip():
+        repo = run_stdout(c, "gh repo view --json nameWithOwner -q .nameWithOwner", dry=False)
+        actions_url = f"https://github.com/{repo}/actions/workflows/{workflow_path.name}"
+        print_warning(
+            f"Workflow has required inputs: {required_inputs.strip()}. Opening browser — complete the run there."
+        )
+        c.run(f"open {actions_url}", warn=True)
+        return
+
+    c.run(f"gh workflow run {workflow_path.name}", warn=True)
+    print_success("Workflow triggered. Waiting for it to start...")
+    c.run("gh run watch", warn=True)
+
+    run_url = run_stdout(c, "gh run view --json url -q .url", dry=False)
+    if run_url:
+        print_success(f"Release URL: {run_url}")
+
+
+def _merge_release_please_pr(c: Context) -> None:
+    """Find the open release-please PR and merge it, triggering the release.
+
+    release-please's release action is merging the Release PR — it creates
+    the tag and GitHub Release automatically after merge.
+    """
+    import json
+
+    raw = run_stdout(
+        c,
+        f'gh pr list --label "{AUTORELEASE_PENDING_LABEL}" --json number,title,url,body --limit 1',
+        dry=False,
+    )
+    prs = json.loads(raw) if raw else []
+    if not prs:
+        print_error(f"No open PR found with label '{AUTORELEASE_PENDING_LABEL}'. Nothing to release.")
+        raise SystemExit(1)
+
+    pr = prs[0]
+    print_success(f"Release PR #{pr['number']}: {pr['title']}")
+    print_success(f"URL: {pr['url']}")
+    print()
+    print(pr.get("body", "(no description)"))
+    print()
+
+    if not c.config.run.dry and not ask_yes_no("Merge this PR and trigger the release?"):
+        raise SystemExit(0)
+
+    c.run(f"gh pr merge {pr['number']} --squash --auto", warn=True)
+    if not c.config.run.dry:
+        print_success("PR merged. release-please will create the tag and GitHub Release shortly.")
+        c.run(f"gh pr view {pr['number']} --web", warn=True)
+
+
+def _preview_changelog(c: Context, cliff_config: Path | None = None) -> None:
+    """Print the changelog git-cliff would generate for unreleased commits.
+
+    Always runs live even in dry mode — the point is to preview, not to skip.
+    Skips silently if cliff.toml is not present (not a git-cliff repo).
+    """
+    config = cliff_config or Path.cwd() / CLIFF_CONFIG
+    if not config.exists():
+        print_warning(f"git-cliff config not found at {config} — skipping changelog preview.")
+        return
+    print_success("Changelog preview (git-cliff --unreleased):")
+    output = run_stdout(c, f"git cliff --unreleased --config {config}", dry=False)
+    print(output or "(no unreleased commits found)")
+
+
+@task()
+def release(c: Context, sanity: bool = False) -> None:
+    """Release the current project via its configured release tool.
+
+    With --sanity: checks release workflow exists, GitHub environment is configured,
+    and bootstraps a v0.0.0 tag if the repo uses semantic-release.
+
+    Without --sanity:
+    - release-please repos: find the open 'autorelease: pending' PR, confirm, merge it.
+    - Other repos: trigger the release workflow via gh workflow run and wait.
+
+    Pass --dry (invoke flag) to preview the git-cliff changelog and see what
+    commands would run, without executing anything.
+    """
+    git = Git(c)
+    repo_root = git.repo_root(quiet=True)
+
+    workflow_path = _find_release_workflow(c, repo_root)
+    if not workflow_path:
+        print_error("No release workflow found under .github/workflows/. Create one first.")
+        raise SystemExit(1)
+
+    print_success(f"Release workflow: {workflow_path}")
+
+    if sanity:
+        env_name = _extract_environment_name(c, workflow_path)
+        if env_name:
+            print_success(f"GitHub environment referenced: {env_name}")
+            _check_github_environment(c, env_name)
+        else:
+            print_warning("No GitHub environment referenced in the workflow.")
+
+        if _uses_release_please(workflow_path, repo_root):
+            print_success("release-please detected — skipping v0.0.0 bootstrap (not needed).")
+        elif _uses_semantic_release(workflow_path, repo_root):
+            print_success("semantic-release detected — checking for v0.0.0 bootstrap tag...")
+            _bootstrap_v0_tag(c)
+        return
+
+    cliff_config = (repo_root or Path.cwd()) / CLIFF_CONFIG
+    _preview_changelog(c, cliff_config)
+
+    if _uses_release_please(workflow_path, repo_root):
+        _merge_release_please_pr(c)
+    else:
+        _trigger_release_workflow(c, workflow_path)
