@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 (2026-05-02)
+
+## What's Changed
+* build(deps): bump urllib3 from 2.3.0 to 2.6.3 by @dependabot[bot] in https://github.com/andreoliwa/conjuring/pull/59
+* build(deps): bump pygments from 2.19.1 to 2.20.0 by @dependabot[bot] in https://github.com/andreoliwa/conjuring/pull/62
+* build(deps): bump requests from 2.32.3 to 2.32.5 by @dependabot[bot] in https://github.com/andreoliwa/conjuring/pull/61
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/andreoliwa/conjuring/pull/54
+
+
+**Full Changelog**: https://github.com/andreoliwa/conjuring/compare/v0.8.0...v0.9.0
+
 ## 0.8.0 (2026-05-02)
 
 ## What's Changed
