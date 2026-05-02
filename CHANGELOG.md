@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 (2026-05-02)
+
+**Full Changelog**: https://github.com/andreoliwa/conjuring/compare/v0.8.0...v0.8.1
+
 ## 0.8.0 (2026-05-02)
 
 ## What's Changed
