@@ -56,9 +56,23 @@ lint = ["pylint"]
 [project.scripts]
 conjuring = "conjuring.cli:app"
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+
 [tool.commitizen]
 # https://commitizen-tools.github.io/commitizen/config/option/#name
 name = "cz_conventional_commits"
+
+[tool.mypy]
+# https://mypy.readthedocs.io/en/stable/config_file.html
+check_untyped_defs = true
+follow_imports = "normal"
+ignore_missing_imports = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+# False positives when running on local machine... it works on pre-commit.ci
+warn_unused_ignores = false
 
 [tool.nitpick]
 ignore_styles = [
@@ -79,6 +93,7 @@ ignore_styles = [
   "py://nitpick/resources/python/github-workflow",
   "py://nitpick/resources/python/ipython",
   "py://nitpick/resources/python/isort",
+  "py://nitpick/resources/python/mypy",
   "py://nitpick/resources/python/poetry",
   "py://nitpick/resources/python/poetry-editable",
   "py://nitpick/resources/python/poetry-venv",
@@ -99,7 +114,6 @@ style = [
   "py://nitpick/resources/any/prettier",
   "py://nitpick/resources/markdown/markdownlint",
   "py://nitpick/resources/python/absent",
-  "py://nitpick/resources/python/mypy",
   "py://nitpick/resources/python/pre-commit-hooks",
   "py://nitpick/resources/python/readthedocs",
   "py://nitpick/resources/shell/bashate",
