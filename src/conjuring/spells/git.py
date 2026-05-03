@@ -589,10 +589,10 @@ def reset_repo(c: Context, yes: bool = False) -> None:
         print_error(f"{GIT_REMOTE}/{default_branch} does not exist.")
         raise SystemExit(1)
 
-    if not yes:
-        ask_yes_no(
-            f"This will hard-reset to {GIT_REMOTE}/{default_branch} and delete all other local branches. Continue?",
-        )
+    if not yes and not ask_yes_no(
+        f"This will hard-reset to {GIT_REMOTE}/{default_branch} and delete all other local branches. Continue?",
+    ):
+        raise SystemExit(1)
 
     # Checkout the default branch (create tracking branch if needed)
     git = Git(c)
@@ -869,7 +869,8 @@ def _handle_rollback(c: Context, target_path: Path) -> None:
         if not chosen_tag:
             vanish("Rollback aborted, no tag was selected")
 
-        ask_yes_no(f"Are you sure you want to rollback to tag {chosen_tag}?")
+        if not ask_yes_no(f"Are you sure you want to rollback to tag {chosen_tag}?"):
+            vanish("Rollback aborted")
 
         print_success(f"Rolling back to tag: {chosen_tag}")
         c.run(f"git reset --hard {chosen_tag}")
@@ -1043,8 +1044,8 @@ def import_repos(  # noqa: PLR0913
     print_success(f"Destination directory: {dir_}")
     src_branch = _validate_and_display_repo_status(c, src_path, "Source repository", show_branches=True)
 
-    if not yes:
-        ask_yes_no("Do you want to proceed with merging this repository?")
+    if not yes and not ask_yes_no("Do you want to proceed with merging this repository?"):
+        raise SystemExit(1)
 
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     safety_tag = f"{IMPORT_REPOS_TAG_PREFIX}-{timestamp}"
