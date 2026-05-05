@@ -5,7 +5,6 @@ from __future__ import annotations
 import fnmatch
 import re
 import shlex
-import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -95,46 +94,6 @@ def _count_ai_iterations(log_lines: list[str]) -> int:
         if match:
             last_number = max(last_number, int(match.group(1)))
     return last_number
-
-
-OLD_STRING = (
-    "    # Find all hookify.*.local.md files\n"
-    "    pattern = os.path.join('.claude', 'hookify.*.local.md')\n"
-    "    files = glob.glob(pattern)\n"
-)
-
-NEW_STRING = (
-    "    # Find all hookify.*.local.md files (local project + global ~/.claude/)\n"
-    "    pattern = os.path.join('.claude', 'hookify.*.local.md')\n"
-    "    global_pattern = os.path.join(os.path.expanduser('~'), '.claude', 'hookify.*.local.md')\n"
-    "    files = list(set(glob.glob(pattern) + glob.glob(global_pattern)))\n"
-)
-
-
-@task
-def claude_patch(c: Context) -> None:
-    """Patch the hookify plugin to load global ~/.claude/hookify.*.local.md rule files."""
-    marketplace = (
-        Path.home() / ".claude/plugins/marketplaces/claude-plugins-official/plugins/hookify/core/config_loader.py"
-    )
-    cache_glob = ".claude/plugins/cache/claude-plugins-official/hookify/*/core/config_loader.py"
-
-    targets = []
-    if marketplace.exists():
-        targets.append(marketplace)
-    targets.extend(Path.home().glob(cache_glob))
-
-    if not targets:
-        print_error("No hookify config_loader.py files found — is the plugin installed?")
-        sys.exit(1)
-
-    for path in sorted(targets):
-        text = path.read_text()
-        if OLD_STRING not in text:
-            print_warning(f"Already patched (or unexpected content): {path}")
-            continue
-        path.write_text(text.replace(OLD_STRING, NEW_STRING, 1))
-        print_success(f"Patched: {path}")
 
 
 @task
