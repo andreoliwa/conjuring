@@ -2,6 +2,9 @@
 # https://pre-commit.com/hooks.html
 # https://pre-commit.com/#creating-new-hooks
 
+ci:
+  autoupdate_commit_msg: "ci(pre-commit): autoupdate"
+
 # https://pre-commit.com/#top_level-default_language_version
 default_language_version:
   python: python3.13
