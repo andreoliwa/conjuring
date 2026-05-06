@@ -3,7 +3,8 @@
 # https://pre-commit.com/#creating-new-hooks
 
 ci:
-  autoupdate_commit_msg: "ci(pre-commit): autoupdate"
+  autofix_commit_msg: "ci(pre-commit): auto fixes from hooks"
+  autoupdate_commit_msg: "ci(pre-commit): auto update hooks"
 
 # https://pre-commit.com/#top_level-default_language_version
 default_language_version:
