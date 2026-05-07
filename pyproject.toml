@@ -175,7 +175,7 @@ max-complexity = 10
 # D104 Missing docstring in public package
 # S101 Use of ? detected https://docs.astral.sh/ruff/rules/#flake8-bandit-s
 "src/conjuring/cli.py" = ["B008"]
-"tests/**" = ["D100", "D103", "D104", "PLR2004", "S101"]
+"tests/**" = ["ANN001", "ANN002", "ANN201", "ANN202", "D100", "D103", "D104", "PLR2004", "S101"]
 
 [tool.tomlsort]
 all = true

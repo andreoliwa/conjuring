@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from conjuring.binding import invoke_context, invoke_to_click
 from conjuring.constants import CONJURING_SPELLS_DIR
 from conjuring.grimoire import collection_from_python_files, magically_add_tasks
 
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Spellbook",
+    "invoke_context",
+    "invoke_to_click",
 ]
 
 
