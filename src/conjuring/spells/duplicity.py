@@ -7,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from invoke import Context, task
 
 from conjuring.constants import CODE_DIR, DEV_DIR
-from conjuring.grimoire import print_success, print_warning, run_command, run_lines, run_with_fzf
+from conjuring.grimoire import get_hostname, print_success, print_warning, run_command, run_lines, run_with_fzf
 from conjuring.spells.git import DOT_GIT, is_valid_git_repository
 
 SHOULD_PREFIX = True
@@ -15,8 +15,8 @@ BACKUP_DIR = Path("~/OneDrive/Backup").expanduser()
 
 
 def print_hostname(c: Context) -> str:
-    """Print the hostname of the current machine."""
-    host = c.run("hostname | sed 's/.local//'", dry=False).stdout.strip()
+    """Print and return the short hostname of the current machine."""
+    host = get_hostname()
     print(f"Host: {host}")
     return host
 

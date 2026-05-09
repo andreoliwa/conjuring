@@ -6,6 +6,7 @@ import fnmatch
 import json
 import os
 import re
+import socket
 import sys
 import tempfile
 import time
@@ -36,6 +37,11 @@ REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
 REGEX_UNIQUE_FILE = re.compile(r"(?P<original_stem>.+)_copy(?P<index>\d+)?", re.IGNORECASE)
 RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --modify-window=1"
 # keep-sorted end
+
+
+def get_hostname() -> str:
+    """Return the short hostname, stripping any .local suffix."""
+    return socket.gethostname().removesuffix(".local")
 
 
 def join_pieces(*pieces: str) -> str:

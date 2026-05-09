@@ -6,7 +6,7 @@ from pathlib import Path
 
 from invoke import Context, task
 
-from conjuring.grimoire import run_lines, run_stdout
+from conjuring.grimoire import get_hostname, run_lines, run_stdout
 
 SHOULD_PREFIX = True
 
@@ -20,7 +20,7 @@ def conflicts(c: Context, dir_: list[str | Path]) -> None:
     if not dir_:
         dir_ = [Path.cwd()]
 
-    hostname = run_stdout(c, "hostname -s").strip()
+    hostname = get_hostname()
     suffix = f"-{hostname}"
     for one_dir in list({str(Path(d).expanduser().absolute()) for d in dir_}):
         for line in run_lines(c, f"fd -t f {hostname} {one_dir} | sort"):
