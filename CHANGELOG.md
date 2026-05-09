@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 (2026-05-09)
+
+## What's Changed
+
+- chore(deps): update pre-commit hook commitizen-tools/commitizen to v4.15.0 by @renovate[bot] in https://github.com/andreoliwa/conjuring/pull/68
+- chore(deps): update actions/checkout action to v6 by @renovate[bot] in https://github.com/andreoliwa/conjuring/pull/69
+- ci(pre-commit): autoupdate by @pre-commit-ci[bot] in https://github.com/andreoliwa/conjuring/pull/67
+
+**Full Changelog**: https://github.com/andreoliwa/conjuring/compare/v0.9.0...v0.10.0
+
 ## 0.9.0 (2026-05-02)
 
 ## What's Changed
