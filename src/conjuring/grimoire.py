@@ -588,3 +588,30 @@ def list_processes_using_port(c: Context, port: int, pid_only: bool = False) -> 
             c.run(f"ps aux | grep {pid}")
 
     return pid
+
+
+def open_xquartz(c: Context) -> None:
+    """Start XQuartz and wait for it to be ready."""
+    import time
+
+    c.run("open /Applications/Utilities/XQuartz.app", dry=False)
+    while True:
+        time.sleep(0.2)
+        pid = run_stdout(c, "pidof XQuartz", warn=True, dry=False)
+        if pid and pid.strip():
+            break
+
+
+def wait_for_process(process_name: str, context: Context | None = None) -> None:
+    """Wait for a process to finish."""
+    from pathlib import Path
+    from time import sleep
+
+    ctx = context or Context()
+    pid = ctx.run(f"pidof {process_name}", hide=True).stdout.strip()
+    if not pid:
+        return
+
+    pid_path = Path(f"/proc/{pid}")
+    while pid_path.exists():
+        sleep(0.5)
