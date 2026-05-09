@@ -4,10 +4,12 @@ body = """
 
 {%- set groups = ["Features", "Bug Fixes", "Performance", "Testing", "Documentation", "Refactoring"] %}
 {%- for group in groups %}
-{%- set group_commits = commits | filter(attribute="group", value=group) | sort(attribute="message") %}
-{%- set scoped = group_commits | filter(attribute="scope") | sort(attribute="scope") %}
-{%- set scopeless = group_commits | filter(attribute="scope", value="") %}
-{%- set group_commits = scoped | concat(with=scopeless) %}
+{%- set scoped = commits | filter(attribute="group", value=group) | filter(attribute="scope") | sort(attribute="scope") %}
+{%- set all_group = commits | filter(attribute="group", value=group) | sort(attribute="message") %}
+{#- Tera's filter(attribute="scope", value="") silently returns empty when value is "" (treats it as falsy).
+    Scopeless commits have scope="" not null, so the original scoped/scopeless split produced an empty list.
+    Fix: build scoped (non-empty scope) + all_group, then deduplicate by id. #}
+{%- set group_commits = scoped | concat(with=all_group) | unique(attribute="id") %}
 {%- if group_commits %}
 
 ### {{ group }}

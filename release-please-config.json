@@ -6,6 +6,6 @@
       "version-files": ["pyproject.toml"]
     }
   },
-  "changelog-type": "github",
+  "changelog-type": "default",
   "include-component-in-tag": false
 }
