@@ -6,7 +6,9 @@ import fnmatch
 import json
 import os
 import re
+import shlex
 import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -49,13 +51,26 @@ def join_pieces(*pieces: str) -> str:
     return " ".join(str(piece) for piece in pieces if str(piece).strip())
 
 
-def run_command(c: Context, *pieces: str, dry: bool | None = None, **kwargs: Any) -> Result:  # noqa: ANN401
-    """Build command from pieces, ignoring empty strings."""
+def run_command(c: Context, *pieces: str, dry: bool | None = None, interactive: bool = False, **kwargs: Any) -> Result:  # noqa: ANN401
+    """Build command from pieces, ignoring empty strings.
+
+    Use interactive=True for commands that need a real TTY (e.g. docker exec -it, pgcli).
+    invoke's runner intercepts stdin via a reader thread, breaking TTY detection for such tools.
+    subprocess.run inherits the real fds directly, bypassing invoke's runner.
+    See: https://github.com/pyinvoke/invoke/issues/552
+    """
+    cmd = join_pieces(*pieces)
+    if interactive:
+        if dry is True or (dry is None and c.config.run.get("dry", False)):
+            print(cmd)
+            return None  # type: ignore[return-value]
+        subprocess.run(shlex.split(cmd), check=False)  # noqa: S603
+        return None  # type: ignore[return-value]
     if dry is not None:
         kwargs.setdefault("dry", dry)
     kwargs.setdefault("warn", False)
     kwargs.setdefault("hide", False)
-    return c.run(join_pieces(*pieces), **kwargs)
+    return c.run(cmd, **kwargs)
 
 
 def run_stdout(c: Context, *pieces: str, dry: bool | None = None, quiet: bool = False, **kwargs: Any) -> str:  # noqa: ANN401
@@ -477,7 +492,7 @@ def run_rsync(
         "| wc -l | awk '{print $1 - 5}'" if count_files else "--progress",
         hide=False,
         dry=False,
-        **kwargs,
+        **kwargs,  # type: ignore[arg-type]
     )
     file_count = result.stdout.strip()
     return int(file_count) if count_files else None
