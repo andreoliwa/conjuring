@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import time
 from enum import Enum
 from pathlib import Path
 
@@ -33,6 +35,7 @@ from conjuring.grimoire import (
 AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "aiff", "flac", "ogg", "wma", "opus"}
 IMAGE_EXTENSIONS = {"bmp", "gif", "heic", "jpeg", "jpg", "png", "tiff", "webp"}
 MAX_COUNT = 1000
+MAX_FILE_SIZE_KB = 512
 MAX_SIZE = 1_000_000_000  # 1 GB
 SHOULD_PREFIX = True
 VIDEO_EXTENSIONS = {"avi", "mp4", "mkv", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg"}
@@ -42,6 +45,52 @@ VIDEO_EXTENSIONS = {"avi", "mp4", "mkv", "mov", "wmv", "flv", "webm", "m4v", "mp
 def extensions_with_dot(extensions: set[str]) -> set[str]:
     """Return a copy of an extension set with a leading dot on each entry, for use with Path.suffix."""
     return {f".{ext}" for ext in extensions}
+
+
+def shrink_and_copy(c: Context, source_file: Path, target_dir: Path, verbose: bool = False, dry: bool = False) -> bool:  # noqa: C901
+    """Copy an image to target_dir, resizing to JPEG if over MAX_FILE_SIZE_KB. Returns True if copied."""
+    if not source_file.is_file():
+        return False
+
+    if source_file.suffix.lower() not in {".jpg", ".jpeg", ".png", ".heic"}:
+        if verbose:
+            print_warning(f"Not an image: {source_file}", dry=dry)
+        return False
+
+    try:
+        next(target_dir.glob(source_file.stem + ".*"))
+    except StopIteration:
+        pass
+    else:
+        if verbose:
+            print_warning(f"Already exists: {source_file.stem}", dry=dry)
+        return False
+
+    file_size_kb = source_file.stat().st_size / 1024
+    print_normal(f"Processing {source_file} (size: {file_size_kb:.2f} KB)", dry=dry)
+
+    if file_size_kb <= MAX_FILE_SIZE_KB:
+        try:
+            if not dry:
+                shutil.copy2(source_file, target_dir / source_file.name)
+        except OSError as err:
+            print_error(f"Failed to copy {source_file}: {err}")
+            return False
+        print_success(f"Copied to {target_dir}", dry=dry)
+    else:
+        jpeg_target = target_dir / f"{source_file.stem}.jpeg"
+        run_command(
+            c,
+            f"magick '{source_file}' -auto-orient -resize 1280x960 -strip -quality 85 '{jpeg_target}'",
+            dry=dry,
+        )
+        time.sleep(0.2)
+        if not dry:
+            source_mtime = source_file.stat().st_mtime
+            os.utime(jpeg_target, (source_mtime, source_mtime))
+        print_success(f"Converted to JPEG at {jpeg_target}", dry=dry)
+
+    return True
 
 
 @task(
