@@ -39,6 +39,10 @@ commit_parsers = [
 conventional_commits = true
 filter_commits = true
 filter_unconventional = true
+link_parsers = [
+  {href = "https://github.com/andreoliwa/conjuring/issues/$1", pattern = "#(\\d+)"},
+]
+protect_breaking_commits = true
 sort_commits = "newest"
 tag_pattern = "v[0-9].*"
 
