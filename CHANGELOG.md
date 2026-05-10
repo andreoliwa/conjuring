@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.0](https://github.com/andreoliwa/conjuring/compare/v0.11.0...v0.12.0) (2026-05-10)
+
+### Features
+
+- **duplicity:** display --archived and --planned files ([8c78d8c](https://github.com/andreoliwa/conjuring/commit/8c78d8cde784c10f2f094f6e70e3f563af64205a))
+
 ## 0.11.0 (2026-05-09)
 
 **Full Changelog**: https://github.com/andreoliwa/conjuring/compare/v0.10.0...v0.11.0
