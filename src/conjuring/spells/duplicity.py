@@ -69,10 +69,13 @@ def _planned_files(c: Context, repo_root: list[str], display: bool = False) -> l
 
 
 @task(
-    help={"repo_root": "Optional root directory of the repositories to backup. Can be used multiple times."},
+    help={
+        "repo_root": "Optional root directory of the repositories to backup. Can be used multiple times.",
+        "allow_source_mismatch": "Pass --allow-source-mismatch to duplicity (use once after hostname change).",
+    },
     iterable=["repo_root"],
 )
-def backup(c: Context, repo_root: list[str]) -> None:
+def backup(c: Context, repo_root: list[str], allow_source_mismatch: bool = False) -> None:
     """Backup files with Duplicity."""
     host = print_hostname(c)
     backup_dir = _backup_dest_dir(host)
@@ -96,6 +99,7 @@ def backup(c: Context, repo_root: list[str]) -> None:
             f"--name='{host}-backup'",
             "-v info",
             "--dry-run" if c.config.run.dry else "",
+            "--allow-source-mismatch" if allow_source_mismatch else "",
             f"--include-filelist={temp_file.name}",
             "--exclude='**' $HOME/",
             backup_dir,
