@@ -42,8 +42,8 @@ RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --
 
 
 def get_hostname() -> str:
-    """Return the short hostname, stripping any .local suffix."""
-    return socket.gethostname().removesuffix(".local")
+    """Return the short hostname, stripping any domain suffix."""
+    return socket.gethostname().split(".")[0]
 
 
 def join_pieces(*pieces: str) -> str:
