@@ -108,16 +108,20 @@ def backup(c: Context, repo_root: list[str]) -> None:
         "archived": "List files in the existing backup archive (last run).",
         "planned": "List files that would be included in the next backup.",
         "repo_root": "Optional root directory of the repositories to scan for planned files. Repeatable.",
+        "host": "Hostname whose backup to inspect (default: current machine).",
     },
     iterable=["repo_root"],
 )
-def ls_files(c: Context, archived: bool = False, planned: bool = False, repo_root: list[str] = []) -> None:  # noqa: B006
+def ls(c: Context, archived: bool = False, planned: bool = False, repo_root: list[str] = [], host: str = "") -> None:  # noqa: B006
     """List files included in the duplicity backup (archived = last run, planned = next run).
 
     If neither flag is set, both sections are shown.
     """
     show_all = not archived and not planned
-    host = print_hostname(c)
+    if host:
+        print(f"Host: {host}")
+    else:
+        host = print_hostname(c)
     backup_dir = _backup_dest_dir(host)
     print(f"Backup dir: {backup_dir}")
 
