@@ -6,7 +6,6 @@ import fnmatch
 import json
 import os
 import re
-import shlex
 import socket
 import subprocess
 import sys
@@ -64,7 +63,7 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, interactive: 
         if dry is True or (dry is None and c.config.run.get("dry", False)):
             print(cmd)
             return None  # type: ignore[return-value]
-        subprocess.run(shlex.split(cmd), check=False)  # noqa: S603
+        subprocess.run(cmd, shell=True, check=False)  # noqa: S602
         return None  # type: ignore[return-value]
     if dry is not None:
         kwargs.setdefault("dry", dry)
