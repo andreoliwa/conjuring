@@ -83,18 +83,22 @@ def _planned_files(c: Context, repo_root: list[str], display: bool = False) -> l
     help={
         "repo_root": "Optional root directory of the repositories to backup. Can be used multiple times.",
         "allow_source_mismatch": "Pass --allow-source-mismatch to duplicity (use once after hostname change).",
+        "template": "Path to the duplicity config template file.",
     },
     iterable=["repo_root"],
 )
-def backup(c: Context, repo_root: list[str], allow_source_mismatch: bool = False) -> None:
+def backup(c: Context, template: str, repo_root: list[str], allow_source_mismatch: bool = False) -> None:
     """Backup files with Duplicity."""
+    if not template:
+        print_color(Color.RED, "Template file is required.")
+        return
     host = print_hostname(c)
     backup_dir = _backup_dest_dir(host)
     print(f"Backup dir: {backup_dir}")
 
     files_to_append = _planned_files(c, repo_root)
 
-    template_file = Path("~/dotfiles/backup-duplicity-template.cfg").expanduser()
+    template_file = Path(template).expanduser()
     print(f"Template file: {template_file}")
 
     template_contents = template_file.read_text()
