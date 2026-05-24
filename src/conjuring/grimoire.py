@@ -154,9 +154,12 @@ def ask_user_prompt(*message: str, color: Color = Color.BOLD_WHITE, allowed_keys
             return lowercase_key
 
 
-def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE) -> bool:
-    """Ask a yes/no question and exit if the user answers no."""
-    answer = input(f"{color.value}{' '.join(message)}{Color.NONE.value} [y/N]: ").strip().lower()
+def ask_yes_no(*message: str, color: Color = Color.BOLD_WHITE, default: bool = False) -> bool:
+    """Ask a yes/no question. default=True means yes is the default (Y/n), default=False means no (y/N)."""
+    hint = "[Y/n]" if default else "[y/N]"
+    answer = input(f"{color.value}{' '.join(message)}{Color.NONE.value} {hint}: ").strip().lower()
+    if not answer:
+        return default
     return answer in ("y", "yes")
 
 
