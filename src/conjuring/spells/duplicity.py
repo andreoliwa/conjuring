@@ -104,11 +104,7 @@ def backup(c: Context, template: str, repo_root: list[str], allow_source_mismatc
     template_contents = template_file.read_text()
     duplicity_config = Template(template_contents).substitute({"HOME": Path.home()})
 
-    extra_includes = [
-        pattern.format(dir=Path(d).expanduser())
-        for d in repo_root
-        for pattern in BACKUP_DIR_PATTERNS
-    ]
+    extra_includes = [pattern.format(dir=Path(d).expanduser()) for d in repo_root for pattern in BACKUP_DIR_PATTERNS]
 
     with NamedTemporaryFile("r+", delete=False) as temp_file:
         temp_file.write(duplicity_config)
