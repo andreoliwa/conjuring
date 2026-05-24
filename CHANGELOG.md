@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.0](https://github.com/andreoliwa/conjuring/compare/v0.11.0...v0.12.0) (2026-05-24)
+
+
+### Features
+
+* **duplicity:** add --allow-source-mismatch flag to backup task ([788d052](https://github.com/andreoliwa/conjuring/commit/788d052a7100e5d52fb7772ec53084aac107175a))
+* **duplicity:** display --archived and --planned files ([8c78d8c](https://github.com/andreoliwa/conjuring/commit/8c78d8cde784c10f2f094f6e70e3f563af64205a))
+* **duplicity:** generate work-dir include patterns dynamically from repo_root ([d1354be](https://github.com/andreoliwa/conjuring/commit/d1354bed04b3ec2d707a44f8c8d7df8e32f147bf))
+* **duplicity:** rename ls-files to ls, add --host param ([a13bfb6](https://github.com/andreoliwa/conjuring/commit/a13bfb6dfb35a17485a6e192d4f1c91bd12c8cfe))
+* **shell:** add hostname-set task with auto-generated opaque name ([2e8ab4f](https://github.com/andreoliwa/conjuring/commit/2e8ab4f7c36f60637024aef1e8d6a00404db72dd))
+
+
+### Bug Fixes
+
+* **grimoire:** get_hostname strips full domain, not just .local ([69af1e4](https://github.com/andreoliwa/conjuring/commit/69af1e4561571bc3479df7c9fb98c4eccd7845bd))
+* **grimoire:** use shell=True in run_command interactive mode to support pipes ([40f7e16](https://github.com/andreoliwa/conjuring/commit/40f7e161144baee19ef67669db5bb88214d3829b))
+
 ## 0.11.0 (2026-05-09)
 
 **Full Changelog**: https://github.com/andreoliwa/conjuring/compare/v0.10.0...v0.11.0
