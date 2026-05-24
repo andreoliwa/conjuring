@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import platform
+import uuid
 from enum import Enum
 from pathlib import Path
 
@@ -238,3 +240,33 @@ def completion_uninstall(c: Context, app: str) -> None:
     for completion_dir in COMPLETION_DIRS:
         with c.cd(completion_dir):
             c.run(f"rm -v {app}*", warn=True)
+
+
+def _generate_hostname() -> str:
+    """Generate an opaque hostname with an OS-based prefix."""
+    suffix = str(uuid.uuid4())[:8]
+    prefix = "Mac" if platform.system() == "Darwin" else "Host"
+    return f"{prefix}-{suffix}"
+
+
+@task
+def hostname_set(c: Context, name: str = "") -> None:
+    """Set the system hostname. Generates an opaque name when NAME is omitted."""
+    dry = c.config.run.dry
+    hostname = name or _generate_hostname()
+
+    if platform.system() == "Darwin":
+        commands = [
+            f"sudo scutil --set ComputerName {hostname!r}",
+            f"sudo scutil --set HostName {hostname!r}",
+            f"sudo scutil --set LocalHostName {hostname!r}",
+        ]
+    else:
+        commands = [f"sudo hostnamectl set-hostname {hostname!r}"]
+
+    print_success(f"Hostname: {hostname}")
+    for cmd in commands:
+        if dry:
+            print_warning(f"[dry run] {cmd}")
+        else:
+            c.run(cmd)
