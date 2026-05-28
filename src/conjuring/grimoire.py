@@ -21,6 +21,7 @@ from shutil import which
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 from invoke import Collection, Context, Exit, Result, Task
+from invoke import task as _invoke_task
 from tqdm import tqdm
 
 from conjuring.colors import Color
@@ -67,6 +68,40 @@ class Binary(Enum):
         obj._value_ = executable
         obj.install_hint = install_hint
         return obj
+
+
+class ConjuringTask(Task):
+    """Invoke Task subclass that checks required external binaries before running.
+
+    Tasks declared with ``@task(requires=[Binary.RG])`` are wrapped in this class
+    (via ``klass=ConjuringTask``). At call time, each binary in ``requires`` is
+    looked up with ``shutil.which``; the first missing one prints a one-line
+    install hint and exits non-zero with no traceback.
+    """
+
+    def __init__(self, *args: Any, requires: list[Binary] | None = None, **kwargs: Any) -> None:  # noqa: ANN401
+        """Initialize ConjuringTask, extracting the ``requires`` kwarg before delegating to invoke.Task."""
+        super().__init__(*args, **kwargs)
+        self.requires: list[Binary] = list(requires or [])
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Check required binaries are on PATH before executing the task body."""
+        for binary in self.requires:
+            if which(binary.value) is None:
+                print(f"{binary.value} not found. Install: {binary.install_hint}", file=sys.stderr)
+                sys.exit(1)
+        return super().__call__(*args, **kwargs)
+
+
+def task(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    """Wrap ``invoke.task`` with ``klass=ConjuringTask`` as default.
+
+    Accepts a ``requires=[Binary.*]`` kwarg in addition to every kwarg
+    ``invoke.task`` already supports. With no ``requires``, the resulting
+    task behaves identically to one declared with the stock ``invoke.task``.
+    """
+    kwargs.setdefault("klass", ConjuringTask)
+    return _invoke_task(*args, **kwargs)
 
 
 def get_hostname() -> str:
