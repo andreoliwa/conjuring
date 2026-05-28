@@ -13,6 +13,7 @@ import tempfile
 import time
 from collections import defaultdict
 from dataclasses import dataclass
+from enum import Enum
 from importlib import import_module
 from pathlib import Path
 from shlex import quote
@@ -38,6 +39,34 @@ REGEX_JIRA = re.compile(r"[A-Z]+-\d+")
 REGEX_UNIQUE_FILE = re.compile(r"(?P<original_stem>.+)_copy(?P<index>\d+)?", re.IGNORECASE)
 RSYNC_DEFAULT = "rsync --human-readable --recursive --times --from0 --verbose --compress --modify-window=1"
 # keep-sorted end
+
+
+class Binary(Enum):
+    """External CLI binaries that conjuring tasks may declare as required.
+
+    Each member's value is the executable name passed to ``shutil.which``;
+    ``install_hint`` is the suggested ``brew install`` argument.
+    """
+
+    # keep-sorted start
+    AWS_VAULT = ("aws-vault", "brew install aws-vault")
+    BAZEL = ("bazel", "brew install bazel")
+    FD = ("fd", "brew install fd")
+    FZF = ("fzf", "brew install fzf")
+    GH = ("gh", "brew install gh")
+    JQ = ("jq", "brew install jq")
+    KUBECTL = ("kubectl", "brew install kubectl")
+    RG = ("rg", "brew install ripgrep")
+    TSH = ("tsh", "brew install teleport")
+    VAULT = ("vault", "brew install hashicorp/tap/vault")
+    # keep-sorted end
+
+    def __new__(cls, executable: str, install_hint: str) -> Binary:  # noqa: PYI034
+        """Create a new Binary member with executable name and install hint."""
+        obj = object.__new__(cls)
+        obj._value_ = executable
+        obj.install_hint = install_hint
+        return obj
 
 
 def get_hostname() -> str:
