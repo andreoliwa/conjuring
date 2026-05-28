@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import time
 from enum import Enum
 from pathlib import Path
 
@@ -47,15 +46,64 @@ def extensions_with_dot(extensions: set[str]) -> set[str]:
     return {f".{ext}" for ext in extensions}
 
 
-def shrink_and_copy(c: Context, source_file: Path, target_dir: Path, verbose: bool = False, dry: bool = False) -> bool:  # noqa: C901
-    """Copy an image to target_dir, resizing to JPEG if over MAX_FILE_SIZE_KB. Returns True if copied."""
+def _copy_preserving_mtime(source_file: Path, dst: Path) -> None:
+    """Copy file and restore original mtime.
+
+    Uses shutil.copy instead of copy2: copy2 calls chflags to preserve BSD file flags,
+    which raises EINVAL on exFAT/NTFS volumes.
+    copy doesn't preserve mtime, so we restore it manually.
+    """
+    shutil.copy(source_file, dst)
+    source_mtime = source_file.stat().st_mtime
+    os.utime(dst, (source_mtime, source_mtime))
+
+
+def _convert_to_jpeg(source_file: Path, dst: Path, resize: bool) -> None:
+    """Convert image to JPEG via sips, optionally resizing to max 1280px on longest edge.
+
+    Uses subprocess with a list instead of run_command to bypass the shell entirely —
+    filenames with spaces or apostrophes pass through verbatim; shell quoting can't
+    escape an apostrophe in a single-quoted string (e.g. "Sarah's").
+    """
+    import subprocess
+
+    resize_args = ["-Z", "1280"] if resize else []
+    subprocess.run(  # noqa: S603
+        [
+            "/usr/bin/sips",
+            "-s",
+            "format",
+            "jpeg",
+            "-s",
+            "formatOptions",
+            "85",
+            *resize_args,
+            str(source_file),
+            "--out",
+            str(dst),
+        ],
+        check=True,
+    )
+    source_mtime = source_file.stat().st_mtime
+    os.utime(dst, (source_mtime, source_mtime))
+
+
+def shrink_and_copy(  # noqa: C901
+    c: Context, source_file: Path, target_dir: Path, verbose: bool = False, dry: bool = False
+) -> Path | None:
+    """Copy image to target_dir. Returns target Path if copied, None otherwise.
+
+    Converts HEIC and other non-web-safe formats to JPEG (feh can't open them).
+    Resizes to max 1280px if over MAX_FILE_SIZE_KB.
+    Appends .jpeg suffix (e.g. foo.heic -> foo.heic.jpeg) to make conversion visible.
+    """
     if not source_file.is_file():
-        return False
+        return None
 
     if source_file.suffix.lower() not in {".jpg", ".jpeg", ".png", ".heic"}:
         if verbose:
             print_warning(f"Not an image: {source_file}", dry=dry)
-        return False
+        return None
 
     try:
         next(target_dir.glob(source_file.stem + ".*"))
@@ -64,33 +112,33 @@ def shrink_and_copy(c: Context, source_file: Path, target_dir: Path, verbose: bo
     else:
         if verbose:
             print_warning(f"Already exists: {source_file.stem}", dry=dry)
-        return False
+        return None
 
     file_size_kb = source_file.stat().st_size / 1024
     print_normal(f"Processing {source_file} (size: {file_size_kb:.2f} KB)", dry=dry)
 
-    if file_size_kb <= MAX_FILE_SIZE_KB:
+    # feh can only open jpg/jpeg/png — HEIC must be converted regardless of size.
+    # Size only determines whether to also resize.
+    needs_conversion = source_file.suffix.lower() not in {".jpg", ".jpeg", ".png"}
+    needs_resize = file_size_kb > MAX_FILE_SIZE_KB
+
+    if not needs_conversion and not needs_resize:
+        dst = target_dir / source_file.name
         try:
             if not dry:
-                shutil.copy2(source_file, target_dir / source_file.name)
+                _copy_preserving_mtime(source_file, dst)
         except OSError as err:
             print_error(f"Failed to copy {source_file}: {err}")
-            return False
+            return None
         print_success(f"Copied to {target_dir}", dry=dry)
     else:
-        jpeg_target = target_dir / f"{source_file.stem}.jpeg"
-        run_command(
-            c,
-            f"magick '{source_file}' -auto-orient -resize 1280x960 -strip -quality 85 '{jpeg_target}'",
-            dry=dry,
-        )
-        time.sleep(0.2)
+        jpeg_suffix = ".jpeg" if source_file.suffix.lower() in {".jpg", ".jpeg"} else f"{source_file.suffix}.jpeg"
+        dst = target_dir / f"{source_file.stem}{jpeg_suffix}"
         if not dry:
-            source_mtime = source_file.stat().st_mtime
-            os.utime(jpeg_target, (source_mtime, source_mtime))
-        print_success(f"Converted to JPEG at {jpeg_target}", dry=dry)
+            _convert_to_jpeg(source_file, dst, resize=needs_resize)
+        print_success(f"Converted to JPEG at {dst}", dry=dry)
 
-    return True
+    return dst
 
 
 @task(
