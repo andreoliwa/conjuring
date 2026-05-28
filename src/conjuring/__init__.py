@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from conjuring.binding import invoke_context, invoke_to_click
 from conjuring.constants import CONJURING_SPELLS_DIR
-from conjuring.grimoire import collection_from_python_files, magically_add_tasks
+from conjuring.grimoire import Binary, ConjuringTask, collection_from_python_files, magically_add_tasks, task
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -24,9 +24,12 @@ if TYPE_CHECKING:
     from invoke import Collection
 
 __all__ = [
+    "Binary",
+    "ConjuringTask",
     "Spellbook",
     "invoke_context",
     "invoke_to_click",
+    "task",
 ]
 
 
