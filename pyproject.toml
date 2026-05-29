@@ -19,6 +19,7 @@ classifiers = [
   "Topic :: Software Development",
 ]
 dependencies = [
+  "click",
   "humanize",
   "invoke",
   "iterfzf",
