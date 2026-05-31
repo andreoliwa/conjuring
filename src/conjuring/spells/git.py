@@ -507,14 +507,14 @@ def changes_since_tag(
 
 
 @task(help={"ref": "Git ref to log from (tag, branch, commit). Default: base branch (e.g. origin/master)"})
-def log_since(c: Context, ref: str = "") -> None:
+def log_since(c: Context, ref: str = "", oneline: bool = False) -> None:
     """Display commits since a ref (tag, branch, commit). Defaults to the base branch."""
     if ref:
         base_ref = ref
     else:
         base_ref = Git(c).resolve_base_ref(exit_on_failure=True)
         print_success(f"Logs since default branch '{base_ref}'")
-    c.run(f"git log {base_ref}..HEAD --oneline")
+    run_command(c, f"git log {base_ref}..HEAD", "--oneline" if oneline else "")
 
 
 @task()
