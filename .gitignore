@@ -1,3 +1,8 @@
+# uv.lock is gitignored because conjuring is a library, not an app.
+# Lock files pin exact versions for reproducible app deploys; libraries
+# should stay flexible so they don't conflict with the app's own lock file.
+uv.lock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
