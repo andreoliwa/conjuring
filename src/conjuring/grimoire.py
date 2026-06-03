@@ -49,12 +49,15 @@ class Binary(Enum):
     ``install_hint`` is the suggested ``brew install`` argument.
     """
 
+    install_hint: str
+
     # keep-sorted start
     AWS_VAULT = ("aws-vault", "brew install aws-vault")
     BAZEL = ("bazel", "brew install bazel")
     FD = ("fd", "brew install fd")
     FZF = ("fzf", "brew install fzf")
     GH = ("gh", "brew install gh")
+    GIT_FILTER_REPO = ("git-filter-repo", "uv tool install git-filter-repo")
     JQ = ("jq", "brew install jq")
     KUBECTL = ("kubectl", "brew install kubectl")
     RG = ("rg", "brew install ripgrep")
