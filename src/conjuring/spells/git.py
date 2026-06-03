@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from invoke import Context, UnexpectedExit, task
+from invoke import Context, UnexpectedExit
 from slugify import slugify
 from tqdm import tqdm
 
@@ -23,6 +23,7 @@ from conjuring.colors import Color
 from conjuring.constants import REGEX_JIRA_TICKET_TITLE
 from conjuring.grimoire import (
     REGEX_JIRA,
+    Binary,
     ask_yes_no,
     print_error,
     print_success,
@@ -31,6 +32,7 @@ from conjuring.grimoire import (
     run_lines,
     run_stdout,
     run_with_fzf,
+    task,
     vanish,
 )
 from conjuring.visibility import MagicTask, ShouldDisplayTasks, is_git_repo
@@ -921,7 +923,7 @@ def _perform_repo_merge(
     target_path: Path,
     src_path: Path,
     src_branch: str,
-    dir_: str,
+    subdir: str,
 ) -> None:
     """Perform the actual repository merge operation.
 
@@ -930,37 +932,37 @@ def _perform_repo_merge(
         target_path: Path to target repository
         src_path: Path to source repository
         src_branch: Branch name from source repository to merge
-        dir_: Destination directory name in target repository
+        subdir: Destination directory name in target repository
 
     """
     temp_dir = Path(tempfile.mkdtemp(prefix="git-import-repos-"))
     try:
-        print_success(f"\nMerging {src_path.name} (branch: {src_branch}) into {dir_}/ ...")
+        print_success(f"\nMerging {src_path.name} (branch: {src_branch}) into {subdir}/ ...")
 
-        temp_clone = temp_dir / dir_
+        temp_clone = temp_dir / subdir
         print(f"Creating a fresh clone at {temp_clone} (required by git-filter-repo)...")
         # Use --no-local to avoid hardlinks which git-filter-repo refuses to work with
         c.run(f"git clone --no-local {src_path} {temp_clone}")
 
         with c.cd(str(temp_clone)):
-            print(f"Rewriting history to move everything into the subdirectory {dir_}/ ...")
+            print(f"Rewriting history to move everything into the subdirectory {subdir}/ ...")
             c.run(f"git checkout {src_branch}")
-            c.run(f"git filter-repo --force --to-subdirectory-filter {dir_}")
+            c.run(f"git filter-repo --force --to-subdirectory-filter {subdir}")
 
-        remote_name = f"temp-import-{dir_}"
+        remote_name = f"temp-import-{subdir}"
         with c.cd(str(target_path)):
             print("Adding temporary remote and fetching...")
             c.run(f"git remote add {remote_name} {temp_clone}")
             c.run(f"git fetch {remote_name}")
 
-            print(f"Merging {dir_} history...")
-            merge_msg = f"chore(git): merge repository {src_path} into subdir {dir_!r}"
+            print(f"Merging {subdir} history...")
+            merge_msg = f"chore(git): merge repository {src_path} into subdir {subdir!r}"
             c.run(f'git merge --allow-unrelated-histories -m "{merge_msg}" {remote_name}/{src_branch}')
 
             print("Cleaning up temporary remote...")
             c.run(f"git remote remove {remote_name}")
 
-        print_success(f"Successfully merged {dir_}")
+        print_success(f"Successfully merged {subdir}")
     finally:
         print(f"\nCleaning up temporary clone at {temp_dir}...")
         c.run(f"rm -rf {temp_dir}")
@@ -970,16 +972,17 @@ def _perform_repo_merge(
     help={
         "target": "Path to the target repository where source repo will be merged into",
         "source": "Path to source repository to merge",
-        "dir_": "Name of the destination directory in the target repository (default: source repo name)",
+        "subdir": "Name of the destination directory in the target repository (default: source repo name)",
         "yes": "Skip confirmation prompt and proceed automatically",
         "rollback": "Rollback a previous import by selecting a safety tag",
     },
+    requires=[Binary.GIT_FILTER_REPO],
 )
 def import_repos(  # noqa: PLR0913
     c: Context,
     target: str,
     source: str = "",
-    dir_: str = "",
+    subdir: str = "",
     yes: bool = False,
     rollback: bool = False,
 ) -> None:
@@ -1001,7 +1004,6 @@ def import_repos(  # noqa: PLR0913
     7. Display rollback instructions
 
     Prerequisites:
-    - Install git-filter-repo: pipx install git-filter-repo
     - Target repository must exist and be a Git repository
     - Source repository must exist and be a Git repository
 
@@ -1015,8 +1017,7 @@ def import_repos(  # noqa: PLR0913
     this function, which does a lot of verifications that git-merge-repo doesn't.
 
     Example usage:
-      invoke git.import-repos --target=/path/to/target --source=/path/to/source --dir_=my-subdir
-      invoke git.import-repos --source=/path/to/source  # Uses source repo name as destination dir
+      invoke git.import-repos --target=/path/to/target --source=/path/to/source --subdir=my-subdir
 
     Rollback:
       invoke git.import-repos --target=/path/to/target --rollback
@@ -1036,14 +1037,14 @@ def import_repos(  # noqa: PLR0913
     src_path = _resolve_repo_path(source)
     _validate_git_repo(src_path, "Source repository")
 
-    if not dir_:
-        dir_ = src_path.name
-    dest_dir_path = target_path / dir_
+    if not subdir:
+        subdir = src_path.name
+    dest_dir_path = target_path / subdir
     if dest_dir_path.exists():
-        vanish(f"The destination dir {dir_!r} already exists")
+        vanish(f"The destination dir {subdir!r} already exists")
 
     _validate_and_display_repo_status(c, target_path, "Target repository")
-    print_success(f"Destination directory: {dir_}")
+    print_success(f"Destination subdirectory: {subdir}")
     src_branch = _validate_and_display_repo_status(c, src_path, "Source repository", show_branches=True)
 
     if not yes and not ask_yes_no("Do you want to proceed with merging this repository?"):
@@ -1051,13 +1052,13 @@ def import_repos(  # noqa: PLR0913
 
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     safety_tag = f"{IMPORT_REPOS_TAG_PREFIX}-{timestamp}"
-    tag_message = f"Before merging repo {src_path.name} into {target_path.name}/{dir_}"
+    tag_message = f"Before merging repo {src_path.name} into {target_path.name}/{subdir}"
 
     with c.cd(str(target_path)):
         c.run(f"git tag -a {safety_tag} -m '{tag_message}'")
         print_success(f"Created safety tag: {safety_tag}")
 
-    _perform_repo_merge(c, target_path, src_path, src_branch, dir_)
+    _perform_repo_merge(c, target_path, src_path, src_branch, subdir)
 
     with c.cd(str(target_path)):
         c.run("git log -1")
