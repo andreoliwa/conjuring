@@ -396,10 +396,12 @@ def rewrite(c: Context, commit: str = "--root", gpg: bool = True, author: bool =
         author_flag = f' --author "{name} <{email}>"'
 
     c.run(f'git log --format="%H %cI %aI %s" {commit} > $TMPDIR/rebase_sign_hashlist')
-    c.run(
+    run_command(
+        c,
         "git rebase --committer-date-is-author-date --exec 'GIT_COMMITTER_DATE="
         '$(fgrep -m 1 "$(git log -1 --format="%aI %s" $GIT_COMMIT)" $TMPDIR/rebase_sign_hashlist'
         f' | cut -d" " -f3) git commit --amend --no-edit -n{author_flag}{gpg_flag}\' -i {commit}',
+        interactive=True,
     )
     history(c, dates=True)
     print()
