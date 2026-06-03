@@ -325,10 +325,13 @@ def extract_subtree(c: Context, new_project_dir: str, reset: bool = False) -> No
     print_success(
         "Next steps:",
         "- Run 'invoke git.rewrite' to fix dates and authors",
-        "- Create a new empty repo on https://github.com/new without initializing it (no README/.gitignore/license)",
-        "- Follow the instructions to add a remote (from 'push an existing repository from the command line')",
-        "- Push files to the new repo with:",
-        "  git push -u origin master",
+        "- Option A - push to a new standalone repo:",
+        "  - Create a new empty repo on https://github.com/new without initializing it (no README/.gitignore/license)",
+        "  - Follow the instructions to add a remote (from 'push an existing repository from the command line')",
+        "  - Push files to the new repo with:",
+        "    git push -u origin master",
+        "- Option B - merge into an existing repo as a subdirectory:",
+        "  - Run 'invoke git.import-repos --target=/path/to/target --source=.'",
         join_nl=True,
     )
 
