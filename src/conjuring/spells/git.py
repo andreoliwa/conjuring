@@ -72,8 +72,6 @@ class Git:
     # Use "tail +2" to remove the blank line at the top
     SHOW_ALL_FILE_HISTORY = 'git log --pretty="format:" --name-only | sort -u | tail +2'
 
-    READ_DEFAULT_BRANCH = "git config git-extras.default-branch"
-
     def __init__(self, context: Context) -> None:
         self.context = context
 
@@ -82,8 +80,10 @@ class Git:
         return run_stdout(self.context, "git branch --show-current")
 
     def default_branch(self) -> str:
-        """Return the default branch nam as configured in git-extras.default-branch, if available."""
-        return run_stdout(self.context, Git.READ_DEFAULT_BRANCH, warn=True, dry=False)
+        """Return the default branch: 'main' if origin/main exists, otherwise 'master'."""
+        if run_command(self.context, f"git rev-parse --verify {GIT_REMOTE}/main", hide=True, warn=True).ok:
+            return "main"
+        return "master"
 
     def resolve_base_ref(self, *, exit_on_failure: bool = False) -> str:
         """Resolve the base branch ref, preferring the remote tracking branch over local.
@@ -467,7 +467,6 @@ def set_default_branch(c: Context, remote: bool = False) -> str:
             "--all" if remote else "",
             "| cut -b 3- | grep -v HEAD | sed -E 's#remotes/[^/]+/##g' | sort -u",
         )
-        run_command(c, Git.READ_DEFAULT_BRANCH, branch)
         run_command(c, "git config init.defaultBranch", branch)
         run_command(c, "git config --list | rg default.*branch")
     return branch
@@ -1015,9 +1014,6 @@ def import_repos(  # noqa: PLR0913
     - Source repository is never modified (temporary clone is used)
     - Target repository can be rolled back using git reset
     - Creates a tag before merging for easy rollback
-
-    Note: git-extras has a git-merge-repo command, but I only found out about it after I had written
-    this function, which does a lot of verifications that git-merge-repo doesn't.
 
     Example usage:
       invoke git.import-repos --target=/path/to/target --source=/path/to/source --subdir=my-subdir
