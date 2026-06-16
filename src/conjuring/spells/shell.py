@@ -1,4 +1,4 @@
-"""Shell: install/uninstall completion."""
+"""Shell: completions, hostname, and process management."""
 
 from __future__ import annotations
 
@@ -10,7 +10,15 @@ from pathlib import Path
 
 from invoke import Context, task
 
-from conjuring.grimoire import ask_yes_no, join_pieces, print_error, print_success, print_warning
+from conjuring.grimoire import (
+    ask_yes_no,
+    join_pieces,
+    print_error,
+    print_success,
+    print_warning,
+    run_command,
+    run_stdout,
+)
 
 SHOULD_PREFIX = True
 
@@ -270,3 +278,42 @@ def hostname_set(c: Context, name: str = "") -> None:
             print_warning(f"[dry run] {cmd}")
         else:
             c.run(cmd)
+
+
+@task(
+    help={
+        "path": "Exact path to the binary to kill (e.g. /usr/local/bin/pocketbase)",
+        "str": "Name fragment to match against the full command line (pkill -f)",
+    },
+)
+def kill_process(c: Context, path: str = "", str: str = "") -> None:  # noqa: A002
+    """Kill a process by binary path or command-line fragment."""
+    if not path and not str:
+        print_warning("Provide --path or --str")
+        return
+    if path:
+        _kill_by_path(c, path)
+    if str:
+        _kill_by_fragment(c, str)
+
+
+def _pgrep(c: Context, fragment: str) -> list[str]:
+    return [p for p in run_stdout(c, "pgrep -f", fragment, dry=False).splitlines() if p.strip()]
+
+
+def _kill_by_path(c: Context, binary_path: str) -> None:
+    pids = _pgrep(c, binary_path)
+    if not pids:
+        print_success(f"  No process found for path: {binary_path}")
+        return
+    print_warning(f"  Killing {len(pids)} process(es) for {binary_path}: {', '.join(pids)}")
+    run_command(c, "kill", "-9", *pids)
+
+
+def _kill_by_fragment(c: Context, fragment: str) -> None:
+    pids = _pgrep(c, fragment)
+    if not pids:
+        print_success(f"  No process found for fragment: {fragment}")
+        return
+    print_warning(f"  Killing {len(pids)} process(es) matching '{fragment}': {', '.join(pids)}")
+    run_command(c, "kill", "-9", *pids)
