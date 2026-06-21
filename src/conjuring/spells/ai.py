@@ -32,10 +32,14 @@ CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
+_GSD_HIDDEN_STATUSES = {"complete"}
 _HIDDEN_STATUSES = {"complete", "canceled", "superseded"}
 _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
+# keep-sorted end
+
+# These need to be out of the keep sorted block
 _STATUS_COLORS = {
     "approved": "green",
     "canceled": "red",
@@ -45,8 +49,13 @@ _STATUS_COLORS = {
     "partial": "yellow",
     "superseded": "magenta",
 }
-# keep-sorted end
-
+_GSD_PHASE_STATUS_COLORS = {
+    "complete": "green",
+    "in_progress": "yellow",
+    "partial": "yellow",
+    "planned": "cyan",
+    "pending": "dim",
+}
 _LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
 
 
@@ -335,7 +344,7 @@ def _render_plans_table(
     from rich.console import Console
     from rich.table import Table
 
-    title = ("All" if all_ else "Incomplete/Missing") + " AI Plans & Specs"
+    title = ("All" if all_ else "Pending") + " AI Plans & Specs"
     table = Table(title=title, show_header=True, header_style="bold magenta")
     table.add_column("File", style="cyan", no_wrap=False)
     for col in columns:
@@ -398,10 +407,153 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
 
     total_rows = sum(len(r) for r in worktree_rows.values())
     if total_rows == 0:
-        print_success("All AI plans are completed")
+        print_success("All superpowers plans are completed")
+    else:
+        _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
+
+    # Show GSD phase table if this repo has a .planning dir
+    if (main_root / ".planning").is_dir():
+        _show_gsd_table(main_root, all_)
+
+
+_GSD_ROADMAP_PHASE = re.compile(
+    r"(?:"
+    r"^#{1,3} Phase\s+(\S+)\s+[-:]\s+(.+)"  # ## Phase N - Name  or  ### Phase N: Name
+    r"|"
+    r"^\s*-\s+\[( |x)\]\s+\*\*Phase\s+(\S+):\s+(.+?)\*\*"  # - [ ] / - [x] **Phase N: Name**
+    r")",
+    re.MULTILINE,
+)
+
+
+def _gsd_roadmap_phases(cwd: Path) -> list[dict]:
+    """Parse ROADMAP.md for all Phase entries, returning [{number, name, checked}]."""
+    roadmap = cwd / ".planning" / "ROADMAP.md"
+    if not roadmap.exists():
+        return []
+    text = roadmap.read_text()
+    seen: set[str] = set()
+    phases = []
+    for m in _GSD_ROADMAP_PHASE.finditer(text):
+        # Heading style: groups 1+2, no checkbox. Checklist style: groups 3(check)+4+5.
+        if m.group(1) is not None:
+            num, name, checked = m.group(1).strip(), m.group(2).strip(), None
+        else:
+            checked, num, name = m.group(3), m.group(4).strip(), m.group(5).strip()
+        if not num or num in seen:
+            continue
+        seen.add(num)
+        # Skip milestone-marker headings like "Phase 1 - Complete (shipped v0.2.x)"
+        if re.match(r"complete\b", name, re.IGNORECASE):
+            continue
+        # Strip trailing tags like [NEXT], (conditional), (immediate)
+        name = re.sub(r"\s*[\[(][^\])]+[\])]$", "", name).strip()
+        phases.append({"number": num, "name": name, "checked": checked == "x"})
+    return phases
+
+
+def _gsd_query(cwd: Path, query: str) -> dict:
+    """Run a gsd-tools query and return parsed JSON, or {} on failure."""
+    import json
+    import subprocess
+
+    try:
+        result = subprocess.run(  # noqa: S603
+            ["gsd-tools", "query", query, "--raw", "--cwd", str(cwd)],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return json.loads(result.stdout)
+    except (OSError, json.JSONDecodeError):
+        pass
+    return {}
+
+
+def _gsd_phase_rows(phases: list[dict], all_: bool) -> list[tuple[str, str, str, str]]:
+    """Build GSD phase rows as (phase, name, status, plans) tuples."""
+    rows = []
+    for phase in phases:
+        status = phase.get("status", "")
+        if not all_ and status in _GSD_HIDDEN_STATUSES:
+            continue
+        plan_count = phase.get("plan_count", 0)
+        summary_count = phase.get("summary_count", 0)
+        plans_cell = f"{summary_count}/{plan_count}"
+        rows.append(
+            (
+                phase.get("number", ""),
+                phase.get("name", ""),
+                status,
+                plans_cell,
+            )
+        )
+    return rows
+
+
+def _render_gsd_table(rows: list[tuple[str, str, str, str]], milestone: str) -> None:
+    """Print a Rich table of GSD phases."""
+    from rich.console import Console
+    from rich.table import Table
+
+    title = f"GSD Phases — {milestone}" if milestone else "GSD Phases"
+    table = Table(title=title, show_header=True, header_style="bold magenta")
+    table.add_column("Phase", style="dim", no_wrap=True)
+    table.add_column("Name", style="cyan")
+    table.add_column("Status")
+    table.add_column("Plans", justify="right")
+
+    for phase_num, name, status, plans_cell in rows:
+        color = _GSD_PHASE_STATUS_COLORS.get(status, "")
+        status_cell = f"[{color}]{status}[/{color}]" if color else status
+        table.add_row(phase_num, name, status_cell, plans_cell)
+
+    Console().print(table)
+
+
+def _show_gsd_table(cwd: Path, all_: bool) -> None:
+    """Detect and render a GSD phase table for the given project root."""
+    import shutil
+
+    if not shutil.which("gsd-tools"):
+        print_warning("gsd-tools not on PATH - install: npx -y @opengsd/gsd-core@latest")
         return
 
-    _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
+    data = _gsd_query(cwd, "init.progress")
+    roadmap_phases = _gsd_roadmap_phases(cwd)
+
+    if not data and not roadmap_phases:
+        return
+
+    # Build a map of known phases from init.progress (have artifact dirs).
+    # Normalize keys: strip leading zeros so "00" and "0" both match.
+    known: dict[str, dict] = {p["number"].lstrip("0") or "0": p for p in data.get("phases", [])}
+
+    # Merge: roadmap order, filling in artifact data where available
+    phases: list[dict] = []
+    for rp in roadmap_phases:
+        num = rp["number"]
+        if num in known:
+            phases.append(known[num])
+        else:
+            status = "complete" if rp.get("checked") else "planned"
+            phases.append({"number": num, "name": rp["name"], "status": status, "plan_count": 0, "summary_count": 0})
+
+    # Fall back to init.progress phases if ROADMAP.md has no headings
+    if not phases:
+        phases = data.get("phases", [])
+
+    if not phases:
+        return
+
+    rows = _gsd_phase_rows(phases, all_)
+    if not rows:
+        print_success("All GSD phases completed")
+        return
+
+    milestone = data.get("milestone_version", "")
+    _render_gsd_table(rows, milestone)
 
 
 def _decode_project_dir(encoded: str) -> str:
