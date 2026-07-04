@@ -420,7 +420,7 @@ _GSD_ROADMAP_PHASE = re.compile(
     r"(?:"
     r"^#{1,3} Phase\s+(\S+)\s+[-:]\s+(.+)"  # ## Phase N - Name  or  ### Phase N: Name
     r"|"
-    r"^\s*-\s+\[( |x)\]\s+\*\*Phase\s+(\S+):\s+(.+?)\*\*"  # - [ ] / - [x] **Phase N: Name**
+    r"^\s*-\s+\[( |x|~)\]\s+\*\*Phase\s+(\S+):\s+(.+?)\*\*"  # - [ ] / - [x] / - [~] **Phase N: Name**
     r")",
     re.MULTILINE,
 )
@@ -448,8 +448,27 @@ def _gsd_roadmap_phases(cwd: Path) -> list[dict]:
             continue
         # Strip trailing tags like [NEXT], (conditional), (immediate)
         name = re.sub(r"\s*[\[(][^\])]+[\])]$", "", name).strip()
-        phases.append({"number": num, "name": name, "checked": checked == "x"})
+        phases.append({"number": num, "name": name, "checked": checked})
     return phases
+
+
+def _archived_phase_plan_counts(cwd: Path, num: str) -> tuple[int, int]:
+    """Return (plan_count, summary_count) for a phase by scanning archived milestone dirs.
+
+    init.progress only reports counts for the current milestone's phase directories;
+    phases from prior completed milestones move under .planning/archive/<milestone>/<num>-*/.
+    """
+    archive_root = cwd / ".planning" / "archive"
+    if not archive_root.is_dir():
+        return 0, 0
+    padded = num.zfill(2)
+    for phase_dir in archive_root.glob(f"*/{padded}-*"):
+        if not phase_dir.is_dir():
+            continue
+        plan_count = len(list(phase_dir.glob("*PLAN.md")))
+        summary_count = len(list(phase_dir.glob("*SUMMARY.md")))
+        return plan_count, summary_count
+    return 0, 0
 
 
 def _gsd_query(cwd: Path, query: str) -> dict:
@@ -492,20 +511,54 @@ def _gsd_phase_rows(phases: list[dict], all_: bool) -> list[tuple[str, str, str,
     return rows
 
 
+_QUICK_SLUG = re.compile(r"^\d{6,8}-[a-z0-9]{3}-")
+
+
+_QUICK_FRONTMATTER_FIELD = re.compile(r"^(status|last_updated):\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _quick_task_status(quick_dir: Path) -> tuple[str, str]:
+    """Return (status, last_updated) for a quick task, read from its SUMMARY*.md frontmatter."""
+    for summary in sorted(quick_dir.glob("*SUMMARY*.md")):
+        text = summary.read_text(errors="ignore")
+        fields = dict(_QUICK_FRONTMATTER_FIELD.findall(text.split("\n---", 1)[0]))
+        if fields.get("status"):
+            return fields["status"], fields.get("last_updated", "")
+    return _MISSING, ""
+
+
+def _quick_task_rows(cwd: Path, all_: bool) -> list[tuple[str, str, str, str]]:
+    """Build quick-task rows as (phase, name, status, plans) tuples."""
+    quick_root = cwd / ".planning" / "quick"
+    if not quick_root.is_dir():
+        return []
+
+    rows = []
+    for quick_dir in sorted(quick_root.iterdir()):
+        if not quick_dir.is_dir():
+            continue
+        status, _last_updated = _quick_task_status(quick_dir)
+        if not all_ and status in _GSD_HIDDEN_STATUSES:
+            continue
+        name = _QUICK_SLUG.sub("", quick_dir.name)
+        rows.append(("quick", name, status, ""))
+    return rows
+
+
 def _render_gsd_table(rows: list[tuple[str, str, str, str]], milestone: str) -> None:
-    """Print a Rich table of GSD phases."""
+    """Print a Rich table of GSD phases and quick tasks."""
     from rich.console import Console
     from rich.table import Table
 
     title = f"GSD Phases — {milestone}" if milestone else "GSD Phases"
     table = Table(title=title, show_header=True, header_style="bold magenta")
-    table.add_column("Phase", style="dim", no_wrap=True)
+    table.add_column("Phase", no_wrap=True)
     table.add_column("Name", style="cyan")
     table.add_column("Status")
     table.add_column("Plans", justify="right")
 
     for phase_num, name, status, plans_cell in rows:
-        color = _GSD_PHASE_STATUS_COLORS.get(status, "")
+        color = _GSD_PHASE_STATUS_COLORS.get(status, "") or _STATUS_COLORS.get(status, "")
         status_cell = f"[{color}]{status}[/{color}]" if color else status
         table.add_row(phase_num, name, status_cell, plans_cell)
 
@@ -513,7 +566,7 @@ def _render_gsd_table(rows: list[tuple[str, str, str, str]], milestone: str) -> 
 
 
 def _show_gsd_table(cwd: Path, all_: bool) -> None:
-    """Detect and render a GSD phase table for the given project root."""
+    """Detect and render a combined GSD phase + quick task table for the given project root."""
     import shutil
 
     if not shutil.which("gsd-tools"):
@@ -537,19 +590,28 @@ def _show_gsd_table(cwd: Path, all_: bool) -> None:
         if num in known:
             phases.append(known[num])
         else:
-            status = "complete" if rp.get("checked") else "planned"
-            phases.append({"number": num, "name": rp["name"], "status": status, "plan_count": 0, "summary_count": 0})
+            checked = rp.get("checked")
+            status = "complete" if checked == "x" else "in_progress" if checked == "~" else "planned"
+            plan_count, summary_count = _archived_phase_plan_counts(cwd, num)
+            phases.append(
+                {
+                    "number": num,
+                    "name": rp["name"],
+                    "status": status,
+                    "plan_count": plan_count,
+                    "summary_count": summary_count,
+                }
+            )
 
     # Fall back to init.progress phases if ROADMAP.md has no headings
     if not phases:
         phases = data.get("phases", [])
 
-    if not phases:
-        return
+    rows = _gsd_phase_rows(phases, all_) if phases else []
+    rows += _quick_task_rows(cwd, all_)
 
-    rows = _gsd_phase_rows(phases, all_)
     if not rows:
-        print_success("All GSD phases completed")
+        print_success("All GSD phases and quick tasks completed")
         return
 
     milestone = data.get("milestone_version", "")
