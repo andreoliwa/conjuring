@@ -60,4 +60,4 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           comment-template: |
-            This was released in [${{ '{{' }} release-tag ${{ '}}' }}](${{ '{{' }} release-link ${{ '}}' }}).
+            This was released in {release_link}.
