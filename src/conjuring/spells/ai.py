@@ -518,12 +518,13 @@ _QUICK_FRONTMATTER_FIELD = re.compile(r"^(status|last_updated):\s*(.+?)\s*$", re
 
 
 def _quick_task_status(quick_dir: Path) -> tuple[str, str]:
-    """Return (status, last_updated) for a quick task, read from its SUMMARY*.md frontmatter."""
-    for summary in sorted(quick_dir.glob("*SUMMARY*.md")):
-        text = summary.read_text(errors="ignore")
-        fields = dict(_QUICK_FRONTMATTER_FIELD.findall(text.split("\n---", 1)[0]))
-        if fields.get("status"):
-            return fields["status"], fields.get("last_updated", "")
+    """Return (status, last_updated), read from SUMMARY*.md frontmatter, falling back to PLAN*.md."""
+    for glob in ("*SUMMARY*.md", "*PLAN*.md"):
+        for md_file in sorted(quick_dir.glob(glob)):
+            text = md_file.read_text(errors="ignore")
+            fields = dict(_QUICK_FRONTMATTER_FIELD.findall(text.split("\n---", 1)[0]))
+            if fields.get("status"):
+                return fields["status"], fields.get("last_updated", "")
     return _MISSING, ""
 
 
