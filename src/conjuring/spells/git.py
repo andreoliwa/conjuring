@@ -108,12 +108,13 @@ class Git:
             raise SystemExit(1)
         raise RuntimeError(msg)
 
-    def guard_not_default_branch(self) -> str:
-        """Exit with an error if on a default branch. Returns the current branch name."""
+    def warn_if_default_branch(self) -> str:
+        """Warn and ask for confirmation if on a default branch. Exit if the user declines."""
         current_branch = self.current_branch()
         if current_branch in DEFAULT_BRANCHES:
-            print_error("You should create a branch to use this command")
-            raise SystemExit(1)
+            print_warning("You should create a branch to use this command")
+            if not ask_yes_no("Continue anyway?"):
+                raise SystemExit(1)
         return current_branch
 
     def checkout(self, *branches: str) -> str:

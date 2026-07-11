@@ -109,7 +109,7 @@ def _count_ai_iterations(log_lines: list[str]) -> int:
 def iteration(c: Context, message: str = "", push: bool = False) -> None:
     """Commit all changes as a numbered AI iteration (e.g. chore(ai): 3. <message>)."""
     git = Git(c)
-    git.guard_not_default_branch()
+    git.warn_if_default_branch()
 
     # Guard: must have changes to commit
     status = run_stdout(c, "git status --porcelain")
