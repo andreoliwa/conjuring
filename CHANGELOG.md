@@ -2,36 +2,33 @@
 
 ## [0.13.0](https://github.com/andreoliwa/conjuring/compare/v0.12.0...v0.13.0) (2026-07-11)
 
-
 ### Features
 
-* **ai:** display table with GSD plan docs ([dee748a](https://github.com/andreoliwa/conjuring/commit/dee748a3b4c1648f500a2e8a4fd2a766fe3b7ebc))
-* **ai:** fall back to PLAN frontmatter for quick task status ([3b90db5](https://github.com/andreoliwa/conjuring/commit/3b90db5e668650e1184594a07a08aa3ebc94b977))
-* **ai:** show quick tasks alongside GSD phases in plans table ([e51461b](https://github.com/andreoliwa/conjuring/commit/e51461b7f052a1ac9cbf69b2c840d92b8d4dd4a1))
-* **conjuring:** re-export Binary, ConjuringTask, task from package __init__ ([1357268](https://github.com/andreoliwa/conjuring/commit/135726844e8416114bfec3c5da17838106ac6246))
-* **git:** add oneline flag to log_since task ([e1619f0](https://github.com/andreoliwa/conjuring/commit/e1619f0573059a0d6148a4a3bf8bf2677d257219))
-* **git:** add requires check and rename dir_ to subdir in git.import-repos ([eb3db20](https://github.com/andreoliwa/conjuring/commit/eb3db2002d670f8f3b6e9539197f510a40ff4aea))
-* **git:** add two-path next steps to git.extract-subtree ([a49de2d](https://github.com/andreoliwa/conjuring/commit/a49de2deef51e98abd75e741cd80a69c6b5f5fcd))
-* **git:** warn instead of block on default branch ([b46d9fe](https://github.com/andreoliwa/conjuring/commit/b46d9fe9e54412176f794e98c4493a0e47b9d661))
-* **grimoire:** add Binary enum for required external CLI binaries ([c1b3f86](https://github.com/andreoliwa/conjuring/commit/c1b3f86be06cc7667818af17df6dea509497fc1f))
-* **grimoire:** add ConjuringTask subclass and task wrapper with requires checking ([d430c50](https://github.com/andreoliwa/conjuring/commit/d430c50689739760b8ca1ffb1b8f7bf7df26d476))
-* **grimoire:** add default parameter to ask_yes_no ([d5f6269](https://github.com/andreoliwa/conjuring/commit/d5f62699cba70a163e799610351dd01d1a672149))
-* **grimoire:** add GIT_FILTER_REPO to Binary enum ([2baf806](https://github.com/andreoliwa/conjuring/commit/2baf8062834699f521913deeef49ef1486165269))
-* **shell:** add kill_process task to stop processes by path or cmdline fragment ([4ff17e7](https://github.com/andreoliwa/conjuring/commit/4ff17e70cee80162ff2311b91fc35aabcbfb9736))
-
+- **ai:** display table with GSD plan docs ([dee748a](https://github.com/andreoliwa/conjuring/commit/dee748a3b4c1648f500a2e8a4fd2a766fe3b7ebc))
+- **ai:** fall back to PLAN frontmatter for quick task status ([3b90db5](https://github.com/andreoliwa/conjuring/commit/3b90db5e668650e1184594a07a08aa3ebc94b977))
+- **ai:** show quick tasks alongside GSD phases in plans table ([e51461b](https://github.com/andreoliwa/conjuring/commit/e51461b7f052a1ac9cbf69b2c840d92b8d4dd4a1))
+- **conjuring:** re-export Binary, ConjuringTask, task from package **init** ([1357268](https://github.com/andreoliwa/conjuring/commit/135726844e8416114bfec3c5da17838106ac6246))
+- **git:** add oneline flag to log_since task ([e1619f0](https://github.com/andreoliwa/conjuring/commit/e1619f0573059a0d6148a4a3bf8bf2677d257219))
+- **git:** add requires check and rename dir_ to subdir in git.import-repos ([eb3db20](https://github.com/andreoliwa/conjuring/commit/eb3db2002d670f8f3b6e9539197f510a40ff4aea))
+- **git:** add two-path next steps to git.extract-subtree ([a49de2d](https://github.com/andreoliwa/conjuring/commit/a49de2deef51e98abd75e741cd80a69c6b5f5fcd))
+- **git:** warn instead of block on default branch ([b46d9fe](https://github.com/andreoliwa/conjuring/commit/b46d9fe9e54412176f794e98c4493a0e47b9d661))
+- **grimoire:** add Binary enum for required external CLI binaries ([c1b3f86](https://github.com/andreoliwa/conjuring/commit/c1b3f86be06cc7667818af17df6dea509497fc1f))
+- **grimoire:** add ConjuringTask subclass and task wrapper with requires checking ([d430c50](https://github.com/andreoliwa/conjuring/commit/d430c50689739760b8ca1ffb1b8f7bf7df26d476))
+- **grimoire:** add default parameter to ask_yes_no ([d5f6269](https://github.com/andreoliwa/conjuring/commit/d5f62699cba70a163e799610351dd01d1a672149))
+- **grimoire:** add GIT_FILTER_REPO to Binary enum ([2baf806](https://github.com/andreoliwa/conjuring/commit/2baf8062834699f521913deeef49ef1486165269))
+- **shell:** add kill_process task to stop processes by path or cmdline fragment ([4ff17e7](https://github.com/andreoliwa/conjuring/commit/4ff17e70cee80162ff2311b91fc35aabcbfb9736))
 
 ### Bug Fixes
 
-* **deps:** declare click as explicit dependency ([61833ed](https://github.com/andreoliwa/conjuring/commit/61833edad39cbb91549d90d371279ea38fb78e18))
-* **git:** replace git-extras default branch detection with origin/main check ([8ac23fe](https://github.com/andreoliwa/conjuring/commit/8ac23fecf547e02ab596e32dd446ee5a24222e00))
-* **git:** use run_command(interactive=True) in git.rewrite ([4657fd3](https://github.com/andreoliwa/conjuring/commit/4657fd384e450aab57bd2a6cee5b02a17d83558b))
-* **grimoire:** run fzf interactively via direct subprocess ([4384d71](https://github.com/andreoliwa/conjuring/commit/4384d71e05b31bbe50c433ffde7f445e4a0a021c))
-* **media:** convert HEIC via sips, fix copy on exFAT, return Path from shrink_and_copy ([5d259d9](https://github.com/andreoliwa/conjuring/commit/5d259d94bcbe6ca8317c76551e37c31593e2c871))
-
+- **deps:** declare click as explicit dependency ([61833ed](https://github.com/andreoliwa/conjuring/commit/61833edad39cbb91549d90d371279ea38fb78e18))
+- **git:** replace git-extras default branch detection with origin/main check ([8ac23fe](https://github.com/andreoliwa/conjuring/commit/8ac23fecf547e02ab596e32dd446ee5a24222e00))
+- **git:** use run_command(interactive=True) in git.rewrite ([4657fd3](https://github.com/andreoliwa/conjuring/commit/4657fd384e450aab57bd2a6cee5b02a17d83558b))
+- **grimoire:** run fzf interactively via direct subprocess ([4384d71](https://github.com/andreoliwa/conjuring/commit/4384d71e05b31bbe50c433ffde7f445e4a0a021c))
+- **media:** convert HEIC via sips, fix copy on exFAT, return Path from shrink_and_copy ([5d259d9](https://github.com/andreoliwa/conjuring/commit/5d259d94bcbe6ca8317c76551e37c31593e2c871))
 
 ### Documentation
 
-* create LICENSE ([032ab0a](https://github.com/andreoliwa/conjuring/commit/032ab0a32ff374ba4fb8ac8a8ab880a94a3e8da8))
+- create LICENSE ([032ab0a](https://github.com/andreoliwa/conjuring/commit/032ab0a32ff374ba4fb8ac8a8ab880a94a3e8da8))
 
 ## [0.12.0](https://github.com/andreoliwa/conjuring/compare/v0.11.0...v0.12.0) (2026-05-24)
 
