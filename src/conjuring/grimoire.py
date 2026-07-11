@@ -9,7 +9,6 @@ import re
 import socket
 import subprocess
 import sys
-import tempfile
 import time
 from collections import defaultdict
 from dataclasses import dataclass
@@ -319,18 +318,28 @@ def run_with_fzf(  # noqa: PLR0913
     if preview:
         fzf_pieces.append(f"--preview={quote(preview)}")
 
-    use_pty = kwargs.pop("pty", False)
+    use_interactive = kwargs.pop("interactive", False)
+    kwargs.pop("pty", False)  # consumed; ignored in favour of interactive
     kwargs.setdefault("hide", False)
-    if use_pty:
-        # fzf needs a real TTY for interactive UI but stdout must be captured.
-        # Redirect fzf output to a temp file; run with pty=True so the UI renders.
-        _, out_file = tempfile.mkstemp()
-        out_path = Path(out_file)
-        try:
-            run_command(c, *pieces, *fzf_pieces, f"> {out_file}", pty=True, **kwargs)
-            result = out_path.read_text().strip()
-        finally:
-            out_path.unlink(missing_ok=True)
+    if use_interactive:
+        # fzf draws its UI on stderr (which goes to the terminal) and writes the
+        # selection to stdout. Invoke intercepts stdin breaking TTY detection, so
+        # bypass it entirely: run the data-producer subprocess, pipe its output
+        # directly into fzf via Python, and capture fzf's stdout.
+        producer_cmd = join_pieces(*pieces)
+        fzf_cmd = join_pieces(*fzf_pieces).lstrip("| ")
+        producer = subprocess.run(producer_cmd, shell=True, capture_output=True, text=True, check=False)  # noqa: S602
+        fzf_proc = subprocess.run(  # noqa: S602
+            fzf_cmd,
+            shell=True,
+            input=producer.stdout,
+            capture_output=False,
+            stdout=subprocess.PIPE,
+            stderr=None,  # inherit stderr so fzf UI renders in terminal
+            text=True,
+            check=False,
+        )
+        result = fzf_proc.stdout.strip()
     elif multi:
         result = "\n".join(run_lines(c, *pieces, *fzf_pieces, **kwargs))
     else:
