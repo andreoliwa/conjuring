@@ -2,10 +2,9 @@
 
 ## [0.13.1](https://github.com/andreoliwa/conjuring/compare/v0.13.0...v0.13.1) (2026-07-26)
 
-
 ### Bug Fixes
 
-* **shell:** refresh completions at startup ([8c595b3](https://github.com/andreoliwa/conjuring/commit/8c595b39482dde22705013623bc17ce16fed6e38))
+- **shell:** refresh completions at startup ([8c595b3](https://github.com/andreoliwa/conjuring/commit/8c595b39482dde22705013623bc17ce16fed6e38))
 
 ## [0.13.0](https://github.com/andreoliwa/conjuring/compare/v0.12.0...v0.13.0) (2026-07-11)
 
