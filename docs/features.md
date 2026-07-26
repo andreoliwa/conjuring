@@ -166,6 +166,15 @@ conjuring --install-completion bash
 Then open a new terminal, type `invoke <TAB>` or `conjuring <TAB>`,
 and you will have auto-completion.
 
+To install a completion for another CLI, run:
+
+```shell
+i shell.completion-install --app vessel
+```
+
+The installed file runs the app's completion command with `eval` when your
+shell starts, so new commands and flags do not need a new completion install.
+
 You can even set up auto-completion for aliases (like `i <TAB>` for `invoke`)
 with the [complete-alias](https://github.com/cykerway/complete-alias) project.
 

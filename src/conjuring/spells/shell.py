@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import platform
+import shlex
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -30,38 +31,7 @@ _SUBCOMMAND_COMPLETION = "completion"
 _SUBCOMMAND_COMPLETIONS = "completions"
 _SHEBANG_PREFIX = "#"
 
-# Typer completion script templates (%(key)s format), sourced from
-# typer._completion_shared._completion_scripts (typer 0.12+, stable since).
-# Embedded here to avoid importing typer into the conjuring environment.
-_TYPER_SCRIPTS: dict[str, str] = {
-    "bash": (
-        "\n%(complete_func)s() {\n"
-        "    local IFS=$'\\n'\n"
-        '    COMPREPLY=( $( env COMP_WORDS="${COMP_WORDS[*]}" \\\n'
-        "                   COMP_CWORD=$COMP_CWORD \\\n"
-        "                   %(autocomplete_var)s=complete_bash $1 ) )\n"
-        "    return 0\n"
-        "}\n\n"
-        "complete -o default -F %(complete_func)s %(prog_name)s\n"
-    ),
-    "zsh": (
-        "\n#compdef %(prog_name)s\n\n"
-        "%(complete_func)s() {\n"
-        '  eval $(env _TYPER_COMPLETE_ARGS="${words[1,$CURRENT]}"'
-        " %(autocomplete_var)s=complete_zsh %(prog_name)s)\n"
-        "}\n\n"
-        "compdef %(complete_func)s %(prog_name)s\n"
-    ),
-    "fish": (
-        "complete --command %(prog_name)s --no-files"
-        ' --arguments "(env %(autocomplete_var)s=complete_fish'
-        " _TYPER_COMPLETE_FISH_ACTION=get-args"
-        ' _TYPER_COMPLETE_ARGS=(commandline -cp) %(prog_name)s)"'
-        ' --condition "env %(autocomplete_var)s=complete_fish'
-        " _TYPER_COMPLETE_FISH_ACTION=is-args"
-        ' _TYPER_COMPLETE_ARGS=(commandline -cp) %(prog_name)s"'
-    ),
-}
+_TYPER_SHELLS = frozenset({"bash", "fish", "zsh"})
 
 
 class Shell(str, Enum):
@@ -94,7 +64,7 @@ def _detect_current_shell() -> Shell | None:
 
 
 def _clap_completion(c: Context, app: str, shell: Shell) -> str:
-    """Try to generate completions for a Clap (Rust) binary.
+    """Return a completion generator command for a Clap (Rust) binary.
 
     Clap-based tools expose either `<app> completions <shell>` or
     `<app> completion <shell>` (both are common spellings in the ecosystem).
@@ -107,14 +77,14 @@ def _clap_completion(c: Context, app: str, shell: Shell) -> str:
 
     """
     for subcommand in (_SUBCOMMAND_COMPLETIONS, _SUBCOMMAND_COMPLETION):
-        output = _probe(c, app, subcommand, shell)
+        output = _probe(c, shlex.quote(app), subcommand, shell)
         if output:
-            return output
+            return shlex.join((app, subcommand, shell.value))
     return ""
 
 
 def _cobra_completion(c: Context, app: str, shell: Shell) -> str:
-    """Try to generate completions for a Cobra (Go) binary.
+    """Return a completion generator command for a Cobra (Go) binary.
 
     Cobra exposes `<app> completion <shell>` automatically on every binary.
     Detection: we probe `<app> completion <shell>` and accept the result only
@@ -125,17 +95,14 @@ def _cobra_completion(c: Context, app: str, shell: Shell) -> str:
     - https://cobra.dev/docs/how-to-guides/shell-completion/
 
     """
-    output = _probe(c, app, _SUBCOMMAND_COMPLETION, shell)
+    output = _probe(c, shlex.quote(app), _SUBCOMMAND_COMPLETION, shell)
     if output and output.startswith(_SHEBANG_PREFIX):
-        return output
+        return shlex.join((app, _SUBCOMMAND_COMPLETION, shell.value))
     return ""
 
 
 def _typer_completion(c: Context, app: str, shell: Shell) -> str:
-    """Try to generate completions for a Typer (Python) binary.
-
-    Typer does not expose completion scripts via the binary — the script is
-    generated internally by `typer._completion_shared.get_completion_script()`.
+    """Return a completion generator command for a Typer (Python) binary.
 
     Detection: `--show-completion` appears in the `--help` output of every
     Typer app that has completion enabled (the default).  We set NO_COLOR=1
@@ -146,19 +113,16 @@ def _typer_completion(c: Context, app: str, shell: Shell) -> str:
     - https://typer.tiangolo.com/tutorial/options-autocompletion/
 
     """
-    help_output = _probe(c, f"NO_COLOR=1 {app}", "--help")
+    help_output = _probe(c, f"NO_COLOR=1 {shlex.quote(app)}", "--help")
     if "--show-completion" not in help_output:
         return ""
-    template = _TYPER_SCRIPTS.get(shell.value)
-    if template is None:
+    if shell.value not in _TYPER_SHELLS:
         return ""
-    complete_func = f"_{app.replace('-', '_')}_completion"
-    complete_var = f"_{app.replace('-', '_').upper()}_COMPLETE"
-    return template % {"complete_func": complete_func, "prog_name": app, "autocomplete_var": complete_var}
+    return shlex.join((app, "--show-completion", shell.value))
 
 
 def _click_completion(c: Context, app: str, shell: Shell) -> str:
-    """Try to generate completions for a Click (Python) binary.
+    """Return a completion generator command for a Click (Python) binary.
 
     Click uses the env-var protocol `_{APP}_COMPLETE=<shell>_source <app>`.
 
@@ -168,7 +132,9 @@ def _click_completion(c: Context, app: str, shell: Shell) -> str:
     """
     env_var = f"_{app.upper()}_COMPLETE"
     env_value = f"{shell}_source"
-    return _probe(c, f"{env_var}={env_value} {app}")
+    if _probe(c, f"{env_var}={env_value} {shlex.quote(app)}"):
+        return f"{env_var}={env_value} {shlex.quote(app)}"
+    return ""
 
 
 # Ordered list of (name, detector_fn).  Add new frameworks here.
@@ -183,12 +149,17 @@ _DETECTORS: list[tuple[str, object]] = [
 
 
 def _generate_completion(c: Context, app: str, shell: Shell) -> tuple[str, str]:
-    """Probe each known framework and return (framework_name, completion_script)."""
+    """Probe each known framework and return its completion generator command."""
     for framework_name, detector in _DETECTORS:
-        script = detector(c, app, shell)  # type: ignore[operator]
-        if script:
-            return framework_name, script
+        generator = detector(c, app, shell)  # type: ignore[operator]
+        if generator:
+            return framework_name, generator
     return "", ""
+
+
+def _completion_loader(generator: str) -> str:
+    """Return a shell snippet that loads fresh completions from GENERATOR."""
+    return f'eval "$({generator})"\n'
 
 
 @task
@@ -220,8 +191,8 @@ def completion_install(c: Context, app: str) -> None:
         print_warning(f"Unknown shell — defaulting to {_DEFAULT_SHELL.value}. Set $SHELL to override.")
         shell = _DEFAULT_SHELL
 
-    framework, script = _generate_completion(c, app, shell)
-    if not script:
+    framework, generator = _generate_completion(c, app, shell)
+    if not generator:
         print_error(f"Could not detect CLI framework for '{app}'. Tried: {', '.join(n for n, _ in _DETECTORS)}")
         return
 
@@ -237,7 +208,7 @@ def completion_install(c: Context, app: str) -> None:
             return
 
     user_dir.mkdir(parents=True, exist_ok=True)
-    completion_file.write_text(script, encoding="utf-8")
+    completion_file.write_text(_completion_loader(generator), encoding="utf-8")
     print_success(f"Installed: {completion_file}")
     c.run(f"eza -l {completion_file}")
 
