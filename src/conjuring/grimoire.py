@@ -17,6 +17,7 @@ from importlib import import_module
 from pathlib import Path
 from shlex import quote
 from shutil import which
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 from invoke import Collection, Context, Exit, Result, Task
@@ -70,6 +71,16 @@ class Binary(Enum):
         obj._value_ = executable
         obj.install_hint = install_hint
         return obj
+
+    @staticmethod
+    def external(executable: str, install_hint: str) -> SimpleNamespace:
+        """Build a one-off requires-compatible binary outside the curated enum, for project-local tasks.
+
+        Enum members are fixed at class-creation time, so callers needing a binary not listed here
+        (e.g. a tool specific to one downstream project) can't add a real member. This returns an object
+        with the same ``value``/``install_hint`` shape ``ConjuringTask`` checks, without touching the enum.
+        """
+        return SimpleNamespace(value=executable, install_hint=install_hint)
 
 
 class ConjuringTask(Task):
