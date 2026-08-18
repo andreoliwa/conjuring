@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 from enum import Enum
 from pathlib import Path
+from shlex import quote
 
 from humanize import naturalsize
 from invoke import Context, task
@@ -264,6 +266,49 @@ def whisper(c: Context, dir_: str | Path) -> None:
             c.run(f"whisper --language pt -f txt '{file}' --output_dir '{file.parent}'")
             continue
         c.run(f"open '{transcript_file}'")
+
+
+@task(
+    help={
+        "file": "Video file to transcribe",
+        "language": "Spoken language code. Default: detect automatically",
+        "model": "Whisper model to use. Default: base",
+        "overwrite": "Replace an existing .srt file. Default: False",
+    },
+)
+def video_to_srt(
+    c: Context,
+    file: str | Path,
+    language: str = "",
+    model: str = "base",
+    overwrite: bool = False,
+) -> None:
+    """Extract a video's audio to a temporary file and transcribe it to a sibling .srt file."""
+    video_file = Path(file).expanduser().absolute()
+    subtitle_file = video_file.with_suffix(".srt")
+    if not video_file.is_file():
+        print_error(f"Video file not found: {video_file}")
+        return
+    if subtitle_file.exists() and not overwrite:
+        print_warning(f"Subtitle already exists: {subtitle_file}. Use --overwrite to replace it")
+        return
+
+    language_option = f"--language {quote(language)}" if language else ""
+    with tempfile.TemporaryDirectory(prefix="conjuring-whisper-") as tmpdir:
+        temp_dir = Path(tmpdir)
+        audio_file = temp_dir / "audio.wav"
+        temp_subtitle_file = audio_file.with_suffix(".srt")
+        c.run(
+            f"ffmpeg -nostdin -i {quote(str(video_file))} -vn -ac 1 -ar 16000 -c:a pcm_s16le {quote(str(audio_file))}"
+        )
+        c.run(
+            f"whisper {quote(str(audio_file))} --model {quote(model)} {language_option}"
+            f" --output_dir {quote(str(temp_dir))} --output_format srt"
+        )
+        if c.config.run.dry:
+            return
+        shutil.move(temp_subtitle_file, subtitle_file)
+    print_success(f"Created subtitle: {subtitle_file}")
 
 
 class CompareDirsAction(Enum):
