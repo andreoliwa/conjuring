@@ -825,7 +825,7 @@ def dirty(c: Context, dir_: list[str | Path]) -> bool:
     table.add_column("Untracked", justify="right")
     table.add_column("Stashes", justify="right")
 
-    for repo_status in dirty_repos_data:
+    for repo_status in sorted(dirty_repos_data, key=lambda status: str(status.repo_path).casefold()):
         # Helper function to format counts (empty string for zero)
         def format_count(count: int) -> str:
             return str(count) if count > 0 else ""
