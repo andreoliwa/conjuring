@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/andreoliwa/conjuring/compare/v0.13.1...v0.14.0) (2026-08-19)
+
+### Features
+
+- **grimoire:** support external task binaries ([2e51ae5](https://github.com/andreoliwa/conjuring/commit/2e51ae555d18a185229455dbbb29daded86327b8))
+- **media:** add video subtitle transcription ([a9ce011](https://github.com/andreoliwa/conjuring/commit/a9ce011ea31b9974e0e75f23215fdc6c2e5719ab))
+
+### Bug Fixes
+
+- **git:** sort dirty repository output ([06310ef](https://github.com/andreoliwa/conjuring/commit/06310ef573fa763b1766ab535300d5e1ffb67291))
+
 ## [0.13.1](https://github.com/andreoliwa/conjuring/compare/v0.13.0...v0.13.1) (2026-07-26)
 
 ### Bug Fixes
