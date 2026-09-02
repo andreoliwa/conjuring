@@ -32,7 +32,6 @@ CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
-_GSD_HIDDEN_STATUSES = {"complete"}
 _HIDDEN_STATUSES = {"complete", "canceled", "superseded"}
 _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "missing"
@@ -495,7 +494,7 @@ def _gsd_phase_rows(phases: list[dict], all_: bool) -> list[tuple[str, str, str,
     rows = []
     for phase in phases:
         status = phase.get("status", "")
-        if not all_ and status in _GSD_HIDDEN_STATUSES:
+        if not all_ and status in _HIDDEN_STATUSES:
             continue
         plan_count = phase.get("plan_count", 0)
         summary_count = phase.get("summary_count", 0)
@@ -539,7 +538,7 @@ def _quick_task_rows(cwd: Path, all_: bool) -> list[tuple[str, str, str, str]]:
         if not quick_dir.is_dir():
             continue
         status, _last_updated = _quick_task_status(quick_dir)
-        if not all_ and status in _GSD_HIDDEN_STATUSES:
+        if not all_ and status in _HIDDEN_STATUSES:
             continue
         name = _QUICK_SLUG.sub("", quick_dir.name)
         rows.append(("quick", name, status, ""))
