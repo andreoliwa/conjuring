@@ -2,15 +2,13 @@
 
 ## [0.15.0](https://github.com/andreoliwa/conjuring/compare/v0.14.0...v0.15.0) (2026-09-03)
 
-
 ### Features
 
-* **ai:** clean unpushed LLM co-authors ([83d945d](https://github.com/andreoliwa/conjuring/commit/83d945de9d311ef4bf9b8877306c0c2d5f0f32f4))
-
+- **ai:** clean unpushed LLM co-authors ([83d945d](https://github.com/andreoliwa/conjuring/commit/83d945de9d311ef4bf9b8877306c0c2d5f0f32f4))
 
 ### Bug Fixes
 
-* **ai:** hide closed GSD work ([7700b1a](https://github.com/andreoliwa/conjuring/commit/7700b1a614ae5f2780b1312340b4d68acfac1889))
+- **ai:** hide closed GSD work ([7700b1a](https://github.com/andreoliwa/conjuring/commit/7700b1a614ae5f2780b1312340b4d68acfac1889))
 
 ## [0.14.0](https://github.com/andreoliwa/conjuring/compare/v0.13.1...v0.14.0) (2026-08-19)
 
