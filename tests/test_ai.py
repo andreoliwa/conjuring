@@ -1,10 +1,52 @@
 # ruff: noqa: SLF001
 
+import re
 from pathlib import Path
 
 import pytest
+from invoke import MockContext, Result
 
 from conjuring.spells import ai
+
+
+def test_clean_llm_coauthor_keeps_subject_only() -> None:
+    message = "feat: add spell\n\nCo-authored-by: Codex <noreply@openai.com>\n"
+
+    assert ai._clean_llm_coauthor(message) == "feat: add spell\n"
+
+
+@pytest.mark.parametrize(
+    "trailer",
+    [
+        "Co-authored-by: Claude <noreply@anthropic.com>",
+        "Co-authored-by: Claude Code <noreply@anthropic.com>",
+        "Co-authored-by: Codex <noreply@openai.com>",
+    ],
+)
+def test_clean_llm_coauthor_keeps_existing_body(trailer: str) -> None:
+    message = f"feat: add spell\n\nUseful detail.\n\n{trailer}\n"
+
+    assert ai._clean_llm_coauthor(message) == "feat: add spell\n\nUseful detail.\n"
+
+
+def test_clean_only_rewrites_unpushed_commits_with_codex_trailers() -> None:
+    log = f"abc123|feat: add spell|Co-authored-by: Codex <noreply@openai.com>{ai._LOG_RECORD_SEP}"
+    c = MockContext(
+        run={
+            re.compile(r"git branch --show-current"): Result("feature\n"),
+            re.compile(r"git rev-parse --verify origin/feature"): Result(exited=1),
+            re.compile(r"git rev-parse --verify origin/main"): Result(),
+            re.compile(r"git log origin/main\.\.HEAD"): Result(log),
+            re.compile(r"git status --porcelain"): Result(""),
+            re.compile(r"FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force"): Result(),
+        }
+    )
+
+    ai.clean(c)
+
+    command = c.run.call_args_list[-1].args[0]
+    assert "--msg-filter" in command
+    assert "origin/main..HEAD" in command
 
 
 @pytest.mark.parametrize("status", ["complete", "canceled", "superseded"])

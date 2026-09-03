@@ -5,6 +5,8 @@ from __future__ import annotations
 import fnmatch
 import re
 import shlex
+import sys
+import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -39,6 +41,11 @@ _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "�
 # keep-sorted end
 
 # These need to be out of the keep sorted block
+LLM_COAUTHOR_PATTERN = re.compile(
+    r"Co-authored-by: (?:[\w .'-]+ <noreply@(?:openai|anthropic|google)\.com>|"
+    r"(?:Aider|Claude(?: Code)?|Codex|Copilot|Cursor|Gemini|GPT) <[^>]+>)$",
+    re.IGNORECASE,
+)
 _STATUS_COLORS = {
     "approved": "green",
     "canceled": "red",
@@ -56,6 +63,19 @@ _GSD_PHASE_STATUS_COLORS = {
     "pending": "dim",
 }
 _LOG_FORMAT = f"%H|%s|%b{_LOG_RECORD_SEP}"
+_CLEAN_COAUTHOR_SCRIPT = f"""import re
+import sys
+
+pattern = re.compile({LLM_COAUTHOR_PATTERN.pattern!r}, re.IGNORECASE)
+cleaned = []
+for line in sys.stdin.readlines():
+    if pattern.fullmatch(line.rstrip("\\r\\n")):
+        if cleaned and not cleaned[-1].strip():
+            cleaned.pop()
+        continue
+    cleaned.append(line)
+sys.stdout.write("".join(cleaned))
+"""
 
 
 class _CommitInfo:
@@ -102,6 +122,59 @@ def _count_ai_iterations(log_lines: list[str]) -> int:
         if match:
             last_number = max(last_number, int(match.group(1)))
     return last_number
+
+
+def _clean_llm_coauthor(message: str) -> str:
+    """Remove LLM co-author trailers and their preceding blank lines."""
+    cleaned: list[str] = []
+    for line in message.splitlines(keepends=True):
+        if LLM_COAUTHOR_PATTERN.fullmatch(line.rstrip("\r\n")):
+            if cleaned and not cleaned[-1].strip():
+                cleaned.pop()
+            continue
+        cleaned.append(line)
+    return "".join(cleaned)
+
+
+def _unpublished_base_ref(c: Context, git: Git) -> str:
+    """Return the matching origin branch, or fall back to the default branch."""
+    origin_branch = f"origin/{git.current_branch()}"
+    if run_command(c, f"git rev-parse --verify {origin_branch}", hide=True, warn=True).ok:
+        return origin_branch
+    return git.resolve_base_ref(exit_on_failure=True)
+
+
+@task
+def clean(c: Context) -> None:
+    """Remove LLM co-author trailers from commits not yet pushed to origin."""
+    git = Git(c)
+    base_ref = _unpublished_base_ref(c, git)
+    commits = _ai_log_commits(c, base_ref)
+    coauthored_commits = [commit for commit in commits if _clean_llm_coauthor(commit.body) != commit.body]
+
+    if not coauthored_commits:
+        print_warning(f"No unpushed commits since {base_ref!r} have an LLM co-author trailer")
+        return
+
+    if run_stdout(c, "git status --porcelain"):
+        print_error("Commit history cannot be rewritten with uncommitted changes")
+        raise SystemExit(1)
+
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as script:
+        script.write(_CLEAN_COAUTHOR_SCRIPT)
+        script_path = Path(script.name)
+
+    try:
+        message_filter = f"{shlex.quote(sys.executable)} {shlex.quote(str(script_path))}"
+        command = (
+            "FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force "
+            f"--msg-filter {shlex.quote(message_filter)} -- {shlex.quote(f'{base_ref}..HEAD')}"
+        )
+        run_command(c, command, pty=True)
+    finally:
+        script_path.unlink(missing_ok=True)
+
+    print_success(f"Removed LLM co-author trailers from {len(coauthored_commits)} unpushed commit(s)")
 
 
 @task
