@@ -29,7 +29,7 @@ def test_clean_llm_coauthor_keeps_existing_body(trailer: str) -> None:
     assert ai._clean_llm_coauthor(message) == "feat: add spell\n\nUseful detail.\n"
 
 
-def test_clean_only_rewrites_unpushed_commits_with_codex_trailers() -> None:
+def test_clean_only_rewrites_unpushed_commits_with_codex_trailers(capsys: pytest.CaptureFixture[str]) -> None:
     log = f"abc123|feat: add spell|Co-authored-by: Codex <noreply@openai.com>{ai._LOG_RECORD_SEP}"
     c = MockContext(
         run={
@@ -47,6 +47,7 @@ def test_clean_only_rewrites_unpushed_commits_with_codex_trailers() -> None:
     command = c.run.call_args_list[-1].args[0]
     assert "--msg-filter" in command
     assert "origin/main..HEAD" in command
+    assert "feat: add spell" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("status", ["complete", "canceled", "superseded"])

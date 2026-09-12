@@ -175,6 +175,8 @@ def clean(c: Context) -> None:
         script_path.unlink(missing_ok=True)
 
     print_success(f"Removed LLM co-author trailers from {len(coauthored_commits)} unpushed commit(s)")
+    for commit in coauthored_commits:
+        print(commit.subject)
 
 
 @task
