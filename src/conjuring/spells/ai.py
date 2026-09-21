@@ -585,9 +585,6 @@ def _gsd_phase_rows(phases: list[dict], all_: bool) -> list[tuple[str, str, str,
     return rows
 
 
-_QUICK_SLUG = re.compile(r"^\d{6,8}-[a-z0-9]{3}-")
-
-
 _QUICK_FRONTMATTER_FIELD = re.compile(r"^(status|last_updated):\s*(.+?)\s*$", re.MULTILINE)
 
 
@@ -615,8 +612,7 @@ def _quick_task_rows(cwd: Path, all_: bool) -> list[tuple[str, str, str, str]]:
         status, _last_updated = _quick_task_status(quick_dir)
         if not all_ and status in _HIDDEN_STATUSES:
             continue
-        name = _QUICK_SLUG.sub("", quick_dir.name)
-        rows.append(("quick", name, status, ""))
+        rows.append(("quick", quick_dir.name, status, ""))
     return rows
 
 

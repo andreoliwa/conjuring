@@ -86,7 +86,7 @@ def test_non_hidden_status_is_shown_for_plans_and_gsd(tmp_path: Path) -> None:
 
     assert plan_rows == [("plan.md", ["draft"])]
     assert phase_rows == [("1", "Test", "draft", "0/1")]
-    assert quick_rows == [("quick", "test", "draft", "")]
+    assert quick_rows == [("quick", "20260901-abc-test", "draft", "")]
 
 
 def test_all_shows_hidden_gsd_statuses() -> None:
