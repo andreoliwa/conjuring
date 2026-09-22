@@ -50,6 +50,12 @@ def test_clean_only_rewrites_unpushed_commits_with_codex_trailers(capsys: pytest
     assert "feat: add spell" in capsys.readouterr().out
 
 
+def test_plans_statuses_only_lists_valid_statuses(capsys: pytest.CaptureFixture[str]) -> None:
+    ai.plans.body(MockContext(), [], statuses=True)
+
+    assert capsys.readouterr().out == "draft\napproved\npartial\ncomplete\nsuperseded\ncanceled\n"
+
+
 @pytest.mark.parametrize("status", ["complete", "canceled", "superseded"])
 def test_hidden_statuses_are_consistent_for_plans_and_gsd(tmp_path: Path, status: str) -> None:
     plan = tmp_path / "plan.md"

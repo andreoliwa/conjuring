@@ -34,11 +34,15 @@ CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
-_HIDDEN_STATUSES = {"complete", "canceled", "superseded"}
 _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
 # keep-sorted end
+
+# Keep these ordered because the valid and hidden status sets derive from terminal statuses.
+_TERMINAL_PLAN_STATUSES = ("complete", "superseded", "canceled")
+_VALID_PLAN_STATUSES = ("draft", "approved", "partial", *_TERMINAL_PLAN_STATUSES)
+_HIDDEN_STATUSES = frozenset(_TERMINAL_PLAN_STATUSES)
 
 # These need to be out of the keep sorted block
 LLM_COAUTHOR_PATTERN = re.compile(
@@ -444,11 +448,16 @@ def _render_plans_table(
         "dynamic": "Discover columns dynamically from all frontmatter keys found "
         "(default: fixed status + last_updated)",
         "all_": "Show all plans including completed/canceled/superseded/ignored ones",
+        "statuses": "Show valid plan statuses",
     },
     iterable=["dirs"],
 )
-def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False) -> None:
+def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False, statuses: bool = False) -> None:
     """Display plans and specs with their frontmatter status and last_updated date."""
+    if statuses:
+        print("\n".join(_VALID_PLAN_STATUSES))
+        return
+
     _repo_root = Git(c).repo_root(quiet=True)
     if not _repo_root:
         return
