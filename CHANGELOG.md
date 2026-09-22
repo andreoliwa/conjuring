@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.15.0](https://github.com/andreoliwa/conjuring/compare/v0.14.0...v0.15.0) (2026-09-22)
+
+
+### Features
+
+* **ai:** clean unpushed LLM co-authors ([83d945d](https://github.com/andreoliwa/conjuring/commit/83d945de9d311ef4bf9b8877306c0c2d5f0f32f4))
+* **ai:** list valid plan statuses ([b9ce934](https://github.com/andreoliwa/conjuring/commit/b9ce934baf2c94e38b22e948694faae05b865c6c))
+* **ai:** show cleaned commit subjects ([db87555](https://github.com/andreoliwa/conjuring/commit/db87555f44e07db70af7e7ee4739a662ab0d3a00))
+
+
+### Bug Fixes
+
+* **ai:** hide closed GSD work ([7700b1a](https://github.com/andreoliwa/conjuring/commit/7700b1a614ae5f2780b1312340b4d68acfac1889))
+* **ai:** retain quick task directory names ([c145dc3](https://github.com/andreoliwa/conjuring/commit/c145dc3f9d623b3453540788e4b31fe65aefe0a6))
+
 ## [0.14.0](https://github.com/andreoliwa/conjuring/compare/v0.13.1...v0.14.0) (2026-08-19)
 
 ### Features
