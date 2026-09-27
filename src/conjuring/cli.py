@@ -18,17 +18,17 @@ import os
 import tempfile
 from enum import Enum
 from pathlib import Path
+from shlex import join, quote
 from shutil import which
 from string import Template
 from textwrap import dedent
 
 import typer
 from invoke import Context
-from iterfzf import iterfzf
 from ruamel.yaml import YAML
 
 from conjuring.constants import CONJURING_INIT, CONJURING_SPELLS_DIR, ROOT_INVOKE_YAML
-from conjuring.grimoire import print_error, print_success, print_warning
+from conjuring.grimoire import print_error, print_success, print_warning, run_with_fzf
 
 KEY_TASKS = "tasks"
 KEY_COLLECTION_NAME = "collection_name"
@@ -49,6 +49,19 @@ class SpellMode(str, Enum):
     OPT_OUT = "opt-out"
     ALL = "all"
     IMPORTED = "imported"
+
+
+def _choose_spells(spell_names: list[str], prompt: str) -> list[str]:
+    """Return spell names selected through the system fzf executable."""
+    # iterfzf bundles its own fzf binary and creates an invalid ARMv7 wheel.
+    # run_with_fzf centralizes the interactive terminal handling for system fzf.
+    return run_with_fzf(
+        Context(),
+        join(["printf", "%s\n", *spell_names]),
+        multi=True,
+        options=f"--prompt={quote(f'conjuring init {prompt}')}",
+        interactive=True,
+    )
 
 
 @app.command()
@@ -151,12 +164,7 @@ def generate_conjuring_init(
             spell_names = sorted(
                 [file.stem for file in CONJURING_SPELLS_DIR.glob("*.py") if not file.stem.startswith("_")],
             )
-            chosen = iterfzf(
-                spell_names,
-                multi=True,
-                prompt=f"conjuring init {prompt}",
-                executable=which("fzf"),
-            )
+            chosen = _choose_spells(spell_names, prompt)
 
         # If nothing still chosen with fzf, quit
         if not chosen:

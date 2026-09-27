@@ -38,8 +38,8 @@ def test_file_without_tasks(datadir: Path) -> None:
 
 
 @pytest.fixture
-def mock_fzf(mocker: Mock) -> Mock:
-    mocked_method = mocker.patch("conjuring.cli.iterfzf")
+def mock_spell_choice(mocker: Mock) -> Mock:
+    mocked_method = mocker.patch("conjuring.cli._choose_spells")
     mocked_method.return_value = ["abc", "def", "ghi"]
     return mocked_method
 
@@ -70,8 +70,8 @@ def mock_fzf(mocker: Mock) -> Mock:
         ),
     ],
 )
-def test_spells(datadir: Path, mode: SpellMode, function_call: str, mock_fzf: Mock) -> None:
-    assert mock_fzf
+def test_spells(datadir: Path, mode: SpellMode, function_call: str, mock_spell_choice: Mock) -> None:
+    assert mock_spell_choice
     file: Path = datadir / "root.py"
     assert not file.exists()
     assert generate_conjuring_init(file, mode, [], [], False)
@@ -103,8 +103,8 @@ def test_import_dirs(datadir: Path) -> None:
     assert file.read_text() == dedent(expected).lstrip()
 
 
-def test_file_exists(datadir: Path, mock_fzf: Mock) -> None:
-    assert mock_fzf
+def test_file_exists(datadir: Path, mock_spell_choice: Mock) -> None:
+    assert mock_spell_choice
     file: Path = datadir / "root.py"
     assert not file.exists()
     output = generate_conjuring_init(file, SpellMode.ALL, [], [], False)

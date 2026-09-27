@@ -22,7 +22,6 @@ dependencies = [
   "click",
   "humanize",
   "invoke",
-  "iterfzf",
   "more-itertools",
   "packaging",
   "python-slugify",
