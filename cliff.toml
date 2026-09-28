@@ -27,20 +27,20 @@ trim = true
 
 [git]
 commit_parsers = [
-  {group = "Bug Fixes", message = "^fix"},
-  {group = "Documentation", message = "^docs"},
-  {group = "Features", message = "^feat"},
-  {group = "Performance", message = "^perf"},
-  {group = "Refactoring", message = "^refactor"},
-  {group = "Testing", message = "^test"},
-  {message = "^bump:", skip = true},
-  {message = "^chore|^build|^ci", skip = true},
+  { group = "Bug Fixes", message = "^fix" },
+  { group = "Documentation", message = "^docs" },
+  { group = "Features", message = "^feat" },
+  { group = "Performance", message = "^perf" },
+  { group = "Refactoring", message = "^refactor" },
+  { group = "Testing", message = "^test" },
+  { message = "^bump:", skip = true },
+  { message = "^chore|^build|^ci", skip = true },
 ]
 conventional_commits = true
 filter_commits = true
 filter_unconventional = true
 link_parsers = [
-  {href = "https://github.com/andreoliwa/conjuring/issues/$1", pattern = "#(\\d+)"},
+  { href = "https://github.com/andreoliwa/conjuring/issues/$1", pattern = "#(\\d+)" },
 ]
 protect_breaking_commits = true
 sort_commits = "newest"
