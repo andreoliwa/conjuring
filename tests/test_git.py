@@ -17,6 +17,15 @@ def test_placeholder() -> None:
     assert True
 
 
+def test_log_since_uses_interactive_runner_for_pager() -> None:
+    from conjuring.spells.git import log_since
+
+    c = MockContext()
+    with patch("conjuring.spells.git.run_command") as run_command:
+        log_since(c, ref="origin/main")
+    run_command.assert_called_once_with(c, "git log origin/main..HEAD", "", interactive=True)
+
+
 def test_find_release_workflow_returns_single_match(tmp_path: Path) -> None:
     from conjuring.spells.git import _find_release_workflow
 

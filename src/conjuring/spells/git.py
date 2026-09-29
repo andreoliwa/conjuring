@@ -521,7 +521,8 @@ def log_since(c: Context, ref: str = "", oneline: bool = False) -> None:
     else:
         base_ref = Git(c).resolve_base_ref(exit_on_failure=True)
         print_success(f"Logs since default branch '{base_ref}'")
-    run_command(c, f"git log {base_ref}..HEAD", "--oneline" if oneline else "")
+    # Git opens a pager for multi-page logs; Invoke's runner breaks interactive TTY use.
+    run_command(c, f"git log {base_ref}..HEAD", "--oneline" if oneline else "", interactive=True)
 
 
 @task()
