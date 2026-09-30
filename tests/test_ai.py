@@ -1,6 +1,7 @@
 # ruff: noqa: SLF001
 
 import re
+from io import StringIO
 from pathlib import Path
 
 import pytest
@@ -93,6 +94,77 @@ def test_non_hidden_status_is_shown_for_plans_and_gsd(tmp_path: Path) -> None:
     assert plan_rows == [("plan.md", ["draft"])]
     assert phase_rows == [("1", "Test", "draft", "0/1")]
     assert quick_rows == [("quick", "20260901-abc-test", "draft", "")]
+
+
+def test_tree_plan_rows_groups_directories_and_keeps_metadata_on_files() -> None:
+    rows = [
+        ("docs/plans/z.md", ["draft", "2026-09-30"]),
+        ("docs/plans/sub/b.md", ["partial", "2026-09-29"]),
+        ("docs/plans/sub/a.md", ["approved", "2026-09-28"]),
+    ]
+
+    assert ai._tree_plan_rows(rows) == [
+        ("docs/plans", ["", ""]),
+        ("├─ sub", ["", ""]),
+        ("│  ├─ a.md", ["approved", "2026-09-28"]),
+        ("│  └─ b.md", ["partial", "2026-09-29"]),
+        ("└─ z.md", ["draft", "2026-09-30"]),
+    ]
+
+
+def test_plans_table_folds_long_filename_without_ellipsis(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from rich.console import Console
+
+    output = StringIO()
+    console = Console(width=48, file=output, force_terminal=False)
+    monkeypatch.setattr("rich.console.Console", lambda: console)
+    name = "2026-09-30-a-very-long-plan-filename-that-must-not-be-truncated.md"
+    ai._render_plans_table(
+        [tmp_path],
+        {tmp_path: [(f"docs/plans/{name}", ["draft", "2026-09-30"])]},
+        tmp_path,
+        ["status", "last_updated"],
+        all_=False,
+    )
+
+    rendered = output.getvalue()
+    assert "…" not in rendered
+    assert "..." not in rendered
+    assert "Updated" in rendered
+    assert "Last Updated" not in rendered
+    file_cells = [line.split("│")[1].strip() for line in rendered.splitlines() if line.startswith("│")]
+    assert name in "".join(file_cells).replace("└─", "").replace(" ", "")
+
+
+def test_plans_table_renders_worktree_labels_and_indents_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from rich.console import Console
+
+    output = StringIO()
+    console = Console(width=90, file=output, force_terminal=False)
+    monkeypatch.setattr("rich.console.Console", lambda: console)
+    first = tmp_path / ".worktrees" / "first"
+    second = tmp_path / ".worktrees" / "second"
+    ai._render_plans_table(
+        [tmp_path, first, second],
+        {
+            tmp_path: [("docs/plans/main.md", ["draft", "2026-09-30"])],
+            first: [("docs/plans/first.md", ["partial", "2026-09-29"])],
+            second: [("docs/plans/second.md", ["approved", "2026-09-28"])],
+        },
+        tmp_path,
+        ["status", "last_updated"],
+        all_=False,
+    )
+
+    rendered = output.getvalue()
+    assert "│ .worktrees/first" in rendered
+    assert "│ .worktrees/second" in rendered
+    assert "├─ .worktrees" not in rendered
+    assert "└─ .worktrees" not in rendered
+    assert "   └─ docs/plans" in rendered
+    assert "      └─ first.md" in rendered
+    assert "      └─ second.md" in rendered
+    assert "./.worktrees" not in rendered
 
 
 def test_all_shows_hidden_gsd_statuses() -> None:

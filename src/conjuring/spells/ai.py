@@ -393,13 +393,47 @@ def _plan_rows(  # noqa: PLR0913
 def _worktree_label(wt: Path, main_root: Path) -> str:
     """Return a display label for a worktree path relative to main_root, or absolute if outside."""
     try:
-        return "./" + str(wt.relative_to(main_root))
+        return str(wt.relative_to(main_root))
     except ValueError:
         return str(wt)
 
 
+def _tree_plan_rows(rows: list[tuple[str, list[str]]]) -> list[tuple[str, list[str]]]:
+    """Group visible plans into a tree, keeping metadata only on file rows."""
+    if not rows:
+        return []
+
+    files = {Path(path).parts: cells for path, cells in rows}
+    directories = {parts[:depth] for parts in files for depth in range(1, len(parts))}
+    parents = [parts[:-1] for parts in files]
+    common_parts = []
+    for components in zip(*parents):
+        if len(set(components)) > 1:
+            break
+        common_parts.append(components[0])
+    common = tuple(common_parts)
+    empty = [""] * len(rows[0][1])
+    tree_rows = [(str(Path(*common)) if common else ".", empty)]
+
+    def visit(parent: tuple[str, ...], prefix: str) -> None:
+        children = sorted(directory for directory in directories if directory[:-1] == parent)
+        leaves = sorted(parts for parts in files if parts[:-1] == parent)
+        entries = [(directory, True) for directory in children] + [(leaf, False) for leaf in leaves]
+        for index, (parts, is_dir) in enumerate(entries):
+            last = index == len(entries) - 1
+            label = f"{prefix}{'└─ ' if last else '├─ '}{parts[-1]}"
+            tree_rows.append((label, empty if is_dir else files[parts]))
+            if is_dir:
+                visit(parts, prefix + ("   " if last else "│  "))
+
+    visit(common, "")
+    return tree_rows
+
+
 def _add_rows_to_table(table: Table, rows: list[tuple[str, list[str]]], columns: list[str], status_idx: int) -> None:
     """Append styled plan rows to a Rich Table."""
+    from rich.markup import escape
+
     for file_path, row in rows:
         status_cell = row[status_idx] if status_idx >= 0 else ""
         base_status = status_cell.split(" (")[0] if " (" in status_cell else status_cell
@@ -408,7 +442,7 @@ def _add_rows_to_table(table: Table, rows: list[tuple[str, list[str]]], columns:
             f"[{color}]{cell}[/{color}]" if color and col in {"status", "last_updated"} else cell
             for col, cell in zip(columns, row)
         ]
-        table.add_row(file_path, *styled_row)
+        table.add_row(escape(file_path), *styled_row)
 
 
 def _render_plans_table(
@@ -424,19 +458,20 @@ def _render_plans_table(
 
     title = ("All" if all_ else "Pending") + " AI Plans & Specs"
     table = Table(title=title, show_header=True, header_style="bold magenta")
-    table.add_column("File", style="cyan", no_wrap=False)
+    table.add_column("File", style="cyan", overflow="fold")
     for col in columns:
-        table.add_column(col.replace("_", " ").title())
+        table.add_column("Updated" if col == "last_updated" else col.replace("_", " ").title())
 
     status_idx = columns.index("status") if "status" in columns else -1
-    _add_rows_to_table(table, worktree_rows[main_root], columns, status_idx)
+    _add_rows_to_table(table, _tree_plan_rows(worktree_rows[main_root]), columns, status_idx)
 
-    for wt in worktrees[1:]:
-        rows = worktree_rows[wt]
-        if not rows:
-            continue
-        table.add_row(f"> {_worktree_label(wt, main_root)}", *[""] * len(columns), style="bold cyan")
-        _add_rows_to_table(table, rows, columns, status_idx)
+    visible_worktrees = [wt for wt in worktrees[1:] if worktree_rows[wt]]
+    for wt in visible_worktrees:
+        table.add_row(_worktree_label(wt, main_root), *[""] * len(columns), style="bold cyan")
+        tree_rows = _tree_plan_rows(worktree_rows[wt])
+        indented_rows = [(f"   └─ {tree_rows[0][0]}", tree_rows[0][1])]
+        indented_rows.extend((f"      {label}", cells) for label, cells in tree_rows[1:])
+        _add_rows_to_table(table, indented_rows, columns, status_idx)
 
     Console().print(table)
 
