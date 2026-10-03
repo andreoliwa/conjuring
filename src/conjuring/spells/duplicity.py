@@ -12,24 +12,13 @@ from conjuring.grimoire import (
     lazy_env_variable,
     print_color,
     print_success,
-    run_command,
     run_lines,
     run_with_fzf,
+    run_with_log_tail,
 )
 from conjuring.spells.git import DOT_GIT, is_valid_git_repository
 
 SHOULD_PREFIX = True
-
-# Glob patterns appended for each extra repo_root dir passed to backup().
-# Use {dir} as placeholder for the root directory path.
-BACKUP_DIR_PATTERNS = [
-    "{dir}/**/*conjuring*.py",
-    "{dir}/**/*sandbox*",
-    "{dir}/**/.*env*",
-    "{dir}/**/.idea/",
-    "{dir}/**/.python-version",
-    "{dir}/**/.tool-versions",
-]
 
 
 def _backup_dest_dir(host: str) -> str:
@@ -104,24 +93,24 @@ def backup(c: Context, template: str, repo_root: list[str], allow_source_mismatc
     template_contents = template_file.read_text()
     duplicity_config = Template(template_contents).substitute({"HOME": Path.home()})
 
-    extra_includes = [pattern.format(dir=Path(d).expanduser()) for d in repo_root for pattern in BACKUP_DIR_PATTERNS]
-
     with NamedTemporaryFile("r+", delete=False) as temp_file:
         temp_file.write(duplicity_config)
-        if extra_includes:
-            temp_file.write("\n".join(extra_includes) + "\n")
         temp_file.write("\n".join(files_to_append))
         temp_file.flush()
-        run_command(
+        run_with_log_tail(
             c,
             "duplicity",
             f"--name='{host}-backup'",
-            "-v info",
+            "--verbosity=9",
+            "--log-timestamp",
+            "--progress",
+            "--progress-rate=5",
             "--dry-run" if c.config.run.dry else "",
             "--allow-source-mismatch" if allow_source_mismatch else "",
             f"--include-filelist={temp_file.name}",
             "--exclude='**' $HOME/",
             backup_dir,
+            label="Duplicity",
             dry=False,
         )
 

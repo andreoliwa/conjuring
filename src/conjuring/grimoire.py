@@ -149,6 +149,58 @@ def run_command(c: Context, *pieces: str, dry: bool | None = None, interactive: 
     return c.run(cmd, **kwargs)
 
 
+def run_with_log_tail(
+    c: Context,
+    *pieces: str,
+    interval: int = 5,
+    tail_lines: int = 3,
+    label: str = "Command",
+    dry: bool | None = None,
+) -> Result:
+    """Run a command and periodically print its newest output lines without retaining the full log."""
+    sampler = """
+from collections import deque
+from datetime import datetime
+from sys import argv, stdin, stdout
+from time import monotonic
+
+interval = int(argv[1])
+tail_lines = int(argv[2])
+label = argv[3]
+lines = deque(maxlen=tail_lines)
+last_report_at = 0.0
+last_report_line = 0
+line_count = 0
+
+
+def report():
+    global last_report_at, last_report_line
+    print(f"\\n{datetime.now():%Y-%m-%d %H:%M:%S} {label} activity:")
+    stdout.writelines(lines)
+    stdout.flush()
+    last_report_at = monotonic()
+    last_report_line = line_count
+
+
+for line in stdin:
+    lines.append(line)
+    line_count += 1
+    if monotonic() - last_report_at >= interval:
+        report()
+
+if lines and line_count > last_report_line:
+    report()
+"""
+    command = join_pieces(*pieces)
+    return run_command(
+        c,
+        f'''set -o pipefail
+{command} 2>&1 | python3 -c {quote(sampler)} {interval} {tail_lines} {quote(label)}
+exit "${{PIPESTATUS[0]}}"'''.strip(),
+        dry=dry,
+    )
+
+
 def run_stdout(c: Context, *pieces: str, dry: bool | None = None, quiet: bool = False, **kwargs: Any) -> str:  # noqa: ANN401
     """Run a (hidden) command and return the stripped stdout."""
     kwargs.setdefault("hide", True)
