@@ -204,27 +204,29 @@ def switch_url_to(c: Context, remote: str = GIT_REMOTE, https: bool = False) -> 
     help={"file": "File(s) or director(ies) to add to the local Git exclude list"},
     iterable=["file"],
 )
-def exclude(c: Context, file: list[str]) -> None:
+def exclude(c: Context, file: list[str] | None = None) -> None:
     """Add files or directories to the local Git exclude file (.git/info/exclude), skipping duplicates."""
     exclude_path = Path(GIT_EXCLUDE_FILE)
     exclude_path.parent.mkdir(parents=True, exist_ok=True)
     existing = set(exclude_path.read_text().splitlines()) if exclude_path.exists() else set()
-    query = " ".join(file)
-    chosen = run_with_fzf(
-        c,
-        "{ git ls-files --others --cached --exclude-standard -z | tr '\\0' '\\n';"
-        " fd --hidden --exclude .git; } | sort -u",
-        query=query,
-        header="Select file(s) to exclude (TAB for multiple)",
-        multi=True,
-        dry=False,
-    )
-    entries = chosen if isinstance(chosen, list) else ([chosen] if chosen else [])
+    if file:
+        entries = file
+    else:
+        chosen = run_with_fzf(
+            c,
+            "{ git ls-files --others --cached --exclude-standard -z | tr '\\0' '\\n';"
+            " fd --hidden --exclude .git; } | sort -u",
+            header="Select file(s) to exclude (TAB for multiple)",
+            multi=True,
+            dry=False,
+        )
+        entries = chosen if isinstance(chosen, list) else ([chosen] if chosen else [])
     for entry in entries:
         if entry in existing:
             print_warning(f"Already excluded: {entry}")
         else:
-            c.run(f"echo {entry!r} >> {GIT_EXCLUDE_FILE}")
+            with exclude_path.open("a") as exclude_file:
+                exclude_file.write(f"{entry}\n")
             print_success(f"Added to {GIT_EXCLUDE_FILE}: {entry}")
 
 

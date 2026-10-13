@@ -17,6 +17,17 @@ def test_placeholder() -> None:
     assert True
 
 
+def test_exclude_adds_each_supplied_path_without_fzf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from conjuring.spells import git
+
+    exclude_file = tmp_path / "exclude"
+    monkeypatch.setattr(git, "GIT_EXCLUDE_FILE", str(exclude_file))
+    with patch("conjuring.spells.git.run_with_fzf") as run_with_fzf:
+        git.exclude.body(MockContext(), ["docs/plans/", "openspec/"])
+
+    run_with_fzf.assert_not_called()
+
+
 def test_log_since_uses_interactive_runner_for_pager() -> None:
     from conjuring.spells.git import log_since
 
