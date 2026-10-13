@@ -148,10 +148,13 @@ def shrink_and_copy(  # noqa: C901
         "dir": "Directory to clean up. Default: current dir",
         "fd": "Use https://github.com/sharkdp/fd instead of 'find'",
         "delete": "Delete the actual files (dotfiles are always deleted). Default: False",
+        "delete_root": "Delete the supplied directories too when they are empty. Default: False",
     },
     iterable=["dir_"],
 )
-def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: bool = True) -> None:
+def empty_dirs(
+    c: Context, dir_: list[str | Path], delete: bool = False, fd: bool = True, delete_root: bool = False
+) -> None:
     """Remove some hidden files first, then remove empty dirs.
 
     The ending slash is needed to search OneDrive, now that its behaviour changed in macOS Monterey.
@@ -159,7 +162,7 @@ def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: boo
     if not dir_:
         dir_ = [Path.cwd()]
 
-    dirs = list({str(Path(d).expanduser().absolute()) for d in dir_})
+    dirs = list(dict.fromkeys(str(Path(d).expanduser().absolute()) for d in dir_))
     xargs = "xargs -0 -r -n 1 rm -v"
     for hidden_file in [DOT_DS_STORE, DOT_NOMEDIA]:
         if fd:
@@ -168,9 +171,9 @@ def empty_dirs(c: Context, dir_: list[str | Path], delete: bool = False, fd: boo
             for one_dir in dirs:
                 c.run(f"find {one_dir}/ -type f -iname {hidden_file} -print0 | {xargs}", hide=True)
 
-    f_option = " ".join([f"-f {d}/" for d in dirs[:-1]])
     delete_flag = "-delete" if delete else ""
-    run_command(c, "find", f_option, f"{dirs[-1]}/ -mindepth 1 -type d -empty -print", delete_flag)
+    root_flag = "-depth" if delete_root else "-mindepth 1"
+    run_command(c, "find", *(f"{directory}/" for directory in dirs), f"{root_flag} -type d -empty -print", delete_flag)
     if not delete:
         print_warning("Run with --delete to actually delete the files", dry=True)
 

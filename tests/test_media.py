@@ -6,6 +6,8 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+from invoke import Config, Context
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -27,7 +29,7 @@ class _Context:
         self.config = SimpleNamespace(run=SimpleNamespace(dry=False))
         self.temp_dir = temp_dir
 
-    def run(self, command: str) -> None:
+    def run(self, command: str, **_kwargs: object) -> None:
         self.commands.append(command)
         if command.startswith("whisper "):
             (self.temp_dir / "audio.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n")
@@ -66,3 +68,40 @@ def test_video_to_srt_does_not_replace_existing_subtitle(tmp_path: Path) -> None
 
     assert subtitle.read_text() == "existing"
     assert c.commands == []
+
+
+def test_empty_dirs_handles_multiple_roots_and_can_delete_them(tmp_path: Path) -> None:
+    from conjuring.spells import media
+
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    c = _Context(tmp_path)
+
+    with patch("conjuring.spells.media.run_command") as run_command:
+        media.empty_dirs.body(c, [first, second], delete=True, delete_root=True, fd=False)
+
+    run_command.assert_called_once_with(
+        c,
+        "find",
+        f"{first}/",
+        f"{second}/",
+        "-depth -type d -empty -print",
+        "-delete",
+    )
+
+
+def test_empty_dirs_deletes_nested_directories_and_roots(tmp_path: Path) -> None:
+    from conjuring.spells import media
+
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    (first / "skills").mkdir(parents=True)
+    (second / "commands" / "opsx").mkdir(parents=True)
+    context = Context(Config(overrides={"run": {"in_stream": False}}))
+
+    media.empty_dirs.body(context, [first, second], delete=True, delete_root=True, fd=False)
+
+    assert not first.exists()
+    assert not second.exists()
