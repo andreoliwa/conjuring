@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import filecmp
 import fnmatch
 import re
 import shlex
+import shutil
 import sys
 import tempfile
 from datetime import date, datetime, timezone
@@ -25,12 +27,16 @@ from conjuring.grimoire import (
     run_stdout,
     run_with_fzf,
 )
-from conjuring.spells.git import Git, log_since
+from conjuring.spells.git import Git, exclude, log_since
+from conjuring.spells.media import empty_dirs
 
 # keep-sorted start
+AGENTS_SKILLS_DIR = Path.home() / ".agents" / "skills"
 AI_COMMITS_FILE_PREFIX = "ai-commits-"
 CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
+CLAUDE_COMMANDS_DIR = Path.home() / ".claude" / "commands" / "opsx"
 CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+CLAUDE_SKILLS_DIR = Path.home() / ".claude" / "skills"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
@@ -38,6 +44,9 @@ _LOG_RECORD_SEP = "|||END|||"
 _MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
 # keep-sorted end
+
+_IGNORE_DIRS = ("docs/plans", "docs/superpowers", "openspec")
+_IGNORE_EXCLUDES = [f"{directory}/" for directory in _IGNORE_DIRS] + [".openspec-target"]
 
 # Keep these ordered because the valid and hidden status sets derive from terminal statuses.
 _TERMINAL_PLAN_STATUSES = ("complete", "superseded", "canceled")
@@ -146,6 +155,129 @@ def _unpublished_base_ref(c: Context, git: Git) -> str:
     if run_command(c, f"git rev-parse --verify {origin_branch}", hide=True, warn=True).ok:
         return origin_branch
     return git.resolve_base_ref(exit_on_failure=True)
+
+
+def _paths_match(source: Path, destination: Path) -> bool:
+    """Return whether two paths have the same contents."""
+    if source.is_file():
+        return destination.is_file() and filecmp.cmp(source, destination, shallow=False)
+    if not destination.is_dir():
+        return False
+    comparison = filecmp.dircmp(source, destination)
+    if comparison.left_only or comparison.right_only or comparison.common_funny:
+        return False
+    return all(_paths_match(source / name, destination / name) for name in comparison.common)
+
+
+def _move_openspec_path(source: Path, destination: Path) -> None:
+    """Install an OpenSpec path globally, replacing or removing its local copy."""
+    if destination.exists() and _paths_match(source, destination):
+        if source.is_dir():
+            shutil.rmtree(source)
+        else:
+            source.unlink()
+        print_success(f"OpenSpec user skill already exists: removed local {source}")
+        return
+
+    if destination.exists():
+        print_warning(f"Replacing different OpenSpec skill: {destination}")
+        if destination.is_dir():
+            shutil.rmtree(destination)
+        else:
+            destination.unlink()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_dir():
+        shutil.move(str(source), str(destination))
+    else:
+        shutil.move(source, destination)
+    print_success(f"Installed OpenSpec user skill: {destination}")
+
+
+def _install_openspec_skills(c: Context, repo: Path) -> None:
+    """Move project OpenSpec skills and commands into their user-wide locations."""
+    source_targets = (
+        (repo / ".agents" / "skills", AGENTS_SKILLS_DIR, "openspec-*"),
+        (repo / ".claude" / "skills", CLAUDE_SKILLS_DIR, "openspec-*"),
+        (repo / ".claude" / "commands" / "opsx", CLAUDE_COMMANDS_DIR, "*.md"),
+    )
+    for source_dir, destination_dir, pattern in source_targets:
+        if not source_dir.exists():
+            continue
+        for source in source_dir.glob(pattern):
+            _move_openspec_path(source, destination_dir / source.name)
+
+    local_dirs = [path for path in (repo / ".agents", repo / ".claude") if path.exists()]
+    if local_dirs:
+        empty_dirs(c, local_dirs, delete=True, delete_root=True)
+
+
+def _ensure_openspec_targets(repo: Path) -> None:
+    """Keep OpenSpec tool detection working after generated files move to user directories."""
+    targets = (
+        (repo / ".agents", "codex", (repo / ".agents").exists() or any(AGENTS_SKILLS_DIR.glob("openspec-*"))),
+        (repo / ".claude", "claude", (repo / ".claude").exists()),
+    )
+    for root, tool, configured in targets:
+        if not configured:
+            continue
+        marker = root / "skills" / ".openspec-target"
+        if not marker.exists():
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(f"{tool}\n")
+
+
+def _write_ignore_file(repo: Path) -> None:
+    """Add Conjuring's discoverable planning paths to the repository ignore file."""
+    ignore_file = repo / ".ignore"
+    parents = list(dict.fromkeys(directory.rpartition("/")[0] for directory in _IGNORE_DIRS if "/" in directory))
+    ignore_lines = [
+        "# Keep private planning documents discoverable through Codex @ mentions.",
+        "# Git exclusion remains in .git/info/exclude.",
+        *(f"!{directory}/" for directory in [*parents, *_IGNORE_DIRS]),
+        *(f"!{directory}/**" for directory in _IGNORE_DIRS),
+    ]
+    ignore_content = "\n".join(ignore_lines) + "\n"
+    if not ignore_file.exists():
+        ignore_file.write_text(ignore_content)
+        return
+
+    existing = ignore_file.read_text()
+    additions = [line for line in ignore_content.splitlines() if line and line not in existing.splitlines()]
+    if additions:
+        with ignore_file.open("a") as file:
+            if existing and not existing.endswith("\n"):
+                file.write("\n")
+            file.write("\n".join(additions) + "\n")
+
+
+@task(
+    iterable=["dir_"],
+    help={
+        "dir_": "Repository directory or directories (defaults to the current directory)",
+        "openspec": "Temporary workaround to install OpenSpec skills and commands globally",
+        "ignore": "Create .ignore entries and local Git exclusions",
+    },
+)
+def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, ignore: bool = True) -> None:
+    """Set up AI tooling in one or more repositories.
+
+    OpenSpec setup is a temporary workaround until OpenSpec supports global
+    skills and commands. The project-scoped openspec/ directory remains local.
+    """
+    repos = [Path(directory).resolve() for directory in dir_] if dir_ else [Path.cwd()]
+    for repo in repos:
+        if openspec:
+            initialized = (repo / "openspec").is_dir()
+            if initialized:
+                _ensure_openspec_targets(repo)
+            command = "openspec update" if initialized else "openspec init --tools codex,claude"
+            c.run(f"cd {shlex.quote(str(repo))} && {command}")
+            _ensure_openspec_targets(repo)
+            _install_openspec_skills(c, repo)
+        if ignore:
+            _write_ignore_file(repo)
+        if openspec or ignore:
+            exclude(c, file=_IGNORE_EXCLUDES if ignore else ["openspec/", ".openspec-target"])
 
 
 @task

@@ -5,15 +5,196 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
-from invoke import MockContext, Result
+from invoke import Config, Context, MockContext, Result
 
-from conjuring.spells import ai
+from conjuring.spells import ai, media
 
 
 def test_clean_llm_coauthor_keeps_subject_only() -> None:
     message = "feat: add spell\n\nCo-authored-by: Codex <noreply@openai.com>\n"
 
     assert ai._clean_llm_coauthor(message) == "feat: add spell\n"
+
+
+def test_setup_initializes_openspec_writes_ignore_file_and_excludes_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    commands: list[str] = []
+    excluded: list[list[str]] = []
+    monkeypatch.setattr(ai, "_install_openspec_skills", lambda _c, _repo: None)
+    monkeypatch.setattr(ai, "exclude", lambda _c, file: excluded.append(file))
+
+    class Context:
+        def run(self, command: str) -> None:
+            commands.append(command)
+
+    ai.setup.body(Context(), dir_=[str(repo)])
+
+    assert commands == [f"cd {repo!s} && openspec init --tools codex,claude"]
+    assert (repo / ".ignore").read_text().splitlines() == [
+        "# Keep private planning documents discoverable through Codex @ mentions.",
+        "# Git exclusion remains in .git/info/exclude.",
+        "!docs/",
+        "!docs/plans/",
+        "!docs/superpowers/",
+        "!openspec/",
+        "!docs/plans/**",
+        "!docs/superpowers/**",
+        "!openspec/**",
+    ]
+    assert excluded == [["docs/plans/", "docs/superpowers/", "openspec/", ".openspec-target"]]
+
+
+def test_setup_updates_existing_openspec_and_replaces_different_user_skills(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    skill = repo / ".agents" / "skills" / "openspec-test"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("new")
+    (repo / "openspec").mkdir()
+    user_skills = tmp_path / "user-skills"
+    existing = user_skills / "openspec-test"
+    existing.mkdir(parents=True)
+    (existing / "SKILL.md").write_text("old")
+    commands: list[str] = []
+    monkeypatch.setattr(ai, "AGENTS_SKILLS_DIR", user_skills)
+    monkeypatch.setattr(ai, "CLAUDE_SKILLS_DIR", tmp_path / "claude-skills")
+    monkeypatch.setattr(ai, "CLAUDE_COMMANDS_DIR", tmp_path / "commands")
+    monkeypatch.setattr(ai, "empty_dirs", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ai, "exclude", lambda *_args, **_kwargs: None)
+
+    class Context:
+        def run(self, command: str) -> None:
+            commands.append(command)
+
+    ai.setup.body(Context(), dir_=[str(repo)], ignore=False)
+
+    assert commands == [f"cd {repo!s} && openspec update"]
+    assert (user_skills / "openspec-test" / "SKILL.md").read_text() == "new"
+    assert not skill.exists()
+    assert "Replacing different OpenSpec skill" in capsys.readouterr().out
+
+
+def test_setup_keeps_codex_and_claude_configured_after_globalizing_skills(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    (repo / "openspec").mkdir(parents=True)
+    (repo / ".claude").mkdir()
+    (repo / ".claude" / "settings.local.json").write_text("{}")
+    user_skills = tmp_path / "user-skills" / "openspec-test"
+    user_skills.mkdir(parents=True)
+    (user_skills / "SKILL.md").write_text("test")
+    monkeypatch.setattr(ai, "AGENTS_SKILLS_DIR", user_skills.parent)
+    monkeypatch.setattr(ai, "_install_openspec_skills", lambda *_args: None)
+    monkeypatch.setattr(ai, "exclude", lambda *_args, **_kwargs: None)
+    commands: list[str] = []
+
+    class Context:
+        def run(self, command: str) -> None:
+            assert (repo / ".agents" / "skills" / ".openspec-target").read_text() == "codex\n"
+            assert (repo / ".claude" / "skills" / ".openspec-target").read_text() == "claude\n"
+            commands.append(command)
+
+    ai.setup.body(Context(), dir_=[str(repo)], ignore=False)
+
+    assert commands == [f"cd {repo} && openspec update"]
+
+
+def test_setup_removes_identical_local_skills(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = tmp_path / "repo"
+    skill = repo / ".claude" / "skills" / "openspec-test"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("same")
+    user_skills = tmp_path / "user-skills"
+    existing = user_skills / "openspec-test"
+    existing.mkdir(parents=True)
+    (existing / "SKILL.md").write_text("same")
+    monkeypatch.setattr(ai, "CLAUDE_SKILLS_DIR", user_skills)
+    monkeypatch.setattr(ai, "empty_dirs", lambda *_args, **_kwargs: None)
+
+    ai._install_openspec_skills(MockContext(), repo)
+
+    assert not skill.exists()
+    assert (user_skills / "openspec-test" / "SKILL.md").read_text() == "same"
+
+
+def test_install_openspec_skills_removes_empty_local_agent_directories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    skill = repo / ".agents" / "skills" / "openspec-test"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("new")
+    cleaned: list[tuple[list[Path], bool, bool]] = []
+    monkeypatch.setattr(ai, "AGENTS_SKILLS_DIR", tmp_path / "user-skills")
+
+    def remove_nested_empty_dirs(_c: object, dirs: list[Path], delete: bool, delete_root: bool) -> None:
+        cleaned.append((dirs, delete, delete_root))
+
+    monkeypatch.setattr(ai, "empty_dirs", remove_nested_empty_dirs)
+
+    ai._install_openspec_skills(MockContext(), repo)
+
+    assert cleaned == [([repo / ".agents"], True, True)]
+
+
+def test_install_openspec_skills_cleans_each_local_directory_separately(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    agent_skill = repo / ".agents" / "skills" / "openspec-agent"
+    claude_skill = repo / ".claude" / "skills" / "openspec-claude"
+    agent_skill.mkdir(parents=True)
+    claude_skill.mkdir(parents=True)
+    (agent_skill / "SKILL.md").write_text("agent")
+    (claude_skill / "SKILL.md").write_text("claude")
+    cleaned: list[list[Path]] = []
+    monkeypatch.setattr(ai, "AGENTS_SKILLS_DIR", tmp_path / "user-agents")
+    monkeypatch.setattr(ai, "CLAUDE_SKILLS_DIR", tmp_path / "user-claude")
+    monkeypatch.setattr(ai, "empty_dirs", lambda _c, dirs, **_kwargs: cleaned.append(dirs))
+
+    ai._install_openspec_skills(MockContext(), repo)
+
+    assert cleaned == [[repo / ".agents", repo / ".claude"]]
+
+
+@pytest.mark.parametrize(
+    ("tool_dir", "tool_name", "user_skills_attr"),
+    [
+        (".agents", "codex", "AGENTS_SKILLS_DIR"),
+        (".claude", "claude", "CLAUDE_SKILLS_DIR"),
+    ],
+)
+def test_install_openspec_skills_preserves_openspec_target_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tool_dir: str, tool_name: str, user_skills_attr: str
+) -> None:
+    repo = tmp_path / "repo"
+    skills_dir = repo / tool_dir / "skills"
+    skills_dir.mkdir(parents=True)
+    marker = skills_dir / ".openspec-target"
+    marker.write_text(f"{tool_name}\n")
+    skill = skills_dir / "openspec-test"
+    skill.mkdir()
+    (skill / "SKILL.md").write_text("test")
+    user_skills = tmp_path / "user-skills"
+    monkeypatch.setattr(ai, user_skills_attr, user_skills)
+    monkeypatch.setattr(
+        ai,
+        "empty_dirs",
+        lambda c, dirs, delete, delete_root: media.empty_dirs.body(
+            c, dirs, delete=delete, delete_root=delete_root, fd=False
+        ),
+    )
+
+    ai._install_openspec_skills(Context(Config(overrides={"run": {"in_stream": False}})), repo)
+
+    assert (user_skills / "openspec-test" / "SKILL.md").read_text() == "test"
+    assert marker.read_text() == f"{tool_name}\n"
+    assert (repo / tool_dir).exists()
 
 
 @pytest.mark.parametrize(
