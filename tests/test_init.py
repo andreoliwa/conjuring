@@ -103,8 +103,9 @@ def test_import_dirs(datadir: Path) -> None:
     assert file.read_text() == dedent(expected).lstrip()
 
 
-def test_file_exists(datadir: Path, mock_spell_choice: Mock) -> None:
+def test_file_exists(datadir: Path, mock_spell_choice: Mock, monkeypatch: pytest.MonkeyPatch) -> None:
     assert mock_spell_choice
+    monkeypatch.setenv("HOME", str(datadir / "missing-home"))
     file: Path = datadir / "root.py"
     assert not file.exists()
     output = generate_conjuring_init(file, SpellMode.ALL, [], [], False)
@@ -114,3 +115,4 @@ def test_file_exists(datadir: Path, mock_spell_choice: Mock) -> None:
 
     output = generate_conjuring_init(file, SpellMode.OPT_IN, [], [], False)
     assert "conjure_only(" in output
+    assert "conjure_all()" in file.read_text()

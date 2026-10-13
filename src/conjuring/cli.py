@@ -182,13 +182,14 @@ def generate_conjuring_init(
 
         # For some reason, calling Context().run(...) doesn't work; maybe because it's inside the "with" block?
         context = Context()
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True, dir=Path().home()) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=True) as temp_file:
             temp_file.write(contents)
             temp_file.flush()
             result = context.run(
                 f"diff -u {path} {temp_file.name}{fancy_option}",
                 hide=True,
                 warn=True,
+                in_stream=False,
             )
             if result.stdout:
                 print_error(f"File {path} already exists. Use --force to override")
