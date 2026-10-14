@@ -2,26 +2,24 @@
 
 ## [0.15.0](https://github.com/andreoliwa/conjuring/compare/v0.14.0...v0.15.0) (2026-10-14)
 
-
 ### Features
 
-* **ai:** clean unpushed LLM co-authors ([83d945d](https://github.com/andreoliwa/conjuring/commit/83d945de9d311ef4bf9b8877306c0c2d5f0f32f4))
-* **ai:** list valid plan statuses ([b9ce934](https://github.com/andreoliwa/conjuring/commit/b9ce934baf2c94e38b22e948694faae05b865c6c))
-* **ai:** set up OpenSpec skills and local ignores ([d9dcfed](https://github.com/andreoliwa/conjuring/commit/d9dcfed9924cff93d493d2d5cb3cf68c679d7904))
-* **ai:** show cleaned commit subjects ([db87555](https://github.com/andreoliwa/conjuring/commit/db87555f44e07db70af7e7ee4739a662ab0d3a00))
-* **duplicity:** stream backup activity ([f8f0b21](https://github.com/andreoliwa/conjuring/commit/f8f0b2180467c49d59a66dd51991861e3a4ffb12))
-* **git:** exclude explicit paths without prompting ([10c0ee4](https://github.com/andreoliwa/conjuring/commit/10c0ee481c7fe75ae40268f41ac2f2eb15831001))
-
+- **ai:** clean unpushed LLM co-authors ([83d945d](https://github.com/andreoliwa/conjuring/commit/83d945de9d311ef4bf9b8877306c0c2d5f0f32f4))
+- **ai:** list valid plan statuses ([b9ce934](https://github.com/andreoliwa/conjuring/commit/b9ce934baf2c94e38b22e948694faae05b865c6c))
+- **ai:** set up OpenSpec skills and local ignores ([d9dcfed](https://github.com/andreoliwa/conjuring/commit/d9dcfed9924cff93d493d2d5cb3cf68c679d7904))
+- **ai:** show cleaned commit subjects ([db87555](https://github.com/andreoliwa/conjuring/commit/db87555f44e07db70af7e7ee4739a662ab0d3a00))
+- **duplicity:** stream backup activity ([f8f0b21](https://github.com/andreoliwa/conjuring/commit/f8f0b2180467c49d59a66dd51991861e3a4ffb12))
+- **git:** exclude explicit paths without prompting ([10c0ee4](https://github.com/andreoliwa/conjuring/commit/10c0ee481c7fe75ae40268f41ac2f2eb15831001))
 
 ### Bug Fixes
 
-* **ai:** hide closed GSD work ([7700b1a](https://github.com/andreoliwa/conjuring/commit/7700b1a614ae5f2780b1312340b4d68acfac1889))
-* **ai:** keep plan paths readable in narrow panes ([b988c95](https://github.com/andreoliwa/conjuring/commit/b988c95e30517b5412468987b28aa97992cc0c00))
-* **ai:** retain quick task directory names ([c145dc3](https://github.com/andreoliwa/conjuring/commit/c145dc3f9d623b3453540788e4b31fe65aefe0a6))
-* **cli:** compare init files without home or stdin access ([db38778](https://github.com/andreoliwa/conjuring/commit/db3877848681a270f2c2da1e1738b5e7ba04867c))
-* **cli:** replace bundled fzf dependency ([8f697db](https://github.com/andreoliwa/conjuring/commit/8f697db795093d4cca16b55dadc6730fc22a9a40))
-* **git:** use real TTY for log pager ([f51da1b](https://github.com/andreoliwa/conjuring/commit/f51da1bf0439f092dbd8bc0559e0155d0354882d))
-* **media:** delete empty trees across multiple roots ([a0bf0b9](https://github.com/andreoliwa/conjuring/commit/a0bf0b94e87e48d527dbfc7bfaa0bcd125884451))
+- **ai:** hide closed GSD work ([7700b1a](https://github.com/andreoliwa/conjuring/commit/7700b1a614ae5f2780b1312340b4d68acfac1889))
+- **ai:** keep plan paths readable in narrow panes ([b988c95](https://github.com/andreoliwa/conjuring/commit/b988c95e30517b5412468987b28aa97992cc0c00))
+- **ai:** retain quick task directory names ([c145dc3](https://github.com/andreoliwa/conjuring/commit/c145dc3f9d623b3453540788e4b31fe65aefe0a6))
+- **cli:** compare init files without home or stdin access ([db38778](https://github.com/andreoliwa/conjuring/commit/db3877848681a270f2c2da1e1738b5e7ba04867c))
+- **cli:** replace bundled fzf dependency ([8f697db](https://github.com/andreoliwa/conjuring/commit/8f697db795093d4cca16b55dadc6730fc22a9a40))
+- **git:** use real TTY for log pager ([f51da1b](https://github.com/andreoliwa/conjuring/commit/f51da1bf0439f092dbd8bc0559e0155d0354882d))
+- **media:** delete empty trees across multiple roots ([a0bf0b9](https://github.com/andreoliwa/conjuring/commit/a0bf0b94e87e48d527dbfc7bfaa0bcd125884451))
 
 ## [0.14.0](https://github.com/andreoliwa/conjuring/compare/v0.13.1...v0.14.0) (2026-08-19)
 
