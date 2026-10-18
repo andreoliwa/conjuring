@@ -1,11 +1,13 @@
 # ruff: noqa: SLF001
 
+import json
 import re
 from io import StringIO
 from pathlib import Path
 
 import pytest
 from invoke import Config, Context, MockContext, Result
+from rich.console import Console
 
 from conjuring.spells import ai, media
 
@@ -258,6 +260,131 @@ def test_plans_statuses_only_lists_valid_statuses(capsys: pytest.CaptureFixture[
     ai.plans.body(MockContext(), [], statuses=True)
 
     assert capsys.readouterr().out == "draft\napproved\npartial\ncomplete\nsuperseded\ncanceled\n"
+
+
+@pytest.mark.parametrize("has_plans", [False, True])
+@pytest.mark.parametrize("openspec_path", ["directory", "file", "absent"])
+@pytest.mark.parametrize("all_", [False, True])
+def test_plans_shows_openspec_only_for_project_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, has_plans: bool, openspec_path: str, all_: bool
+) -> None:
+    repo = tmp_path / "project with spaces"
+    repo.mkdir()
+    if openspec_path == "directory":
+        (repo / "openspec").mkdir()
+    elif openspec_path == "file":
+        (repo / "openspec").touch()
+    if has_plans:
+        plan = repo / "docs" / "plans" / "test.md"
+        plan.parent.mkdir(parents=True)
+        plan.write_text("---\nstatus: draft\nlast_updated: 2026-10-12\n---\n")
+
+    monkeypatch.setattr(ai.Git, "repo_root", lambda *_args, **_kwargs: repo)
+    monkeypatch.setattr(ai, "_main_repo_root", lambda _root: repo)
+    monkeypatch.setattr(ai, "_list_worktrees", lambda _root: [repo])
+    monkeypatch.setattr(ai, "_load_plans_ignore", lambda _root: [])
+    output = StringIO()
+    console = Console(width=120, file=output, force_terminal=False)
+    monkeypatch.setattr("rich.console.Console", lambda: console)
+    commands = []
+
+    def run(command: str, **_kwargs: object) -> Result:
+        commands.append(command)
+        if command.endswith("openspec view"):
+            assert "29/48" in output.getvalue()
+            console.print("OpenSpec Dashboard")
+            return Result()
+        assert command == "openspec list --changes --json"
+        return Result(
+            json.dumps(
+                {
+                    "changes": [
+                        {
+                            "name": "time-code-normalize-insert",
+                            "completedTasks": 29,
+                            "totalTasks": 48,
+                            "lastModified": "2026-10-15T23:08:58.923Z",
+                            "status": "in-progress",
+                        },
+                        {
+                            "name": "finished-change",
+                            "completedTasks": 48,
+                            "totalTasks": 48,
+                            "lastModified": "2026-10-16T23:08:58.923Z",
+                            "status": "complete",
+                        },
+                    ],
+                    "root": {"path": str(repo), "source": "nearest"},
+                }
+            )
+        )
+
+    context = Context()
+    monkeypatch.setattr(context, "run", run)
+    ai.plans.body(context, [], all_=all_)
+
+    rendered = output.getvalue()
+    if openspec_path == "directory":
+        assert commands == [
+            "openspec list --changes --json",
+            "openspec view",
+        ]
+        for cell in ("Name", "Status", "Modified", "Tasks", "time-code-normalize-insert", "in-progress", "2026-10-15"):
+            assert cell in rendered
+        assert "23:08" not in rendered
+        assert ("finished-change" in rendered) is all_
+        assert ("48/48" in rendered) is all_
+        assert rendered.index("29/48") < rendered.index("OpenSpec Dashboard")
+    else:
+        assert commands == []
+        assert "OpenSpec" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("status", "all_"), [("", False), ("", True), ("complete", False), ("canceled", False), ("superseded", False)]
+)
+def test_openspec_no_visible_changes_shows_success_without_table_or_dashboard(
+    capsys: pytest.CaptureFixture[str], status: str, all_: bool
+) -> None:
+    changes = (
+        [
+            {
+                "name": "finished-change",
+                "status": status,
+                "lastModified": "2026-10-16",
+                "completedTasks": 1,
+                "totalTasks": 1,
+            }
+        ]
+        if status
+        else []
+    )
+    context = MockContext(
+        run={
+            "openspec list --changes --json": Result(json.dumps({"changes": changes})),
+            "openspec view": Result(),
+        }
+    )
+
+    ai._show_openspec_table(context, all_)
+
+    output = capsys.readouterr().out
+    assert "All OpenSpec changes completed" in output
+    assert "OpenSpec Changes" not in output
+    assert "┏" not in output
+    assert context.run.call_count == 1
+
+
+@pytest.mark.parametrize("response", [Result("not json"), Result(exited=127)])
+def test_openspec_query_failure_does_not_render_table_or_dashboard(
+    response: Result, capsys: pytest.CaptureFixture[str]
+) -> None:
+    context = MockContext(run={"openspec list --changes --json": response})
+
+    ai._show_openspec_table(context)
+
+    assert "OpenSpec Changes" not in capsys.readouterr().out
+    assert context.run.call_count == 1
 
 
 @pytest.mark.parametrize("status", ["complete", "canceled", "superseded"])

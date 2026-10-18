@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import filecmp
 import fnmatch
+import json
 import re
 import shlex
 import shutil
@@ -37,6 +38,7 @@ CHORE_AI_PATTERN = re.compile(r"chore\(ai\):\s+(\d+)")
 CLAUDE_COMMANDS_DIR = Path.home() / ".claude" / "commands" / "opsx"
 CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 CLAUDE_SKILLS_DIR = Path.home() / ".claude" / "skills"
+OPENSPEC_DIR = "openspec"
 SHOULD_PREFIX = True
 _DEFAULT_PLAN_DIRS = ("docs/superpowers", "docs/plans")
 _FRONTMATTER_BLOCK = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
@@ -45,7 +47,7 @@ _MISSING = "missing"
 _PHASE_STATUS_SYMBOLS = {"complete": "✓", "pending": "…", "in_progress": "▶"}
 # keep-sorted end
 
-_IGNORE_DIRS = ("docs/plans", "docs/superpowers", "openspec")
+_IGNORE_DIRS = ("docs/plans", "docs/superpowers", OPENSPEC_DIR)
 _IGNORE_EXCLUDES = [f"{directory}/" for directory in _IGNORE_DIRS] + [".openspec-target"]
 
 # Keep these ordered because the valid and hidden status sets derive from terminal statuses.
@@ -267,7 +269,7 @@ def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, igno
     repos = [Path(directory).resolve() for directory in dir_] if dir_ else [Path.cwd()]
     for repo in repos:
         if openspec:
-            initialized = (repo / "openspec").is_dir()
+            initialized = (repo / OPENSPEC_DIR).is_dir()
             if initialized:
                 _ensure_openspec_targets(repo)
             command = "openspec update" if initialized else "openspec init --tools codex,claude"
@@ -277,7 +279,7 @@ def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, igno
         if ignore:
             _write_ignore_file(repo)
         if openspec or ignore:
-            exclude(c, file=_IGNORE_EXCLUDES if ignore else ["openspec/", ".openspec-target"])
+            exclude(c, file=_IGNORE_EXCLUDES if ignore else [f"{OPENSPEC_DIR}/", ".openspec-target"])
 
 
 @task
@@ -620,7 +622,7 @@ def _render_plans_table(
     iterable=["dirs"],
 )
 def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False, statuses: bool = False) -> None:
-    """Display plans and specs with their frontmatter status and last_updated date."""
+    """Display plans, specs, GSD phases, and OpenSpec changes with their status and progress."""
     if statuses:
         print("\n".join(_VALID_PLAN_STATUSES))
         return
@@ -646,24 +648,63 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
 
     if not any(worktree_md.values()):
         print_warning("No Markdown files found in any worktree")
-        return
-
-    columns = _plan_columns(all_fm, dynamic)
-
-    # Build rows per worktree
-    worktree_rows: dict[Path, list[tuple[str, list[str]]]] = {}
-    for wt, md_files in worktree_md.items():
-        worktree_rows[wt] = _plan_rows(md_files, all_fm, wt, columns, ignore_patterns, all_)
-
-    total_rows = sum(len(r) for r in worktree_rows.values())
-    if total_rows == 0:
-        print_success("All superpowers plans are completed")
     else:
-        _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
+        columns = _plan_columns(all_fm, dynamic)
+
+        # Build rows per worktree
+        worktree_rows: dict[Path, list[tuple[str, list[str]]]] = {}
+        for wt, md_files in worktree_md.items():
+            worktree_rows[wt] = _plan_rows(md_files, all_fm, wt, columns, ignore_patterns, all_)
+
+        total_rows = sum(len(r) for r in worktree_rows.values())
+        if total_rows == 0:
+            print_success("All superpowers plans are completed")
+        else:
+            _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
 
     # Show GSD phase table if this repo has a .planning dir
     if (main_root / ".planning").is_dir():
         _show_gsd_table(main_root, all_)
+
+    if (main_root / OPENSPEC_DIR).is_dir():
+        _show_openspec_table(c, all_)
+
+
+def _show_openspec_table(c: Context, all_: bool = False) -> None:
+    """Print visible OpenSpec changes and dashboard, or a success message when none remain."""
+    from rich.console import Console
+    from rich.table import Table
+
+    raw = run_stdout(c, "openspec list --changes --json")
+    if not raw:
+        return
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        print_warning("Could not parse OpenSpec changes JSON")
+        return
+
+    table = Table(title="OpenSpec Changes", show_header=True, header_style="bold magenta")
+    table.add_column("Name", style="cyan", overflow="fold")
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Modified", no_wrap=True)
+    table.add_column("Tasks", justify="right", no_wrap=True)
+    for change in data.get("changes", []):
+        if not all_ and change["status"] in _HIDDEN_STATUSES:
+            continue
+        table.add_row(
+            change["name"],
+            change["status"],
+            change["lastModified"][:10],
+            f"{change['completedTasks']}/{change['totalTasks']}",
+        )
+
+    if not table.row_count:
+        print_success("All OpenSpec changes completed")
+        return
+
+    Console().print(table)
+    run_command(c, "openspec view")
 
 
 _GSD_ROADMAP_PHASE = re.compile(
