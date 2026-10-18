@@ -681,7 +681,7 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
 
         total_rows = sum(len(r) for r in worktree_rows.values())
         if total_rows == 0:
-            print_success("All superpowers plans are completed")
+            print_success("Superpowers: All plans are completed")
         else:
             _render_plans_table(worktrees, worktree_rows, main_root, columns, all_)
 
@@ -723,10 +723,10 @@ def _show_openspec_table(c: Context, all_: bool = False) -> None:
         )
 
     if not table.row_count:
-        print_success("All OpenSpec changes completed")
-        return
+        print_success("OpenSpec: No active changes")
+    else:
+        Console().print(table)
 
-    Console().print(table)
     run_command(c, "openspec view")
 
 
@@ -922,7 +922,7 @@ def _show_gsd_table(cwd: Path, all_: bool) -> None:
     rows += _quick_task_rows(cwd, all_)
 
     if not rows:
-        print_success("All GSD phases and quick tasks completed")
+        print_success("GSD: All phases and quick tasks completed")
         return
 
     milestone = data.get("milestone_version", "")
