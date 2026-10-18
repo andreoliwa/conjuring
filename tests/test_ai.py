@@ -72,6 +72,57 @@ def test_setup_initializes_openspec_writes_ignore_file_and_excludes_paths(
     assert excluded == [["docs/plans/", "docs/superpowers/", "openspec/", ".openspec-target"]]
 
 
+@pytest.mark.parametrize("openspec", [False, True])
+@pytest.mark.parametrize("ignore", [False, True])
+def test_setup_commit_files_removes_only_planning_exclusions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, openspec: bool, ignore: bool
+) -> None:
+    repos = [tmp_path / "first repo", tmp_path / "second repo"]
+    context = Context(config=Config(overrides={"run": {"in_stream": False}}))
+    for repo in repos:
+        repo.mkdir()
+        with context.cd(str(repo)):
+            context.run("git init --quiet", hide=True)
+        (repo / ".git" / "info" / "exclude").write_text(
+            "# Local exclusions\nprivate/\ndocs/plans/\ndocs/superpowers/\nopenspec/\n.openspec-target\n"
+        )
+    monkeypatch.setattr(ai, "run_command", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ai, "_install_openspec_skills", lambda *_args: None)
+
+    ai.setup.body(context, dir_=[str(repo) for repo in repos], openspec=openspec, ignore=ignore, commit_files=True)
+
+    for repo in repos:
+        assert (repo / ".git" / "info" / "exclude").read_text() == "# Local exclusions\nprivate/\n"
+        assert (repo / ".ignore").exists() is ignore
+
+
+def test_setup_commit_files_does_not_create_missing_exclude_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    context = Context(config=Config(overrides={"run": {"in_stream": False}}))
+    with context.cd(str(tmp_path)):
+        context.run("git init --quiet", hide=True)
+    exclude_file = tmp_path / ".git" / "info" / "exclude"
+    exclude_file.unlink(missing_ok=True)
+    monkeypatch.chdir(tmp_path)
+
+    ai.setup.body(context, openspec=False, ignore=False, commit_files=True)
+
+    assert not exclude_file.exists()
+
+
+def test_setup_commit_files_uses_git_resolved_exclude_path(tmp_path: Path) -> None:
+    repo = tmp_path / "worktree"
+    repo.mkdir()
+    exclude_file = tmp_path / "shared-exclude"
+    exclude_file.write_text("docs/plans/\nprivate/\n")
+    context = MockContext(run=Result(stdout=f"{exclude_file}\n"))
+
+    ai.setup.body(context, dir_=[str(repo)], openspec=False, ignore=False, commit_files=True)
+
+    assert exclude_file.read_text() == "private/\n"
+
+
 def test_setup_updates_existing_openspec_and_replaces_different_user_skills(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

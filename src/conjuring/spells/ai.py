@@ -252,19 +252,40 @@ def _write_ignore_file(repo: Path) -> None:
             file.write("\n".join(additions) + "\n")
 
 
+def _remove_planning_exclusions(c: Context, repo: Path) -> None:
+    """Remove setup's planning entries from this repository's local Git exclusions."""
+    with c.cd(str(repo)):
+        result = c.run("git rev-parse --git-path info/exclude", hide=True, pty=False)
+    exclude_file = repo / result.stdout.strip()
+    if not exclude_file.exists():
+        return
+    existing = exclude_file.read_text()
+    remaining = "".join(line for line in existing.splitlines(keepends=True) if line.strip() not in _IGNORE_EXCLUDES)
+    if remaining != existing:
+        exclude_file.write_text(remaining)
+
+
 @task(
     iterable=["dir_"],
     help={
         "dir_": "Repository directory or directories (defaults to the current directory)",
         "openspec": "Temporary workaround to install OpenSpec skills and commands globally",
         "ignore": "Create .ignore entries and local Git exclusions",
+        "commit_files": "Remove local planning exclusions so files can be committed (does not commit them)",
     },
 )
-def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, ignore: bool = True) -> None:
+def setup(
+    c: Context,
+    dir_: list[str] | None = None,
+    openspec: bool = True,
+    ignore: bool = True,
+    commit_files: bool = False,
+) -> None:
     """Set up AI tooling in one or more repositories.
 
     OpenSpec setup is a temporary workaround until OpenSpec supports global
-    skills and commands. The project-scoped openspec/ directory remains local.
+    skills and commands. Planning files stay locally excluded by default;
+    use --commit-files in private repositories to allow tracking them.
     """
     repos = [Path(directory).resolve() for directory in dir_] if dir_ else [Path.cwd()]
     for repo in repos:
@@ -278,7 +299,9 @@ def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, igno
             _install_openspec_skills(c, repo)
         if ignore:
             _write_ignore_file(repo)
-        if openspec or ignore:
+        if commit_files:
+            _remove_planning_exclusions(c, repo)
+        elif openspec or ignore:
             exclude(c, file=_IGNORE_EXCLUDES if ignore else [f"{OPENSPEC_DIR}/", ".openspec-target"])
 
 
