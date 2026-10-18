@@ -16,6 +16,31 @@ def test_clean_llm_coauthor_keeps_subject_only() -> None:
     assert ai._clean_llm_coauthor(message) == "feat: add spell\n"
 
 
+@pytest.mark.parametrize("initialized", [False, True])
+def test_setup_runs_openspec_with_inherited_terminal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, initialized: bool
+) -> None:
+    repo = tmp_path / "repo with spaces"
+    repo.mkdir()
+    if initialized:
+        (repo / "openspec").mkdir()
+    monkeypatch.setattr(ai, "_ensure_openspec_targets", lambda _repo: None)
+    monkeypatch.setattr(ai, "_install_openspec_skills", lambda *_args: None)
+    monkeypatch.setattr(ai, "exclude", lambda *_args, **_kwargs: None)
+    calls = []
+
+    def run_subprocess(command: str, **kwargs: bool) -> None:
+        calls.append((command, kwargs))
+
+    monkeypatch.setattr("conjuring.grimoire.subprocess.run", run_subprocess)
+    context = MockContext(run=True)
+
+    ai.setup.body(context, dir_=[str(repo)], ignore=False)
+
+    command = "openspec update" if initialized else "openspec init --tools codex,claude"
+    assert calls == [(f"cd '{repo}' && {command}", {"shell": True, "check": False})]
+
+
 def test_setup_initializes_openspec_writes_ignore_file_and_excludes_paths(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -26,9 +51,7 @@ def test_setup_initializes_openspec_writes_ignore_file_and_excludes_paths(
     monkeypatch.setattr(ai, "_install_openspec_skills", lambda _c, _repo: None)
     monkeypatch.setattr(ai, "exclude", lambda _c, file: excluded.append(file))
 
-    class Context:
-        def run(self, command: str) -> None:
-            commands.append(command)
+    monkeypatch.setattr("conjuring.grimoire.subprocess.run", lambda command, **_kwargs: commands.append(command))
 
     ai.setup.body(Context(), dir_=[str(repo)])
 
@@ -66,9 +89,7 @@ def test_setup_updates_existing_openspec_and_replaces_different_user_skills(
     monkeypatch.setattr(ai, "empty_dirs", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ai, "exclude", lambda *_args, **_kwargs: None)
 
-    class Context:
-        def run(self, command: str) -> None:
-            commands.append(command)
+    monkeypatch.setattr("conjuring.grimoire.subprocess.run", lambda command, **_kwargs: commands.append(command))
 
     ai.setup.body(Context(), dir_=[str(repo)], ignore=False)
 
@@ -93,11 +114,12 @@ def test_setup_keeps_codex_and_claude_configured_after_globalizing_skills(
     monkeypatch.setattr(ai, "exclude", lambda *_args, **_kwargs: None)
     commands: list[str] = []
 
-    class Context:
-        def run(self, command: str) -> None:
-            assert (repo / ".agents" / "skills" / ".openspec-target").read_text() == "codex\n"
-            assert (repo / ".claude" / "skills" / ".openspec-target").read_text() == "claude\n"
-            commands.append(command)
+    def run_subprocess(command: str, **_kwargs: bool) -> None:
+        assert (repo / ".agents" / "skills" / ".openspec-target").read_text() == "codex\n"
+        assert (repo / ".claude" / "skills" / ".openspec-target").read_text() == "claude\n"
+        commands.append(command)
+
+    monkeypatch.setattr("conjuring.grimoire.subprocess.run", run_subprocess)
 
     ai.setup.body(Context(), dir_=[str(repo)], ignore=False)
 

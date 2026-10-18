@@ -271,7 +271,7 @@ def setup(c: Context, dir_: list[str] | None = None, openspec: bool = True, igno
             if initialized:
                 _ensure_openspec_targets(repo)
             command = "openspec update" if initialized else "openspec init --tools codex,claude"
-            c.run(f"cd {shlex.quote(str(repo))} && {command}")
+            run_command(c, f"cd {shlex.quote(str(repo))} && {command}", interactive=True)
             _ensure_openspec_targets(repo)
             _install_openspec_skills(c, repo)
         if ignore:
