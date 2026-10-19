@@ -394,7 +394,7 @@ def test_plans_shows_openspec_only_for_project_directory(
 @pytest.mark.parametrize(
     ("status", "all_"), [("", False), ("", True), ("complete", False), ("canceled", False), ("superseded", False)]
 )
-def test_openspec_no_visible_changes_shows_success_without_table_or_dashboard(
+def test_openspec_no_visible_changes_shows_success_and_dashboard_without_table(
     capsys: pytest.CaptureFixture[str], status: str, all_: bool
 ) -> None:
     changes = (
@@ -420,10 +420,13 @@ def test_openspec_no_visible_changes_shows_success_without_table_or_dashboard(
     ai._show_openspec_table(context, all_)
 
     output = capsys.readouterr().out
-    assert "All OpenSpec changes completed" in output
+    assert "OpenSpec: No active changes" in output
     assert "OpenSpec Changes" not in output
     assert "┏" not in output
-    assert context.run.call_count == 1
+    assert [call.args[0] for call in context.run.call_args_list] == [
+        "openspec list --changes --json",
+        "openspec view",
+    ]
 
 
 @pytest.mark.parametrize("response", [Result("not json"), Result(exited=127)])
