@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.1](https://github.com/andreoliwa/conjuring/compare/v0.15.0...v0.15.1) (2026-10-19)
+
+### Bug Fixes
+
+- **ai:** always show OpenSpec dashboard ([d49b4e7](https://github.com/andreoliwa/conjuring/commit/d49b4e70fed51899801a01e55f0c883813fdab2a))
+
 ## [0.15.0](https://github.com/andreoliwa/conjuring/compare/v0.14.0...v0.15.0) (2026-10-18)
 
 ### Features
