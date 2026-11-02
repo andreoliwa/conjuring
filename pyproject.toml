@@ -8,7 +8,7 @@ dev = [
 ]
 
 [project]
-authors = [{email = "andreoliwa@sent.com", name = "W. Augusto Andreoli"}]
+authors = [{ email = "andreoliwa@sent.com", name = "W. Augusto Andreoli" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
