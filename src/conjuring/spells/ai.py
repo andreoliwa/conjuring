@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import filecmp
 import fnmatch
-import json
 import re
 import shlex
 import shutil
@@ -555,35 +554,40 @@ def _worktree_label(wt: Path, main_root: Path) -> str:
         return str(wt)
 
 
-def _tree_plan_rows(rows: list[tuple[str, list[str]]]) -> list[tuple[str, list[str]]]:
-    """Group visible plans into a tree, keeping metadata only on file rows."""
+def _tree_plan_rows(rows: list[tuple[str, list[str]]], *, nested: bool = False) -> list[tuple[str, list[str]]]:
+    """Group plans into compact directory trees, keeping metadata only on file rows."""
     if not rows:
         return []
 
     files = {Path(path).parts: cells for path, cells in rows}
     directories = {parts[:depth] for parts in files for depth in range(1, len(parts))}
-    parents = [parts[:-1] for parts in files]
-    common_parts = []
-    for components in zip(*parents):
-        if len(set(components)) > 1:
-            break
-        common_parts.append(components[0])
-    common = tuple(common_parts)
     empty = [""] * len(rows[0][1])
-    tree_rows = [(str(Path(*common)) if common else ".", empty)]
+    tree_rows = []
 
-    def visit(parent: tuple[str, ...], prefix: str) -> None:
+    def children(parent: tuple[str, ...]) -> list[tuple[tuple[str, ...], bool]]:
         children = sorted(directory for directory in directories if directory[:-1] == parent)
         leaves = sorted(parts for parts in files if parts[:-1] == parent)
-        entries = [(directory, True) for directory in children] + [(leaf, False) for leaf in leaves]
-        for index, (parts, is_dir) in enumerate(entries):
+        return [(directory, True) for directory in children] + [(leaf, False) for leaf in leaves]
+
+    def visit(parent: tuple[str, ...], prefix: str) -> None:
+        entries = children(parent)
+        for index, (entry, is_dir) in enumerate(entries):
+            parts = entry
             last = index == len(entries) - 1
-            label = f"{prefix}{'└─ ' if last else '├─ '}{parts[-1]}"
+            if is_dir:
+                descendants = children(parts)
+                while len(descendants) == 1 and descendants[0][1]:
+                    parts = descendants[0][0]
+                    descendants = children(parts)
+            branched = bool(parent) or nested
+            branch = ("└─ " if last else "├─ ") if branched else ""
+            label = f"{prefix}{branch}{Path(*parts[len(parent) :])}"
             tree_rows.append((label, empty if is_dir else files[parts]))
             if is_dir:
-                visit(parts, prefix + ("   " if last else "│  "))
+                child_prefix = prefix + ("   " if last else "│  ") if branched else prefix
+                visit(parts, child_prefix)
 
-    visit(common, "")
+    visit((), "   " if nested else "")
     return tree_rows
 
 
@@ -625,18 +629,30 @@ def _render_plans_table(
     visible_worktrees = [wt for wt in worktrees[1:] if worktree_rows[wt]]
     for wt in visible_worktrees:
         table.add_row(_worktree_label(wt, main_root), *[""] * len(columns), style="bold cyan")
-        tree_rows = _tree_plan_rows(worktree_rows[wt])
-        indented_rows = [(f"   └─ {tree_rows[0][0]}", tree_rows[0][1])]
-        indented_rows.extend((f"      {label}", cells) for label, cells in tree_rows[1:])
-        _add_rows_to_table(table, indented_rows, columns, status_idx)
+        tree_rows = _tree_plan_rows(worktree_rows[wt], nested=True)
+        _add_rows_to_table(table, tree_rows, columns, status_idx)
 
     Console().print(table)
+
+
+def _plan_markdown_files(root: Path, dirs: list[str]) -> list[Path]:
+    """Find plan documents, leaving managed OpenSpec artifacts to its dashboard."""
+    search_dirs = [root / directory for directory in (dirs or _DEFAULT_PLAN_DIRS)]
+    md_files = {path for directory in search_dirs if directory.is_dir() for path in directory.rglob("*.md")}
+    if not dirs:
+        openspec = root / OPENSPEC_DIR
+        if openspec.is_dir():
+            md_files.update(openspec.glob("*.md"))
+            initiatives = openspec / "initiatives"
+            if initiatives.is_dir():
+                md_files.update(initiatives.rglob("*.md"))
+    return sorted(md_files)
 
 
 @task(
     help={
         "dirs": f"Directories to scan for plan/spec Markdown files (relative to repo root). "
-        f"Default: {', '.join(_DEFAULT_PLAN_DIRS)}",
+        f"Default: {', '.join(_DEFAULT_PLAN_DIRS)}, openspec/*.md, openspec/initiatives",
         "dynamic": "Discover columns dynamically from all frontmatter keys found "
         "(default: fixed status + last_updated)",
         "all_": "Show all plans including completed/canceled/superseded/ignored ones",
@@ -645,7 +661,7 @@ def _render_plans_table(
     iterable=["dirs"],
 )
 def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False, statuses: bool = False) -> None:
-    """Display plans, specs, GSD phases, and OpenSpec changes with their status and progress."""
+    """Display plan documents, GSD phases, and the OpenSpec dashboard."""
     if statuses:
         print("\n".join(_VALID_PLAN_STATUSES))
         return
@@ -657,14 +673,12 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
     main_root = _main_repo_root(_repo_root)
     worktrees = _list_worktrees(main_root)
     ignore_patterns = _load_plans_ignore(main_root)
-    plan_dirs = dirs or list(_DEFAULT_PLAN_DIRS)
 
     # Collect md files and frontmatter across all worktrees
     worktree_md: dict[Path, list[Path]] = {}
     all_fm: dict[Path, dict[str, str]] = {}
     for wt in worktrees:
-        search_dirs = [wt / d for d in plan_dirs]
-        md_files = sorted(path for sd in search_dirs if sd.is_dir() for path in sd.rglob("*.md"))
+        md_files = _plan_markdown_files(wt, dirs)
         worktree_md[wt] = md_files
         for path in md_files:
             all_fm[path] = _parse_all_frontmatter(path)
@@ -690,44 +704,7 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
         _show_gsd_table(main_root, all_)
 
     if (main_root / OPENSPEC_DIR).is_dir():
-        _show_openspec_table(c, all_)
-
-
-def _show_openspec_table(c: Context, all_: bool = False) -> None:
-    """Print visible OpenSpec changes and dashboard, or a success message when none remain."""
-    from rich.console import Console
-    from rich.table import Table
-
-    raw = run_stdout(c, "openspec list --changes --json")
-    if not raw:
-        return
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        print_warning("Could not parse OpenSpec changes JSON")
-        return
-
-    table = Table(title="OpenSpec Changes", show_header=True, header_style="bold magenta")
-    table.add_column("Name", style="cyan", overflow="fold")
-    table.add_column("Status", no_wrap=True)
-    table.add_column("Modified", no_wrap=True)
-    table.add_column("Tasks", justify="right", no_wrap=True)
-    for change in data.get("changes", []):
-        if not all_ and change["status"] in _HIDDEN_STATUSES:
-            continue
-        table.add_row(
-            change["name"],
-            change["status"],
-            change["lastModified"][:10],
-            f"{change['completedTasks']}/{change['totalTasks']}",
-        )
-
-    if not table.row_count:
-        print_success("OpenSpec: No active changes")
-    else:
-        Console().print(table)
-
-    run_command(c, "openspec view")
+        run_command(c, "openspec view")
 
 
 _GSD_ROADMAP_PHASE = re.compile(

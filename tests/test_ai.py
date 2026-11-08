@@ -1,13 +1,11 @@
 # ruff: noqa: SLF001
 
-import json
 import re
 from io import StringIO
 from pathlib import Path
 
 import pytest
 from invoke import Config, Context, MockContext, Result
-from rich.console import Console
 
 from conjuring.spells import ai, media
 
@@ -313,132 +311,25 @@ def test_plans_statuses_only_lists_valid_statuses(capsys: pytest.CaptureFixture[
     assert capsys.readouterr().out == "draft\napproved\npartial\ncomplete\nsuperseded\ncanceled\n"
 
 
-@pytest.mark.parametrize("has_plans", [False, True])
-@pytest.mark.parametrize("openspec_path", ["directory", "file", "absent"])
-@pytest.mark.parametrize("all_", [False, True])
-def test_plans_shows_openspec_only_for_project_directory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, has_plans: bool, openspec_path: str, all_: bool
-) -> None:
-    repo = tmp_path / "project with spaces"
-    repo.mkdir()
-    if openspec_path == "directory":
-        (repo / "openspec").mkdir()
-    elif openspec_path == "file":
-        (repo / "openspec").touch()
-    if has_plans:
-        plan = repo / "docs" / "plans" / "test.md"
-        plan.parent.mkdir(parents=True)
-        plan.write_text("---\nstatus: draft\nlast_updated: 2026-10-12\n---\n")
-
-    monkeypatch.setattr(ai.Git, "repo_root", lambda *_args, **_kwargs: repo)
-    monkeypatch.setattr(ai, "_main_repo_root", lambda _root: repo)
-    monkeypatch.setattr(ai, "_list_worktrees", lambda _root: [repo])
-    monkeypatch.setattr(ai, "_load_plans_ignore", lambda _root: [])
-    output = StringIO()
-    console = Console(width=120, file=output, force_terminal=False)
-    monkeypatch.setattr("rich.console.Console", lambda: console)
-    commands = []
-
-    def run(command: str, **_kwargs: object) -> Result:
-        commands.append(command)
-        if command.endswith("openspec view"):
-            assert "29/48" in output.getvalue()
-            console.print("OpenSpec Dashboard")
-            return Result()
-        assert command == "openspec list --changes --json"
-        return Result(
-            json.dumps(
-                {
-                    "changes": [
-                        {
-                            "name": "time-code-normalize-insert",
-                            "completedTasks": 29,
-                            "totalTasks": 48,
-                            "lastModified": "2026-10-15T23:08:58.923Z",
-                            "status": "in-progress",
-                        },
-                        {
-                            "name": "finished-change",
-                            "completedTasks": 48,
-                            "totalTasks": 48,
-                            "lastModified": "2026-10-16T23:08:58.923Z",
-                            "status": "complete",
-                        },
-                    ],
-                    "root": {"path": str(repo), "source": "nearest"},
-                }
-            )
-        )
-
-    context = Context()
-    monkeypatch.setattr(context, "run", run)
-    ai.plans.body(context, [], all_=all_)
-
-    rendered = output.getvalue()
-    if openspec_path == "directory":
-        assert commands == [
-            "openspec list --changes --json",
-            "openspec view",
-        ]
-        for cell in ("Name", "Status", "Modified", "Tasks", "time-code-normalize-insert", "in-progress", "2026-10-15"):
-            assert cell in rendered
-        assert "23:08" not in rendered
-        assert ("finished-change" in rendered) is all_
-        assert ("48/48" in rendered) is all_
-        assert rendered.index("29/48") < rendered.index("OpenSpec Dashboard")
-    else:
-        assert commands == []
-        assert "OpenSpec" not in rendered
-
-
-@pytest.mark.parametrize(
-    ("status", "all_"), [("", False), ("", True), ("complete", False), ("canceled", False), ("superseded", False)]
-)
-def test_openspec_no_visible_changes_shows_success_and_dashboard_without_table(
-    capsys: pytest.CaptureFixture[str], status: str, all_: bool
-) -> None:
-    changes = (
-        [
-            {
-                "name": "finished-change",
-                "status": status,
-                "lastModified": "2026-10-16",
-                "completedTasks": 1,
-                "totalTasks": 1,
-            }
-        ]
-        if status
-        else []
-    )
-    context = MockContext(
-        run={
-            "openspec list --changes --json": Result(json.dumps({"changes": changes})),
-            "openspec view": Result(),
-        }
-    )
-
-    ai._show_openspec_table(context, all_)
-
-    output = capsys.readouterr().out
-    assert "OpenSpec: No active changes" in output
-    assert "OpenSpec Changes" not in output
-    assert "┏" not in output
-    assert [call.args[0] for call in context.run.call_args_list] == [
-        "openspec list --changes --json",
-        "openspec view",
+def test_plan_markdown_files_includes_only_openspec_documents_outside_dashboard(tmp_path: Path) -> None:
+    visible = [
+        "docs/plans/plan.md",
+        "docs/superpowers/specs/design.md",
+        "openspec/overview.md",
+        "openspec/initiatives/localization/plan.md",
     ]
+    hidden = [
+        "openspec/changes/active/tasks.md",
+        "openspec/changes/archive/finished/proposal.md",
+        "openspec/specs/localization/spec.md",
+        "openspec/config.yaml",
+    ]
+    for name in visible + hidden:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
 
-
-@pytest.mark.parametrize("response", [Result("not json"), Result(exited=127)])
-def test_openspec_query_failure_does_not_render_table_or_dashboard(
-    response: Result, capsys: pytest.CaptureFixture[str]
-) -> None:
-    context = MockContext(run={"openspec list --changes --json": response})
-
-    ai._show_openspec_table(context)
-
-    assert "OpenSpec Changes" not in capsys.readouterr().out
-    assert context.run.call_count == 1
+    assert ai._plan_markdown_files(tmp_path, []) == sorted(tmp_path / name for name in visible)
 
 
 @pytest.mark.parametrize("status", ["complete", "canceled", "superseded"])
@@ -496,6 +387,31 @@ def test_tree_plan_rows_groups_directories_and_keeps_metadata_on_files() -> None
     ]
 
 
+def test_tree_plan_rows_omits_dot_root_and_collapses_directory_chains() -> None:
+    rows = [
+        ("docs/plans/l10n/sync/design/a.md", ["draft", "2026-10-07"]),
+        ("docs/plans/l10n/sync/design/b.md", ["partial", "2026-10-08"]),
+        ("docs/plans/l10n/brand/rfc.md", ["approved", "2026-10-09"]),
+        ("openspec/initiatives/sync.md", ["draft", "2026-10-20"]),
+    ]
+
+    assert ai._tree_plan_rows(rows) == [
+        ("docs/plans/l10n", ["", ""]),
+        ("├─ brand", ["", ""]),
+        ("│  └─ rfc.md", ["approved", "2026-10-09"]),
+        ("└─ sync/design", ["", ""]),
+        ("   ├─ a.md", ["draft", "2026-10-07"]),
+        ("   └─ b.md", ["partial", "2026-10-08"]),
+        ("openspec/initiatives", ["", ""]),
+        ("└─ sync.md", ["draft", "2026-10-20"]),
+    ]
+
+
+def test_tree_plan_rows_keeps_root_file_metadata() -> None:
+    assert ai._tree_plan_rows([("plan.md", ["draft"])]) == [("plan.md", ["draft"])]
+    assert ai._tree_plan_rows([]) == []
+
+
 def test_plans_table_folds_long_filename_without_ellipsis(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from rich.console import Console
 
@@ -532,7 +448,10 @@ def test_plans_table_renders_worktree_labels_and_indents_files(tmp_path: Path, m
         [tmp_path, first, second],
         {
             tmp_path: [("docs/plans/main.md", ["draft", "2026-09-30"])],
-            first: [("docs/plans/first.md", ["partial", "2026-09-29"])],
+            first: [
+                ("docs/plans/first.md", ["partial", "2026-09-29"]),
+                ("openspec/initiatives/spec.md", ["draft", "2026-09-30"]),
+            ],
             second: [("docs/plans/second.md", ["approved", "2026-09-28"])],
         },
         tmp_path,
@@ -546,7 +465,10 @@ def test_plans_table_renders_worktree_labels_and_indents_files(tmp_path: Path, m
     assert "├─ .worktrees" not in rendered
     assert "└─ .worktrees" not in rendered
     assert "   └─ docs/plans" in rendered
-    assert "      └─ first.md" in rendered
+    assert "   ├─ docs/plans" in rendered
+    assert "   └─ openspec/initiatives" in rendered
+    assert "   │  └─ first.md" in rendered
+    assert "      └─ spec.md" in rendered
     assert "      └─ second.md" in rendered
     assert "./.worktrees" not in rendered
 
