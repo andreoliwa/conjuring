@@ -194,7 +194,7 @@ can be added to the global scope and be available from any directory.
 - On the init file, call `import_dirs()` with the path to your modules or packages;
 - The import method detects if the directory is a Python package or not,
   and imports it accordingly;
-- The example uses `cast_all()`, but you can use any of the other `cast_*`
+- The example uses `conjure_all()`, but you can use any of the other `conjure_*`
   methods described above ([opt-in](#opt-in)
   or [opt-out](#opt-out)).
 
@@ -208,7 +208,7 @@ namespace = (
         "~/path/to/your/src/my_package",
         "~/path/to/a/some-directory-with-py-files",
     )
-    .cast_all()
+    .conjure_all()
 )
 ```
 
