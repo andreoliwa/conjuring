@@ -38,10 +38,12 @@ repos:
       - id: prettier
         stages:
           - pre-commit
-  - repo: https://github.com/igorshubovych/markdownlint-cli # https://github.com/DavidAnson/markdownlint
-    rev: v0.49.1
+  # Python-packaged Rust binary; no npm installation is needed.
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.3.2
     hooks:
-      - id: markdownlint-fix
+      - id: rumdl-check
+        args: [--fix]
   - repo: https://github.com/asottile/blacken-docs
     rev: 1.20.0
     hooks:
