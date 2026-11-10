@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import filecmp
 import fnmatch
+import json
 import re
 import shlex
 import shutil
@@ -528,12 +529,16 @@ def _plan_rows(  # noqa: PLR0913
     repo_root: Path,
     columns: list[str],
     ignore_patterns: list[str],
+    *,
     all_: bool,
+    history: bool = False,
 ) -> list[tuple[str, list[str]]]:
     """Build table rows for plans, applying status and ignore filters."""
     rows: list[tuple[str, list[str]]] = []
     for path in md_files:
         fm = all_fm[path]
+        if history and not fm.get("status"):
+            continue
         rel = str(path.relative_to(repo_root))
         ignored = _is_ignored(rel, ignore_patterns)
         if not all_ and (fm.get("status") in _HIDDEN_STATUSES or ignored):
@@ -656,15 +661,29 @@ def _plan_markdown_files(root: Path, dirs: list[str]) -> list[Path]:
         "dynamic": "Discover columns dynamically from all frontmatter keys found "
         "(default: fixed status + last_updated)",
         "all_": "Show all plans including completed/canceled/superseded/ignored ones",
+        "history": "Show all plan statuses, excluding plans with no status metadata",
         "statuses": "Show valid plan statuses",
     },
     iterable=["dirs"],
 )
-def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False, statuses: bool = False) -> None:
-    """Display plan documents, GSD phases, and the OpenSpec dashboard."""
+def plans(  # noqa: PLR0913
+    c: Context,
+    dirs: list[str],
+    dynamic: bool = False,
+    all_: bool = False,
+    statuses: bool = False,
+    history: bool = False,
+) -> None:
+    """Display plan documents, GSD phases, and active OpenSpec changes.
+
+    Use --all to include every plan, or --history to include every status except
+    missing status metadata. Both flags always show the OpenSpec dashboard.
+    """
     if statuses:
         print("\n".join(_VALID_PLAN_STATUSES))
         return
+
+    all_ = all_ or history
 
     _repo_root = Git(c).repo_root(quiet=True)
     if not _repo_root:
@@ -691,7 +710,7 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
         # Build rows per worktree
         worktree_rows: dict[Path, list[tuple[str, list[str]]]] = {}
         for wt, md_files in worktree_md.items():
-            worktree_rows[wt] = _plan_rows(md_files, all_fm, wt, columns, ignore_patterns, all_)
+            worktree_rows[wt] = _plan_rows(md_files, all_fm, wt, columns, ignore_patterns, all_=all_, history=history)
 
         total_rows = sum(len(r) for r in worktree_rows.values())
         if total_rows == 0:
@@ -704,7 +723,24 @@ def plans(c: Context, dirs: list[str], dynamic: bool = False, all_: bool = False
         _show_gsd_table(main_root, all_)
 
     if (main_root / OPENSPEC_DIR).is_dir():
-        run_command(c, "openspec view")
+        with c.cd(str(main_root)):
+            _show_openspec_dashboard(c, all_)
+
+
+def _show_openspec_dashboard(c: Context, all_: bool) -> None:
+    """Hide inactive changes unless all statuses were requested."""
+    if not all_:
+        output = run_stdout(c, "openspec list --json")
+        try:
+            changes = json.loads(output)["changes"]
+            # Changes without tasks are drafts, not completed changes.
+            if not any(change["status"] != "complete" for change in changes):
+                print_success("OpenSpec: no active changes, all are completed or archived")
+                return
+        except (ValueError, KeyError, TypeError):
+            # If the query fails, keep the dashboard rather than claim nothing is active.
+            pass
+    run_command(c, "openspec view")
 
 
 _GSD_ROADMAP_PHASE = re.compile(

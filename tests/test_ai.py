@@ -1,5 +1,6 @@
 # ruff: noqa: SLF001
 
+import json
 import re
 from io import StringIO
 from pathlib import Path
@@ -484,3 +485,78 @@ def test_all_shows_hidden_gsd_statuses() -> None:
         ("2", "canceled", "canceled", "0/0"),
         ("3", "superseded", "superseded", "0/0"),
     ]
+
+
+@pytest.mark.parametrize(("all_", "history"), [(True, False), (False, True), (True, True)])
+def test_plans_history_filters_missing_status_not_missing_date(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], all_: bool, history: bool
+) -> None:
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    for status in ("draft", "approved", "partial", "complete", "canceled", "superseded"):
+        (plans / f"{status}.md").write_text(f"---\nstatus: {status}\n---\n")
+    (plans / "no-status.md").write_text("---\nlast_updated: 2026-11-10\n---\n")
+    (plans / "ignored-no-status.md").write_text("No metadata\n")
+    (plans / "blank-status.md").write_text("---\nstatus:\n---\n")
+    (tmp_path / "mise.local.toml").write_text(
+        '[_.conjuring.ai]\nplans_ignore = ["docs/plans/ignored-*.md", "docs/plans/complete.md"]\n'
+    )
+    monkeypatch.setattr(ai.Git, "repo_root", lambda *_args, **_kwargs: tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    ai.plans.body(MockContext(), [], all_=all_, history=history)
+
+    output = capsys.readouterr().out
+    for status in ("draft", "approved", "partial", "complete", "canceled", "superseded"):
+        assert f"{status}.md" in output
+    for name in ("no-status.md", "ignored-no-status.md", "blank-status.md"):
+        assert (name in output) is not history
+    assert "All AI Plans & Specs" in output
+
+
+@pytest.mark.parametrize("mode", ["default", "all", "history"])
+@pytest.mark.parametrize("state", ["empty", "archived", "complete", "in-progress", "no-tasks", "error", "invalid"])
+def test_plans_openspec_dashboard_visibility(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mode: str, state: str
+) -> None:
+    openspec = tmp_path / "openspec"
+    openspec.mkdir()
+    if state == "archived":
+        (openspec / "changes" / "archive" / "old-change").mkdir(parents=True)
+    changes = []
+    if state in {"complete", "in-progress", "no-tasks"}:
+        changes.append(
+            {
+                "name": "test-change",
+                "completedTasks": 1 if state == "complete" else 0,
+                "totalTasks": 0 if state == "no-tasks" else 1,
+                "lastModified": "2026-11-10T00:00:00.000Z",
+                "status": state,
+            }
+        )
+    result = Result(
+        "not JSON" if state == "invalid" else json.dumps({"changes": changes}), exited=1 if state == "error" else 0
+    )
+    context = MockContext(run=True)
+    working_dirs = []
+
+    def record_working_dir(command, **kwargs: object):
+        working_dirs.append(context.cwd)
+        assert command in {"openspec list --json", "openspec view"}
+        return result if command == "openspec list --json" else Result()
+
+    context.run.side_effect = record_working_dir
+    monkeypatch.setattr(ai.Git, "repo_root", lambda *_args, **_kwargs: tmp_path)
+    # Run outside the repo to verify OpenSpec is queried in the detected main root.
+    monkeypatch.chdir(tmp_path.parent)
+
+    ai.plans.body(context, [], all_=mode == "all", history=mode == "history")
+
+    commands = [call.args[0] for call in context.run.call_args_list]
+    show_dashboard = mode != "default" or state in {"in-progress", "no-tasks", "error", "invalid"}
+    assert any(command.endswith("openspec view") for command in commands) is show_dashboard
+    if mode == "default":
+        assert "openspec list --json" in commands
+    assert working_dirs == [str(tmp_path)] * len(commands)
+    output = capsys.readouterr().out
+    assert ("OpenSpec: no active changes, all are completed or archived" in output) is not show_dashboard
