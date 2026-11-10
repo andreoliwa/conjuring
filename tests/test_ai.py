@@ -2,6 +2,7 @@
 
 import json
 import re
+import sys
 from io import StringIO
 from pathlib import Path
 
@@ -485,6 +486,17 @@ def test_all_shows_hidden_gsd_statuses() -> None:
         ("2", "canceled", "canceled", "0/0"),
         ("3", "superseded", "superseded", "0/0"),
     ]
+
+
+@pytest.mark.parametrize("filename", ["mise.toml", "mise.local.toml"])
+@pytest.mark.parametrize("value", ['["docs/plans/ignored-*.md"]', '"docs/plans/ignored-*.md"'])
+def test_mise_plans_ignore_without_tomllib(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, filename: str, value: str
+) -> None:
+    monkeypatch.setitem(sys.modules, "tomllib", None)
+    (tmp_path / filename).write_text(f"[_.conjuring.ai]\nplans_ignore = {value}\n")
+
+    assert ai._mise_plans_ignore(tmp_path) == ["docs/plans/ignored-*.md"]
 
 
 @pytest.mark.parametrize(("all_", "history"), [(True, False), (False, True), (True, True)])

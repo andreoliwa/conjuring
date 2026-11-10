@@ -466,14 +466,13 @@ def _parse_all_frontmatter(path: Path) -> dict[str, str]:
 
 def _mise_plans_ignore(directory: Path) -> list[str]:
     """Try loading plans_ignore from [_.conjuring.ai] in mise configs under directory."""
-    import tomllib
+    import tomlkit
 
     for name in ("mise.local.toml", "mise.toml"):
         path = directory / name
         if not path.exists():
             continue
-        with path.open("rb") as fh:
-            data = tomllib.load(fh)
+        data = tomlkit.loads(path.read_text())
         ignore = data.get("_", {}).get("conjuring", {}).get("ai", {}).get("plans_ignore", [])
         if ignore:
             return ignore if isinstance(ignore, list) else [ignore]
