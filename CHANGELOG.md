@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.16.0](https://github.com/andreoliwa/conjuring/compare/v0.15.0...v0.16.0) (2026-11-10)
+
+### Features
+
+- **ai:** add plan history and hide inactive OpenSpec dashboards ([bdfcecd](https://github.com/andreoliwa/conjuring/commit/bdfcecd870231988b5f3e08ee63946a8c978cca4))
+- **ai:** simplify plan trees and use the OpenSpec dashboard ([79fd827](https://github.com/andreoliwa/conjuring/commit/79fd827313eaa9ed8fa577f0adcb22273c9e6a92))
+
+### Bug Fixes
+
+- **ai:** always show OpenSpec dashboard ([d49b4e7](https://github.com/andreoliwa/conjuring/commit/d49b4e70fed51899801a01e55f0c883813fdab2a))
+- **ai:** brighten canceled plan statuses ([0a8ffec](https://github.com/andreoliwa/conjuring/commit/0a8ffec012f2e9a746582e47c4827feeaffaf2fe))
+- **ai:** load plan ignore settings on Python 3.10 ([8bcc7cc](https://github.com/andreoliwa/conjuring/commit/8bcc7cc360eb1596c133dcb98a0bb309a79cc5c7))
+
+### Documentation
+
+- **spellbook:** use current conjure methods in import examples ([d085146](https://github.com/andreoliwa/conjuring/commit/d0851469ae2becf9dd23163d5329c2664b34e424))
+
 ## [0.15.0](https://github.com/andreoliwa/conjuring/compare/v0.14.0...v0.15.0) (2026-10-18)
 
 ### Features
