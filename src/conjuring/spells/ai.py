@@ -62,7 +62,7 @@ LLM_COAUTHOR_PATTERN = re.compile(
 )
 _STATUS_COLORS = {
     "approved": "green",
-    "canceled": "red",
+    "canceled": "bright_red",
     "complete": "green",
     "ignored": "yellow",
     "missing": "red",
