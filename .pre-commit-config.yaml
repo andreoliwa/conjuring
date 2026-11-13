@@ -40,7 +40,7 @@ repos:
           - pre-commit
   # Python-packaged Rust binary; no npm installation is needed.
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.3.2
+    rev: v0.3.4
     hooks:
       - id: rumdl-check
         args: [--fix]
@@ -71,7 +71,7 @@ repos:
         # https://docs.openstack.org/bashate/latest/man/bashate.html#options
         args: [-i, E006]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.19.3
+    rev: v4.19.2
     hooks:
       - id: commitizen
         stages: [commit-msg]
